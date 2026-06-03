@@ -33,9 +33,8 @@ class _CustomSplashScreenState extends State<CustomSplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Jika ada logo gambar silakan pakai Image.asset, jika tidak kita pakai teks estetik
             Text(
-              'TRAXA',
+              'NotaryTrack',
               style: GoogleFonts.comfortaa(
                 fontSize: 48,
                 fontWeight: FontWeight.bold,
