@@ -62,7 +62,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       body: SafeArea(
         child: Column(
           children: [
-           
             Align(
               alignment: Alignment.topRight,
               child: Padding(
@@ -92,7 +91,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Lingkaran Ilustrasi Gambar Dummy (Nanti bisa diganti Image.asset)
                         Container(
                           width: 240,
                           height: 240,
@@ -135,13 +133,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               ),
             ),
 
-      
             Padding(
               padding: const EdgeInsets.all(32.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                
                   Row(
                     children: List.generate(
                       _onboardingData.length,

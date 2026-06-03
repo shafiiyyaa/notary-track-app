@@ -12,23 +12,21 @@ class HomePresenter {
   Future<void> fetchDashboardSummary() async {
     try {
       // 1. Ambil semua baris id dari tabel 'documents' untuk tahu totalnya
-      final totalRes = await _supabase
-          .from('documents')
-          .select('id');
-      
+      final totalRes = await _supabase.from('documents').select('id');
+
       // 2. Ambil baris id yang kolom status-nya bernilai 'Selesai'
       final completedRes = await _supabase
           .from('documents')
           .select('id')
           .eq('status', 'Selesai');
-      
+
       // 3. Bungkus hasil perhitungan ke dalam entitas DashboardSummary Model
       final summary = DashboardSummary(
         totalDocuments: totalRes.length,
-        totalDeadlines: 5, // Angka statis / dummy untuk tenggat waktu terdekat
+        totalDeadlines: 0,
         completedDocuments: completedRes.length,
       );
-      
+
       // 4. Kirim data yang berhasil diambil kembali ke halaman View (UI)
       _view.onSummaryLoaded(summary);
     } catch (e) {
