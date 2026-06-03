@@ -14,7 +14,7 @@ class _CustomSplashScreenState extends State<CustomSplashScreen> {
   @override
   void initState() {
     super.initState();
-    // Beri jeda 3 detik lalu pindah ke halaman Onboarding
+    //  jeda 3 detik lalu pindah ke halaman Onboarding
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
         Navigator.pushReplacement(
@@ -28,7 +28,7 @@ class _CustomSplashScreenState extends State<CustomSplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color.fromARGB(255, 91, 141, 184),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
