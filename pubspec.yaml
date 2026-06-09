@@ -22,7 +22,7 @@ flutter:
    
 assets:
   - assets/images/
-  # Pasang konfigurasi ini di bagian paling bawah pubspec.yaml
+
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
@@ -34,3 +34,4 @@ flutter_launcher_icons:
   image: "assets/images/logo.png"
   
   fullscreen: true
+

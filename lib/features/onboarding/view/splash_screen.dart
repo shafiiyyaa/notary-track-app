@@ -27,7 +27,6 @@ class _CustomSplashScreenState extends State<CustomSplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-     
       backgroundColor: const Color(0xFF5B8DB8),
       body: Center(
         child: Column(
@@ -42,11 +41,11 @@ class _CustomSplashScreenState extends State<CustomSplashScreen> {
             ),
 
             const SizedBox(height: 16), // Jarak antara logo dan tulisan teks
-            // 2. Bagian Tulisan "Notary Track" di bawah logo
+
             Text(
               'Notary Track',
               style: GoogleFonts.cinzel(
-                fontSize: 32,
+                fontSize: 20,
                 fontWeight: FontWeight.w500,
                 color: const Color(0xFFEFECE3),
                 letterSpacing: 1.2,
