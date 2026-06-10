@@ -1,11 +1,14 @@
 name: notarytrackapp
 description: "A new Flutter project."
-publish_to: 'none' 
+publish_to: 'none'
+
 environment:
   sdk: ^3.11.1
+
 dependencies:
   flutter:
     sdk: flutter
+
   cupertino_icons: ^1.0.8
   supabase_flutter: ^2.6.0
   google_fonts: ^6.1.0
@@ -17,21 +20,19 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.4
   flutter_native_splash: ^2.2.11
 
-flutter:
-   uses-material-design: true
-   
-assets:
-  - assets/images/
-
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/images/logo.png" 
+  image_path: "assets/images/logo.png"
   min_sdk_android: 15
 
-  flutter_native_splash:
+flutter_native_splash:
   color: "#F5F3E9"
   image: "assets/images/logo.png"
-  
   fullscreen: true
 
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
