@@ -23,6 +23,7 @@ class RegisterPresenter {
       _view.hideLoading();
       _view.onRegisterSuccess();
     } catch (e) {
+  
       print("ERROR REGISTER: $e");
       _view.hideLoading();
       _view.onRegisterError(e.toString());
