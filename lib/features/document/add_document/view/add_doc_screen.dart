@@ -13,7 +13,6 @@ class AddDocumentScreen extends StatefulWidget {
 
 class _AddDocumentScreenState extends State<AddDocumentScreen>
     implements AddDocumentViewContract {
-
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _deadlineController = TextEditingController();
@@ -23,6 +22,9 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
   final _additionalFee1Controller = TextEditingController();
   final _additionalFee2Controller = TextEditingController();
 
+  List<Map<String, dynamic>> _documentTypes = [];
+  int? _selectedDocumentTypeId;
+
   bool _isLoading = false;
 
   late AddDocPresenter _presenter;
@@ -31,6 +33,19 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
   void initState() {
     super.initState();
     _presenter = AddDocPresenter(this);
+    _loadDocumentTypes();
+  }
+
+  Future<void> _loadDocumentTypes() async {
+    final data = await _presenter.getDocumentTypes();
+
+    setState(() {
+      _documentTypes = data;
+
+      if (data.isNotEmpty) {
+        _selectedDocumentTypeId = data.first['id'];
+      }
+    });
   }
 
   @override
@@ -73,9 +88,7 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
       appBar: AppBar(
         title: Text(
           'Tambah Dokumen',
-          style: GoogleFonts.comfortaa(
-            fontWeight: FontWeight.bold,
-          ),
+          style: GoogleFonts.comfortaa(fontWeight: FontWeight.bold),
         ),
       ),
       body: SingleChildScrollView(
@@ -83,7 +96,6 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             _buildLabel('Nama Klien'),
             TextField(
               controller: _nameController,
@@ -103,6 +115,28 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
                 fillColor: Colors.white,
                 border: InputBorder.none,
               ),
+            ),
+
+            _buildLabel('Jenis Dokumen'),
+
+            DropdownButtonFormField<int>(
+              value: _selectedDocumentTypeId,
+              decoration: const InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                border: InputBorder.none,
+              ),
+              items: _documentTypes.map((doc) {
+                return DropdownMenuItem<int>(
+                  value: doc['id'],
+                  child: Text(doc['name']),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() {
+                  _selectedDocumentTypeId = value;
+                });
+              },
             ),
 
             _buildLabel('Deadline (YYYY-MM-DD)'),
@@ -176,19 +210,15 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
 
                           deadline: _deadlineController.text,
 
-                          initialFee: double.tryParse(
-                                _initialFeeController.text,
-                              ) ??
+                          initialFee:
+                              double.tryParse(_initialFeeController.text) ?? 0,
+
+                          additionalFee1:
+                              double.tryParse(_additionalFee1Controller.text) ??
                               0,
 
-                          additionalFee1: double.tryParse(
-                                _additionalFee1Controller.text,
-                              ) ??
-                              0,
-
-                          additionalFee2: double.tryParse(
-                                _additionalFee2Controller.text,
-                              ) ??
+                          additionalFee2:
+                              double.tryParse(_additionalFee2Controller.text) ??
                               0,
 
                           note: _noteController.text,
@@ -201,9 +231,7 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
                     ? const CircularProgressIndicator()
                     : const Text(
                         'Simpan Dokumen',
-                        style: TextStyle(
-                          color: Colors.white,
-                        ),
+                        style: TextStyle(color: Colors.white),
                       ),
               ),
             ),
@@ -216,12 +244,7 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
   Widget _buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-        ),
-      ),
+      child: Text(text, style: const TextStyle(fontWeight: FontWeight.bold)),
     );
   }
 }

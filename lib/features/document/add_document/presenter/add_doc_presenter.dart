@@ -48,4 +48,12 @@ class AddDocPresenter {
       _view.onSaveError(e.toString());
     }
   }
+  Future<List<Map<String, dynamic>>> getDocumentTypes() async {
+  final response = await _supabase
+      .from('document_types')
+      .select()
+      .order('name');
+
+  return List<Map<String, dynamic>>.from(response);
+}
 }
