@@ -11,13 +11,20 @@ class AddDocumentScreen extends StatefulWidget {
   State<AddDocumentScreen> createState() => _AddDocumentScreenState();
 }
 
-class _AddDocumentScreenState extends State<AddDocumentScreen> implements AddDocumentViewContract {
+class _AddDocumentScreenState extends State<AddDocumentScreen>
+    implements AddDocumentViewContract {
+
   final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _deadlineController = TextEditingController();
-  final _priceController = TextEditingController();
   final _noteController = TextEditingController();
-  String _selectedType = 'Akta Jual Beli';
+
+  final _initialFeeController = TextEditingController();
+  final _additionalFee1Controller = TextEditingController();
+  final _additionalFee2Controller = TextEditingController();
+
   bool _isLoading = false;
+
   late AddDocPresenter _presenter;
 
   @override
@@ -27,50 +34,194 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> implements AddDoc
   }
 
   @override
-  void showLoading() => setState(() => _isLoading = true);
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    _deadlineController.dispose();
+    _noteController.dispose();
+    _initialFeeController.dispose();
+    _additionalFee1Controller.dispose();
+    _additionalFee2Controller.dispose();
+    super.dispose();
+  }
+
   @override
-  void hideLoading() => setState(() => _isLoading = false);
+  void showLoading() {
+    setState(() => _isLoading = true);
+  }
+
   @override
-  void onSaveSuccess() => Navigator.pop(context);
+  void hideLoading() {
+    setState(() => _isLoading = false);
+  }
+
   @override
-  void onSaveError(String message) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  void onSaveSuccess() {
+    Navigator.pop(context);
+  }
+
+  @override
+  void onSaveError(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Tambah Dokumen', style: GoogleFonts.comfortaa(fontWeight: FontWeight.bold))),
+      appBar: AppBar(
+        title: Text(
+          'Tambah Dokumen',
+          style: GoogleFonts.comfortaa(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _buildLabel('Nama Klien'),
-          TextField(controller: _nameController, decoration: const InputDecoration(filled: true, fillColor: Colors.white, border: InputBorder.none)),
-          _buildLabel('Jenis Dokumen'),
-          DropdownButton<String>(
-            value: _selectedType,
-            isExpanded: true,
-            items: ['Akta Jual Beli', 'Pendirian Yayasan', 'Pemecahan Sertifikat'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-            onChanged: (v) => setState(() => _selectedType = v!),
-          ),
-          _buildLabel('Deadline (YYYY-MM-DD)'),
-          TextField(controller: _deadlineController, decoration: const InputDecoration(filled: true, fillColor: Colors.white, border: InputBorder.none)),
-          _buildLabel('Total Biaya'),
-          TextField(controller: _priceController, keyboardType: TextInputType.number, decoration: const InputDecoration(filled: true, fillColor: Colors.white, border: InputBorder.none)),
-          _buildLabel('Catatan'),
-          TextField(controller: _noteController, maxLines: 3, decoration: const InputDecoration(filled: true, fillColor: Colors.white, border: InputBorder.none)),
-          const SizedBox(height: 30),
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : () => _presenter.saveDocument(name: _nameController.text, type: _selectedType, deadline: _deadlineController.text, price: double.tryParse(_priceController.text) ?? 0, note: _noteController.text),
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue),
-              child: _isLoading ? const CircularProgressIndicator() : const Text('Simpan Dokumen', style: TextStyle(color: Colors.white)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+
+            _buildLabel('Nama Klien'),
+            TextField(
+              controller: _nameController,
+              decoration: const InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                border: InputBorder.none,
+              ),
             ),
-          )
-        ]),
+
+            _buildLabel('Nomor Telepon'),
+            TextField(
+              controller: _phoneController,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                border: InputBorder.none,
+              ),
+            ),
+
+            _buildLabel('Deadline (YYYY-MM-DD)'),
+            TextField(
+              controller: _deadlineController,
+              decoration: const InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                border: InputBorder.none,
+              ),
+            ),
+
+            _buildLabel('Biaya Awal'),
+            TextField(
+              controller: _initialFeeController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                border: InputBorder.none,
+              ),
+            ),
+
+            _buildLabel('Biaya Tambahan 1'),
+            TextField(
+              controller: _additionalFee1Controller,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                border: InputBorder.none,
+              ),
+            ),
+
+            _buildLabel('Biaya Tambahan 2'),
+            TextField(
+              controller: _additionalFee2Controller,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                border: InputBorder.none,
+              ),
+            ),
+
+            _buildLabel('Catatan'),
+            TextField(
+              controller: _noteController,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                border: InputBorder.none,
+              ),
+            ),
+
+            const SizedBox(height: 30),
+
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: _isLoading
+                    ? null
+                    : () {
+                        _presenter.saveDocument(
+                          name: _nameController.text,
+                          phone: _phoneController.text,
+
+                          documentTypeId: 1,
+
+                          deadline: _deadlineController.text,
+
+                          initialFee: double.tryParse(
+                                _initialFeeController.text,
+                              ) ??
+                              0,
+
+                          additionalFee1: double.tryParse(
+                                _additionalFee1Controller.text,
+                              ) ??
+                              0,
+
+                          additionalFee2: double.tryParse(
+                                _additionalFee2Controller.text,
+                              ) ??
+                              0,
+
+                          note: _noteController.text,
+                        );
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryBlue,
+                ),
+                child: _isLoading
+                    ? const CircularProgressIndicator()
+                    : const Text(
+                        'Simpan Dokumen',
+                        style: TextStyle(
+                          color: Colors.white,
+                        ),
+                      ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildLabel(String txt) => Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text(txt, style: const TextStyle(fontWeight: FontWeight.bold)));
+  Widget _buildLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
 }
