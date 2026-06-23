@@ -5,10 +5,11 @@ import 'constants/constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   await Supabase.initialize(
-    url: 'https://bwmixsdyqmrkdbxalzyr.supabase.co', 
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ3bWl4c2R5cW1ya2RieGFsenlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzODYyMzIsImV4cCI6MjA5NTk2MjIzMn0.ZVm6ZEDlN2tooY1x2NGhZGnA3_uqGVwcu7arcz0Fm0Y', 
+    url: 'https://bwmixsdyqmrkdbxalzyr.supabase.co',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ3bWl4c2R5cW1ya2RieGFsenlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzODYyMzIsImV4cCI6MjA5NTk2MjIzMn0.ZVm6ZEDlN2tooY1x2NGhZGnA3_uqGVwcu7arcz0Fm0Y',
   );
 
   runApp(const NotaryTrackApp());
@@ -23,8 +24,8 @@ class NotaryTrackApp extends StatelessWidget {
       title: 'NotaryTrackApp',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        scaffoldBackgroundColor: AppColors.background,
-        primaryColor: AppColors.primaryBlue,
+        scaffoldBackgroundColor: const Color.fromARGB(255, 91, 141, 184),
+        primaryColor: const Color.fromRGBO(91, 141, 184, 1),
         useMaterial3: true,
       ),
       home: const CustomSplashScreen(),

@@ -39,6 +39,8 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
   Future<void> _loadDocumentTypes() async {
     final data = await _presenter.getDocumentTypes();
 
+    print(data);
+
     setState(() {
       _documentTypes = data;
 
@@ -120,7 +122,7 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
             _buildLabel('Jenis Dokumen'),
 
             DropdownButtonFormField<int>(
-              value: _selectedDocumentTypeId,
+              initialValue: _selectedDocumentTypeId,
               decoration: const InputDecoration(
                 filled: true,
                 fillColor: Colors.white,
