@@ -24,7 +24,7 @@ class NotaryTrackApp extends StatelessWidget {
       title: 'NotaryTrackApp',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        scaffoldBackgroundColor: const Color.fromARGB(255, 91, 141, 184),
+        scaffoldBackgroundColor: AppColors.background,
         primaryColor: const Color.fromRGBO(91, 141, 184, 1),
         useMaterial3: true,
       ),
