@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../../../constants/constants.dart';
 import '../model/profile_model.dart';
 import '../presenter/profile.presenter.dart';
@@ -12,7 +14,8 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> implements ProfileViewContract {
+class _ProfileScreenState extends State<ProfileScreen>
+    implements ProfileViewContract {
   late ProfilePresenter _presenter;
   ProfileModel? _profile;
 
@@ -39,50 +42,81 @@ class _ProfileScreenState extends State<ProfileScreen> implements ProfileViewCon
           : SafeArea(
               child: SingleChildScrollView(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  padding: const EdgeInsets.all(24),
                   child: Column(
                     children: [
-                      const SizedBox(height: 40),
-                      Text(
-                        'Akun Saya',
-                        style: GoogleFonts.comfortaa(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primaryBlueDark,
-                        ),
-                      ),
                       const SizedBox(height: 30),
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white,
-                        ),
-                        child: CircleAvatar(
-                          radius: 70,
-                          backgroundImage: NetworkImage(_profile!.avatarUrl),
+
+                      Text(
+                        "Akun Saya",
+                        style: GoogleFonts.comfortaa(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
+
+                      const SizedBox(height: 30),
+
+                      const CircleAvatar(
+                        radius: 70,
+                        backgroundImage: NetworkImage(
+                          "https://i.pravatar.cc/300",
+                        ),
+                      ),
+                      
                       const SizedBox(height: 20),
+
                       Text(
                         _profile!.name,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 22,
+                        style: GoogleFonts.comfortaa(
+                          fontSize: 24,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+
+                      const SizedBox(height: 5),
+
                       Text(
                         _profile!.email,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 14,
-                          color: Colors.black54,
                         ),
                       ),
-                      const SizedBox(height: 40),
-                      _buildMenuItem(Icons.person, 'Edit Profil'),
-                      _buildMenuItem(Icons.notifications, 'Notifikasi'),
-                      _buildMenuItem(Icons.lock, 'Ubah Kata Sandi'),
-                      _buildMenuItem(Icons.logout, 'Keluar'),
+
+                      const SizedBox(height: 30),
+
+                      _menuTile(
+                        Icons.person,
+                        "Edit Profil",
+                        () {},
+                      ),
+
+                      _menuTile(
+                        Icons.notifications,
+                        "Notifikasi",
+                        () {},
+                      ),
+
+                      _menuTile(
+                        Icons.lock,
+                        "Ubah Kata Sandi",
+                        () {},
+                      ),
+
+                      _menuTile(
+                        Icons.logout,
+                        "Keluar",
+                        () async {
+                          await Supabase.instance.client.auth.signOut();
+
+                          if (!mounted) return;
+
+                          Navigator.popUntil(
+                            context,
+                            (route) => route.isFirst,
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -91,22 +125,30 @@ class _ProfileScreenState extends State<ProfileScreen> implements ProfileViewCon
     );
   }
 
-  Widget _buildMenuItem(IconData icon, String title) {
+  Widget _menuTile(
+    IconData icon,
+    String title,
+    VoidCallback onTap,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFFD9E2ED), // Biru pastel estetik sesuai mockup
+        color: const Color(0xFFD9E6F2),
         borderRadius: BorderRadius.circular(20),
       ),
       child: ListTile(
-        leading: Icon(icon, color: AppColors.primaryBlueDark),
+        leading: Icon(
+          icon,
+          color: AppColors.primaryBlue,
+        ),
         title: Text(
           title,
-          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 16),
+          style: GoogleFonts.comfortaa(
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        trailing: const Icon(Icons.chevron_right, color: Colors.black),
-        onTap: () {},
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: onTap,
       ),
     );
   }

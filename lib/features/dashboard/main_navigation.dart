@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../dashboard/view/dashboard_screen.dart';
 import '../document/document_list/view/document_list_screen.dart';
 import '../document/add_document/view/add_doc_screen.dart';
+import '../profile/view/profile_screen.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -16,7 +17,7 @@ class _MainNavigationState extends State<MainNavigation> {
     const HomeScreen(),
     const DocumentListScreen(),
     const Center(child: Text('Riwayat Screen')),
-    const Center(child: Text('Akun Screen')),
+    const ProfileScreen(),
   ];
 
   @override
@@ -24,7 +25,10 @@ class _MainNavigationState extends State<MainNavigation> {
     return Scaffold(
       body: IndexedStack(index: _selectedIndex, children: _screens),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AddDocumentScreen())),
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AddDocumentScreen()),
+        ),
         backgroundColor: const Color(0xFFABC8E2),
         shape: const CircleBorder(),
         child: const Icon(Icons.add, size: 36, color: Colors.white),
@@ -41,7 +45,7 @@ class _MainNavigationState extends State<MainNavigation> {
             children: [
               _buildNavItem(Icons.home, 'Home', 0),
               _buildNavItem(Icons.assignment, 'Dokumen', 1),
-              const SizedBox(width: 40), 
+              const SizedBox(width: 40),
               _buildNavItem(Icons.history, 'Riwayat', 2),
               _buildNavItem(Icons.person, 'Akun', 3),
             ],
@@ -58,8 +62,18 @@ class _MainNavigationState extends State<MainNavigation> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: isSelected ? const Color(0xFF1E3A5F) : Colors.white70, size: 26),
-          Text(label, style: TextStyle(color: isSelected ? const Color(0xFF1E3A5F) : Colors.white70, fontSize: 11)),
+          Icon(
+            icon,
+            color: isSelected ? const Color(0xFF1E3A5F) : Colors.white70,
+            size: 26,
+          ),
+          Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? const Color(0xFF1E3A5F) : Colors.white70,
+              fontSize: 11,
+            ),
+          ),
         ],
       ),
     );
