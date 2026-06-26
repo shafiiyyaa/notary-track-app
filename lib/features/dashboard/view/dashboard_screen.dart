@@ -16,7 +16,14 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
   late HomePresenter _presenter;
   int _totalDocs = 0;
   int _completedDocs = 0;
+  String _username = "Admin";
 
+@override
+void onUserLoaded(String username) {
+  setState(() {
+    _username = username;
+  });
+}
   @override
   void initState() {
     super.initState();
@@ -50,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Halo, Admin!', style: GoogleFonts.comfortaa(fontSize: 26, fontWeight: FontWeight.bold)),
+                      Text('Halo,  $_username!', style: GoogleFonts.comfortaa(fontSize: 26, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 4),
                       Text('Aplikasi Pemantauan Dokumen Notaris', style: TextStyle(color: Colors.black54)),
                     ],

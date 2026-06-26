@@ -34,4 +34,22 @@ class HomePresenter {
       _view.onSummaryError(e.toString());
     }
   }
+  Future<void> fetchUser() async {
+  try {
+    final user = _supabase.auth.currentUser;
+
+    if (user == null) return;
+
+    final profile =
+        await _supabase
+            .from('profiles')
+            .select('username')
+            .eq('id', user.id)
+            .single();
+
+    _view.onUserLoaded(profile['username']);
+  } catch (e) {
+    _view.onUserLoaded("Admin");
+  }
+}
 }
