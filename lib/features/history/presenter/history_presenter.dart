@@ -1,18 +1,39 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../model/history_model.dart';
 import '../view/history_view.dart';
 
 class HistoryPresenter {
   final HistoryViewContract _view;
+
+  final SupabaseClient _supabase = Supabase.instance.client;
+
   HistoryPresenter(this._view);
 
-  void loadHistory() {
-    final list = [
-      HistoryModel(status: "Selesai", staff: "Tri", waktu: "03-Maret-2026", doc: "Balik Nama AJB"),
-      HistoryModel(status: "Selesai", staff: "Alex", waktu: "30-Maret-2026", doc: "Pemecahan Sertifikat"),
-      HistoryModel(status: "Selesai", staff: "Dwii", waktu: "03-April-2026", doc: "Pendirian Yayasan"),
-      HistoryModel(status: "Selesai", staff: "Lea", waktu: "30-April-2026", doc: "Surat Hutang Piutang"),
-      HistoryModel(status: "Selesai", staff: "Tri", waktu: "03-Mei-2026", doc: "Balik Nama Akta"),
-    ];
-    _view.displayHistory(list);
+  Future<void> loadHistory() async {
+    _view.showLoading();
+
+    try {
+      final response = await _supabase
+          .from('documents')
+          .select('''
+            id,
+            status,
+            deadline,
+            profiles(name),
+            document_types(name)
+          ''')
+          .order('deadline');
+
+      final list = response
+          .map<HistoryModel>((e) => HistoryModel.fromJson(e))
+          .toList();
+
+      _view.displayHistory(list);
+    } catch (e) {
+      _view.showError(e.toString());
+    }
+
+    _view.hideLoading();
   }
 }

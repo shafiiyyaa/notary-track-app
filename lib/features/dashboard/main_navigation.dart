@@ -3,6 +3,7 @@ import '../dashboard/view/dashboard_screen.dart';
 import '../document/document_list/view/document_list_screen.dart';
 import '../document/add_document/view/add_doc_screen.dart';
 import '../profile/view/profile_screen.dart';
+import '../history/view/history_screen.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -16,7 +17,7 @@ class _MainNavigationState extends State<MainNavigation> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const DocumentListScreen(),
-    const Center(child: Text('Riwayat Screen')),
+     const HistoryScreen(),
     const ProfileScreen(),
   ];
 

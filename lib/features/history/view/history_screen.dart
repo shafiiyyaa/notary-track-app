@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import '../../../constants/constants.dart';
 import '../model/history_model.dart';
 import '../presenter/history_presenter.dart';
@@ -15,12 +16,17 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen>
     implements HistoryViewContract {
   late HistoryPresenter _presenter;
+
+  bool _loading = true;
+
   List<HistoryModel> _historyList = [];
 
   @override
   void initState() {
     super.initState();
+
     _presenter = HistoryPresenter(this);
+
     _presenter.loadHistory();
   }
 
@@ -32,121 +38,127 @@ class _HistoryScreenState extends State<HistoryScreen>
   }
 
   @override
+  void showLoading() {
+    setState(() {
+      _loading = true;
+    });
+  }
+
+  @override
+  void hideLoading() {
+    setState(() {
+      _loading = false;
+    });
+  }
+
+  @override
+  void showError(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 30),
-            Text(
-              'Riwayat',
-              style: GoogleFonts.comfortaa(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 30),
-            // Header Tabel Sesuai Gambar Berkas Kontrak
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
                 children: [
-                  Expanded(
-                    flex: 2,
-                    child: Text("Status", style: _headerStyle()),
-                  ),
-                  Expanded(
-                    flex: 3,
-                    child: Text("Waktu", style: _headerStyle()),
-                  ),
-                  Expanded(
-                    flex: 3,
-                    child: Text("Dokumen", style: _headerStyle()),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(thickness: 1, height: 30, indent: 16, endIndent: 16),
-            Expanded(
-              child: ListView.builder(
-                itemCount: _historyList.length,
-                itemBuilder: (context, index) {
-                  final item = _historyList[index];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
+                  const SizedBox(height: 30),
+
+                  Text(
+                    "Riwayat",
+                    style: GoogleFonts.comfortaa(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
                     ),
+                  ),
+
+                  const SizedBox(height: 25),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Row(
                       children: [
                         Expanded(
-                          flex: 2,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(
-                                    0xFF2E8B57,
-                                  ), // Hijau seagreen khas rancanganmu
-                                  borderRadius: BorderRadius.circular(15),
-                                ),
-                                child: Text(
-                                  item.status,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: Colors.white,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                "Staff : ${item.staff}",
+                            flex: 2,
+                            child: Text("Status",
                                 style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 10,
-                                  color: Colors.black54,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                                    fontWeight: FontWeight.bold))),
                         Expanded(
-                          flex: 3,
-                          child: Text(
-                            item.waktu,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
+                            flex: 3,
+                            child: Text("Waktu",
+                                style: GoogleFonts.plusJakartaSans(
+                                    fontWeight: FontWeight.bold))),
                         Expanded(
-                          flex: 3,
-                          child: Text(
-                            item.doc,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
+                            flex: 3,
+                            child: Text("Dokumen",
+                                style: GoogleFonts.plusJakartaSans(
+                                    fontWeight: FontWeight.bold))),
                       ],
                     ),
-                  );
-                },
+                  ),
+
+                  const Divider(),
+
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: _historyList.length,
+                      itemBuilder: (_, index) {
+                        final item = _historyList[index];
+
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 14),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                flex: 2,
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 5),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green,
+                                        borderRadius:
+                                            BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        item.status,
+                                        style: const TextStyle(
+                                            color: Colors.white),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      "Staff : ${item.staff}",
+                                      style: const TextStyle(fontSize: 11),
+                                    )
+                                  ],
+                                ),
+                              ),
+                              Expanded(
+                                flex: 3,
+                                child: Text(item.waktu),
+                              ),
+                              Expanded(
+                                flex: 3,
+                                child: Text(item.doc),
+                              )
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  )
+                ],
               ),
-            ),
-          ],
-        ),
       ),
     );
   }
-
-  TextStyle _headerStyle() =>
-      GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold);
 }

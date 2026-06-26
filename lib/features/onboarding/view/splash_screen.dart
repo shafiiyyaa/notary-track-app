@@ -45,7 +45,7 @@ class _CustomSplashScreenState extends State<CustomSplashScreen> {
             Text(
               'Notary Track',
               style: GoogleFonts.cinzel(
-                fontSize: 20,
+                fontSize: 24,
                 fontWeight: FontWeight.w500,
                 color: const Color(0xFFEFECE3),
                 letterSpacing: 1.2,
