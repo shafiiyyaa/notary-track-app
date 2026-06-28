@@ -60,7 +60,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                       const CircleAvatar(
                         radius: 70,
                         backgroundImage: NetworkImage(
-                          "https://i.pravatar.cc/300",
+                          "assets/images/0e9da6a3619b0ce0eea22849978221c2.jpg",
                         ),
                       ),
                       

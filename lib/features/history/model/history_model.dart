@@ -17,7 +17,7 @@ class HistoryModel {
     return HistoryModel(
       id: json['id'],
       status: json['status'] ?? '',
-      staff: json['profiles']?['name'] ?? '-',
+      staff: json['profiles']?['username'] ?? '-',
       waktu: json['deadline'] ?? '',
       doc: json['document_types']?['name'] ?? '-',
     );

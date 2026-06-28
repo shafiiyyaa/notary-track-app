@@ -20,7 +20,7 @@ class HistoryPresenter {
             id,
             status,
             deadline,
-            profiles(name),
+            profiles(username),
             document_types(name)
           ''')
           .order('deadline');
