@@ -57,12 +57,21 @@ class AddDocPresenter {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getDocumentTypes() async {
+Future<List<Map<String, dynamic>>> getDocumentTypes() async {
+  try {
     final response = await _supabase
         .from('document_types')
         .select()
         .order('name');
 
+    print("===== DOCUMENT TYPES =====");
+    print(response);
+
     return List<Map<String, dynamic>>.from(response);
+  } catch (e) {
+    print("ERROR DOCUMENT TYPES");
+    print(e);
+    return [];
   }
+}
 }

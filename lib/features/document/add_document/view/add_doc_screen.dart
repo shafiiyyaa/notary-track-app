@@ -39,7 +39,10 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
   Future<void> _loadDocumentTypes() async {
     final data = await _presenter.getDocumentTypes();
 
+    print("========== DATA DARI SUPABASE ==========");
     print(data);
+
+    if (!mounted) return;
 
     setState(() {
       _documentTypes = data;
@@ -48,6 +51,8 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
         _selectedDocumentTypeId = data.first['id'];
       }
     });
+
+    print("Selected ID : $_selectedDocumentTypeId");
   }
 
   @override
@@ -208,7 +213,7 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
                           name: _nameController.text,
                           phone: _phoneController.text,
 
-                          documentTypeId: 1,
+                          documentTypeId: _selectedDocumentTypeId!,
 
                           deadline: _deadlineController.text,
 
