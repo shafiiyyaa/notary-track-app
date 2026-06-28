@@ -22,6 +22,13 @@ class AddDocPresenter {
       return;
     }
 
+    final user = _supabase.auth.currentUser;
+
+    if (user == null) {
+      _view.onSaveError("Silakan login terlebih dahulu.");
+      return;
+    }
+
     final totalPrice =
         initialFee + additionalFee1 + additionalFee2;
 
@@ -39,6 +46,7 @@ class AddDocPresenter {
         'additional_fee_1': additionalFee1,
         'additional_fee_2': additionalFee2,
         'total_price': totalPrice,
+        'staff_id': user.id,
       });
 
       _view.hideLoading();
@@ -48,12 +56,13 @@ class AddDocPresenter {
       _view.onSaveError(e.toString());
     }
   }
-  Future<List<Map<String, dynamic>>> getDocumentTypes() async {
-  final response = await _supabase
-      .from('document_types')
-      .select()
-      .order('name');
 
-  return List<Map<String, dynamic>>.from(response);
-}
+  Future<List<Map<String, dynamic>>> getDocumentTypes() async {
+    final response = await _supabase
+        .from('document_types')
+        .select()
+        .order('name');
+
+    return List<Map<String, dynamic>>.from(response);
+  }
 }
