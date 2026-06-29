@@ -8,16 +8,27 @@ class DocListPresenter {
 
   DocListPresenter(this._view);
 
-  Future<void> fetchAllDocuments() async {
-    _view.showLoading();
-    try {
-      final List<dynamic> data = await _supabase.from('documents').select().order('created_at', ascending: false);
-      List<DocumentModel> docs = data.map((item) => DocumentModel.fromMap(item)).toList();
-      _view.hideLoading();
-      _view.onDocumentsLoaded(docs);
-    } catch (e) {
-      _view.hideLoading();
-      _view.onDocumentsError(e.toString());
-    }
+Future<void> fetchAllDocuments() async {
+  _view.showLoading();
+
+  try {
+    final data = await _supabase
+        .from('documents')
+        .select();
+
+    print("===== DOCUMENT LIST =====");
+    print(data);
+
+    final docs = (data as List)
+        .map((e) => DocumentModel.fromMap(e))
+        .toList();
+
+    _view.hideLoading();
+    _view.onDocumentsLoaded(docs);
+  } catch (e) {
+    print(e);
+    _view.hideLoading();
+    _view.onDocumentsError(e.toString());
   }
+}
 }

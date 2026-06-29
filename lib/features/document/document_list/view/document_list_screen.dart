@@ -24,15 +24,21 @@ class _DocumentListScreenState extends State<DocumentListScreen> implements Docu
     _presenter = DocListPresenter(this);
     _presenter.fetchAllDocuments();
   }
+  
+  @override
+void onDocumentsLoaded(List<DocumentModel> documents) {
+  print("Jumlah dokumen: ${documents.length}");
+
+  setState(() {
+    _documentList = documents;
+  });
+}
 
   @override
   void showLoading() => setState(() => _isLoading = true);
 
   @override
   void hideLoading() => setState(() => _isLoading = false);
-
-  @override
-  void onDocumentsLoaded(List<DocumentModel> documents) => setState(() => _documentList = documents);
 
   @override
   void onDocumentsError(String message) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));

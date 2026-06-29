@@ -7,17 +7,25 @@ class DocumentModel {
   final String status;
   final double totalPrice;
 
-  DocumentModel({required this.id, required this.clientName, required this.docType, required this.dateIn, required this.deadline, required this.status, required this.totalPrice});
+  DocumentModel({
+    required this.id,
+    required this.clientName,
+    required this.docType,
+    required this.dateIn,
+    required this.deadline,
+    required this.status,
+    required this.totalPrice,
+  });
 
   factory DocumentModel.fromMap(Map<String, dynamic> map) {
     return DocumentModel(
       id: map['id'].toString(),
       clientName: map['client_name'] ?? '',
-      docType: map['doc_type'] ?? '',
-      dateIn: map['date_in'] ?? '',
+      docType: map['document_types']?['name'] ?? '',
+      dateIn: map['created_at']?.toString().substring(0, 10) ?? '',
       deadline: map['deadline'] ?? '',
-      status: map['status'] ?? 'Belum Diproses',
-      totalPrice: (map['total_price'] ?? 0).toDouble(),
+      status: map['status'] ?? '',
+      totalPrice: (map['total_price'] as num?)?.toDouble() ?? 0,
     );
   }
 }
