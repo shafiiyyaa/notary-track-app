@@ -1,18 +1,51 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../model/notification_model.dart';
 import '../view/notification_view.dart';
 
 class NotificationPresenter {
   final NotificationViewContract _view;
+  final SupabaseClient _supabase = Supabase.instance.client;
+
   NotificationPresenter(this._view);
 
-  void loadNotifications() {
-    final list = [
-      NotificationModel(title: "PT. Bangkit Sendiri", deadline: "2 Hari lagi (AJB)", date: "10 Mei 2026", isUrgent: false),
-      NotificationModel(title: "PT. Besok makan apa", deadline: "2 Hari lagi (AJB)", date: "10 Mei 2026", isUrgent: false),
-      NotificationModel(title: "Bpk. Rahmat Aji", deadline: "5 Hari lagi (SHM)", date: "13 Mei 2026", isUrgent: true),
-      NotificationModel(title: "PT. Jatuh Bangun", deadline: "8 Hari lagi (CV)", date: "16 Mei 2026", isUrgent: false),
-      NotificationModel(title: "Yayasan Apalah ya", deadline: "10 Hari lagi (CV)", date: "18 Mei 2026", isUrgent: false),
-    ];
-    _view.displayNotifications(list);
+  Future<void> loadNotifications() async {
+    try {
+      final response = await _supabase
+          .from('documents')
+          .select('''
+            client_name,
+            deadline,
+            document_types(name)
+          ''')
+          .order('deadline', ascending: true);
+
+      List<NotificationModel> list = [];
+
+      for (final item in response) {
+        final deadline = DateTime.parse(item['deadline']);
+
+        final remainingDays =
+            deadline.difference(DateTime.now()).inDays;
+
+        // tampilkan hanya deadline 7 hari ke depan
+        if (remainingDays >= 0 && remainingDays <= 7) {
+          list.add(
+            NotificationModel(
+              clientName: item['client_name'] ?? '',
+              documentType:
+                  item['document_types']?['name'] ?? '',
+              deadline: deadline,
+              remainingDays: remainingDays,
+            ),
+          );
+        }
+      }
+
+      list.sort((a, b) => a.remainingDays.compareTo(b.remainingDays));
+
+      _view.displayNotifications(list);
+    } catch (e) {
+      print(e);
+    }
   }
 }

@@ -3,7 +3,7 @@ import '../dashboard/view/dashboard_screen.dart';
 import '../document/document_list/view/document_list_screen.dart';
 import '../document/add_document/view/add_doc_screen.dart';
 import '../profile/view/profile_screen.dart';
-import '../history/view/history_screen.dart';
+import '../notification/view/notification_screen.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -17,7 +17,7 @@ class _MainNavigationState extends State<MainNavigation> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const DocumentListScreen(),
-     const HistoryScreen(),
+    const NotificationScreen(),
     const ProfileScreen(),
   ];
 
@@ -46,8 +46,7 @@ class _MainNavigationState extends State<MainNavigation> {
             children: [
               _buildNavItem(Icons.home, 'Home', 0),
               _buildNavItem(Icons.assignment, 'Dokumen', 1),
-              const SizedBox(width: 40),
-              _buildNavItem(Icons.history, 'Riwayat', 2),
+              _buildNavItem(Icons.notifications_active_outlined, 'Notifikasi', 2),
               _buildNavItem(Icons.person, 'Akun', 3),
             ],
           ),

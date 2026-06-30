@@ -1,13 +1,13 @@
 class NotificationModel {
-  final String title;
-  final String deadline;
-  final String date;
-  final bool isUrgent;
+  final String clientName;
+  final String documentType;
+  final DateTime deadline;
+  final int remainingDays;
 
   NotificationModel({
-    required this.title,
+    required this.clientName,
+    required this.documentType,
     required this.deadline,
-    required this.date,
-    required this.isUrgent,
+    required this.remainingDays,
   });
 }

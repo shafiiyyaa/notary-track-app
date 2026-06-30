@@ -78,7 +78,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              item.title,
+                              item.clientName,
                               style: GoogleFonts.plusJakartaSans(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
@@ -86,7 +86,11 @@ class _NotificationScreenState extends State<NotificationScreen>
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              "Deadline: ${item.deadline}",
+                              item.remainingDays == 0
+                                  ? "Deadline Hari Ini (${item.documentType})"
+                                  : item.remainingDays == 1
+                                  ? "Deadline Besok (${item.documentType})"
+                                  : "Deadline ${item.remainingDays} hari lagi (${item.documentType})",
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -98,7 +102,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              item.date,
+                              "${item.deadline.day}/${item.deadline.month}/${item.deadline.year}",
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 10,
                                 color: Colors.red,
@@ -106,9 +110,9 @@ class _NotificationScreenState extends State<NotificationScreen>
                             ),
                             const SizedBox(height: 8),
                             Icon(
-                              item.isUrgent
-                                  ? Icons.report_problem_rounded
-                                  : Icons.alarm,
+                              item.remainingDays <= 1
+                                  ? Icons.warning_rounded
+                                  : Icons.notifications_active,
                               color: Colors.red.shade400,
                             ),
                           ],
