@@ -11,7 +11,15 @@ class DetailDocPresenter {
   Future<void> fetchDocumentDetail(String id) async {
     _view.showLoading();
     try {
-      final data = await _supabase.from('documents').select().eq('id', id).single();
+     final data = await _supabase
+    .from('documents')
+    .select('''
+      *,
+      document_types(name),
+      profiles!staff_id(full_name)
+    ''')
+    .eq('id', id)
+    .single();
       final doc = DocumentModel.fromMap(data);
       final notes = data['notes'] ?? '';
       _view.hideLoading();

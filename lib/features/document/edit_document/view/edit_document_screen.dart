@@ -3,18 +3,23 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../constants/constants.dart';
-import '../presenter/add_doc_presenter.dart';
-import 'add_doc_view.dart';
+import '../../document_list/model/document_model.dart';
+import '../presenter/edit_document_presenter.dart';
+import 'edit_document_view.dart';
 
-class AddDocumentScreen extends StatefulWidget {
-  const AddDocumentScreen({super.key});
+class EditDocumentScreen extends StatefulWidget {
+  final String documentId;
+
+  const EditDocumentScreen({
+    super.key, required this.documentId});
 
   @override
-  State<AddDocumentScreen> createState() => _AddDocumentScreenState();
+  State<EditDocumentScreen> createState() => 
+  _EditDocumentScreenState();
 }
 
-class _AddDocumentScreenState extends State<AddDocumentScreen>
-    implements AddDocumentViewContract {
+class _EditDocumentScreenState extends State<EditDocumentScreen>
+    implements EditDocumentViewContract {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _deadlineController = TextEditingController();
@@ -28,9 +33,10 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
   int? _selectedDocumentTypeId;
 
   bool _isLoading = false;
+  DocumentModel? _document;
   double _totalPrice = 0;
   String _staffName = "-";
-  late AddDocPresenter _presenter;
+  late EditDocPresenter _presenter;
   final _rupiah = NumberFormat.currency(
     locale: 'id_ID',
     symbol: 'Rp ',
@@ -40,9 +46,8 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
   @override
   void initState() {
     super.initState();
-    _presenter = AddDocPresenter(this);
+    _presenter = EditDocPresenter(this);
     _loadDocumentTypes();
-    _loadCurrentStaff();
   }
 
   Future<void> _loadDocumentTypes() async {
@@ -56,16 +61,6 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
       if (data.isNotEmpty) {
         _selectedDocumentTypeId = data.first['id'];
       }
-    });
-  }
-
-  Future<void> _loadCurrentStaff() async {
-    final name = await _presenter.getCurrentStaffName();
-
-    if (!mounted) return;
-
-    setState(() {
-      _staffName = name;
     });
   }
 
@@ -116,22 +111,63 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
 
   @override
   void hideLoading() {
-    setState(() => _isLoading = false);
-  }
+      setState(() => _isLoading = false);
+    }
 
   @override
-  void onSaveSuccess() {
+  void onDocumentLoaded(DocumentModel document) {
+    _document = document;
+
+    _nameController.text = document.clientName;
+    _phoneController.text = document.phone;
+    _deadlineController.text = document.deadline;
+    _noteController.text = document.notes;
+
+    _initialFeeController.text =
+        document.initialFee.toStringAsFixed(0);
+
+    _additionalFee1Controller.text =
+        document.additionalFee1.toStringAsFixed(0);
+
+    _additionalFee2Controller.text =
+        document.additionalFee2.toStringAsFixed(0);
+
+    _selectedDocumentTypeId =
+        document.documentTypeId;
+
+    _staffName = document.staffName;
+
+    _totalPrice = document.totalPrice;
+
+    setState(() {});
+  }
+
+@override
+void onUpdateSuccess() {
+    Navigator.pop(context, true);
+  }
+
+@override
+void onError(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+@override
+void onSaveSuccess() {
     Navigator.pop(context);
   }
 
-  @override
-  void onSaveError(String message) {
+@override
+void onSaveError(String message) {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  @override
+@override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -333,13 +369,15 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
                 onPressed: _isLoading
                     ? null
                     : () {
-                        _presenter.saveDocument(
-                          name: _nameController.text,
+                        _presenter.updateDocument(
+                          id: widget.documentId,
+                          clientName: _nameController.text,
                           phone: _phoneController.text,
 
                           documentTypeId: _selectedDocumentTypeId!,
 
                           deadline: _deadlineController.text,
+                          status: _document!.status,
 
                           initialFee:
                               double.tryParse(
@@ -365,7 +403,7 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
                               ) ??
                               0,
 
-                          note: _noteController.text,
+                          notes: _noteController.text,
                         );
                       },
                 style: ElevatedButton.styleFrom(
@@ -374,7 +412,7 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
                 child: _isLoading
                     ? const CircularProgressIndicator()
                     : const Text(
-                        'Simpan Dokumen',
+                        'Update Dokumen',
                         style: TextStyle(color: Colors.white),
                       ),
               ),
