@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../constants/constants.dart';
 import '../presenter/add_doc_presenter.dart';
@@ -26,21 +28,25 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
   int? _selectedDocumentTypeId;
 
   bool _isLoading = false;
-
+  double _totalPrice = 0;
+  String _staffName = "-";
   late AddDocPresenter _presenter;
+  final _rupiah = NumberFormat.currency(
+  locale: 'id_ID',
+  symbol: 'Rp ',
+  decimalDigits: 0,
+  );
 
   @override
   void initState() {
     super.initState();
     _presenter = AddDocPresenter(this);
     _loadDocumentTypes();
+    _loadCurrentStaff();
   }
 
   Future<void> _loadDocumentTypes() async {
     final data = await _presenter.getDocumentTypes();
-
-    print("========== DATA DARI SUPABASE ==========");
-    print(data);
 
     if (!mounted) return;
 
@@ -52,9 +58,32 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
       }
     });
 
-    print("Selected ID : $_selectedDocumentTypeId");
   }
+  Future<void> _loadCurrentStaff() async {
+      final name = await _presenter.getCurrentStaffName();
 
+      if (!mounted) return;
+
+      setState(() {
+        _staffName = name;
+      });
+    }
+
+    void _calculateTotal() {
+      final awal =
+          double.tryParse(_initialFeeController.text) ?? 0;
+
+      final tambah1 =
+          double.tryParse(_additionalFee1Controller.text) ?? 0;
+
+      final tambah2 =
+          double.tryParse(_additionalFee2Controller.text) ?? 0;
+
+      setState(() {
+        _totalPrice = awal + tambah1 + tambah2;
+      });
+    }
+  
   @override
   void dispose() {
     _nameController.dispose();
@@ -106,6 +135,7 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
             _buildLabel('Nama Klien'),
             TextField(
               controller: _nameController,
+              textInputAction: TextInputAction.next,
               decoration: const InputDecoration(
                 filled: true,
                 fillColor: Colors.white,
@@ -115,14 +145,20 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
 
             _buildLabel('Nomor Telepon'),
             TextField(
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                filled: true,
-                fillColor: Colors.white,
-                border: InputBorder.none,
+            controller: _phoneController,
+            keyboardType: TextInputType.phone,
+            textInputAction: TextInputAction.next,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(15),
+            ],
+            decoration: const InputDecoration(
+              filled: true,
+              fillColor: Colors.white,
+              border: InputBorder.none,
               ),
             ),
+            
 
             _buildLabel('Jenis Dokumen'),
 
@@ -145,53 +181,102 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
                 });
               },
             ),
+            _buildLabel("Staff Penanggung Jawab"),
 
-            _buildLabel('Deadline (YYYY-MM-DD)'),
+            Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.person,
+                  color: AppColors.primaryBlue,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  _staffName,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+              const SizedBox(height: 10),
+            _buildLabel('Deadline'),
             TextField(
               controller: _deadlineController,
+              readOnly: true,
               decoration: const InputDecoration(
                 filled: true,
                 fillColor: Colors.white,
                 border: InputBorder.none,
+                suffixIcon: Icon(Icons.calendar_today),
               ),
+              onTap: () async {
+                DateTime? picked = await showDatePicker(
+                  context: context,
+                  initialDate: DateTime.now(),
+                  firstDate: DateTime(2024),
+                  lastDate: DateTime(2100),
+                );
+
+                if (picked != null) {
+                  _deadlineController.text =
+                      "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+                }
+              },
             ),
 
             _buildLabel('Biaya Awal'),
             TextField(
-              controller: _initialFeeController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                filled: true,
-                fillColor: Colors.white,
-                border: InputBorder.none,
+            controller: _initialFeeController,
+            textInputAction: TextInputAction.next,
+            keyboardType: TextInputType.number,
+            onChanged: (_) => _calculateTotal(),
+            decoration: const InputDecoration(
+            filled: true,
+            fillColor: Colors.white,
+            border: InputBorder.none,
+                ),
               ),
-            ),
 
             _buildLabel('Biaya Tambahan 1'),
-            TextField(
-              controller: _additionalFee1Controller,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                filled: true,
-                fillColor: Colors.white,
-                border: InputBorder.none,
+           TextField(
+            controller: _additionalFee1Controller,
+            textInputAction: TextInputAction.next,
+            keyboardType: TextInputType.number,
+            onChanged: (_) => _calculateTotal(),
+            decoration: const InputDecoration(
+              filled: true,
+              fillColor: Colors.white,
+              border: InputBorder.none,
+                ),
               ),
-            ),
 
             _buildLabel('Biaya Tambahan 2'),
-            TextField(
-              controller: _additionalFee2Controller,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
+           TextField(
+            controller: _additionalFee2Controller,
+            textInputAction: TextInputAction.next,
+            keyboardType: TextInputType.number,
+            onChanged: (_) => _calculateTotal(),
+            decoration: const InputDecoration(
                 filled: true,
                 fillColor: Colors.white,
                 border: InputBorder.none,
-              ),
-            ),
+                  ),
+                ),
 
             _buildLabel('Catatan'),
             TextField(
               controller: _noteController,
+              textInputAction: TextInputAction.next,
               maxLines: 3,
               decoration: const InputDecoration(
                 filled: true,
@@ -200,8 +285,46 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
               ),
             ),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 20),
 
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Total Biaya",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                 Text(
+                  _rupiah.format(_totalPrice),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: AppColors.primaryBlue,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 25),
+ 
+          const SizedBox(height: 10),
+          Text(
+            "*Total biaya dihitung otomatis",
+            style: TextStyle(
+              color: Colors.grey,
+              fontSize: 12,
+            ),
+          ),
             SizedBox(
               width: double.infinity,
               height: 50,

@@ -74,4 +74,18 @@ Future<List<Map<String, dynamic>>> getDocumentTypes() async {
     return [];
   }
 }
+
+Future<String> getCurrentStaffName() async {
+  final user = _supabase.auth.currentUser;
+
+  if (user == null) return "-";
+
+  final data = await _supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single();
+
+  return data['full_name'] ?? "-";
+}
 }
