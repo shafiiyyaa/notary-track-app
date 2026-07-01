@@ -115,7 +115,7 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen> implements 
 
           const SizedBox(height: 30),
 
-                    SizedBox(
+                   SizedBox(
             width: double.infinity,
             height: 52,
             child: ElevatedButton.icon(
@@ -138,7 +138,7 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen> implements 
                   context,
                   MaterialPageRoute(
                     builder: (_) => EditDocumentScreen(
-                      documentId: _document!.id,
+                      document: _document!,
                     ),
                   ),
                 );

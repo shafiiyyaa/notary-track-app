@@ -18,7 +18,7 @@ class EditDocPresenter {
           .select('''
             *,
             document_types(name),
-            profiles!staff_id(full_name)
+            profiles!staff_id(username)
           ''')
           .eq('id', documentId)
           .single();

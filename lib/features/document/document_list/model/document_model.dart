@@ -53,8 +53,8 @@ class DocumentModel {
 
       docType: map['document_types']?['name'] ?? '',
 
-      staffId: map['profiles']?['id'] ?? '-',
-      staffName: map['profiles']?['full_name'] ?? '-',
+      staffId: map['staff_id'] ?? '',
+      staffName: map['profiles']?['username'] ?? '-',
 
       dateIn:
           map['created_at']

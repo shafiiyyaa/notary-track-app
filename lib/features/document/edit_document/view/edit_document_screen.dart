@@ -8,14 +8,16 @@ import '../presenter/edit_document_presenter.dart';
 import 'edit_document_view.dart';
 
 class EditDocumentScreen extends StatefulWidget {
-  final String documentId;
+  final DocumentModel document;
 
   const EditDocumentScreen({
-    super.key, required this.documentId});
+    super.key,
+    required this.document,
+  });
 
   @override
-  State<EditDocumentScreen> createState() => 
-  _EditDocumentScreenState();
+  State<EditDocumentScreen> createState() =>
+      _EditDocumentScreenState();
 }
 
 class _EditDocumentScreenState extends State<EditDocumentScreen>
@@ -33,7 +35,6 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   int? _selectedDocumentTypeId;
 
   bool _isLoading = false;
-  DocumentModel? _document;
   double _totalPrice = 0;
   String _staffName = "-";
   late EditDocPresenter _presenter;
@@ -43,26 +44,45 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
     decimalDigits: 0,
   );
 
-  @override
-  void initState() {
-    super.initState();
-    _presenter = EditDocPresenter(this);
-    _loadDocumentTypes();
-  }
+@override
+void initState() {
+  super.initState();
+
+  final doc = widget.document;
+
+  _presenter = EditDocPresenter(this);
+
+  _nameController.text = doc.clientName;
+  _phoneController.text = doc.phone;
+  _deadlineController.text = doc.deadline;
+  _noteController.text = doc.notes;
+
+  _initialFeeController.text =
+      doc.initialFee.toStringAsFixed(0);
+
+  _additionalFee1Controller.text =
+      doc.additionalFee1.toStringAsFixed(0);
+
+  _additionalFee2Controller.text =
+      doc.additionalFee2.toStringAsFixed(0);
+
+  _calculateTotal();
+
+  _loadDocumentTypes();
+}
 
   Future<void> _loadDocumentTypes() async {
-    final data = await _presenter.getDocumentTypes();
+  final data = await _presenter.getDocumentTypes();
 
-    if (!mounted) return;
+  if (!mounted) return;
 
-    setState(() {
-      _documentTypes = data;
+  setState(() {
+    _documentTypes = data;
 
-      if (data.isNotEmpty) {
-        _selectedDocumentTypeId = data.first['id'];
-      }
-    });
-  }
+    _selectedDocumentTypeId =
+        widget.document.documentTypeId;
+  });
+}
 
   void _calculateTotal() {
     final awal =
@@ -116,7 +136,6 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
 
   @override
   void onDocumentLoaded(DocumentModel document) {
-    _document = document;
 
     _nameController.text = document.clientName;
     _phoneController.text = document.phone;
@@ -172,7 +191,7 @@ void onSaveError(String message) {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Tambah Dokumen',
+          'Edit Dokumen',
           style: GoogleFonts.comfortaa(fontWeight: FontWeight.bold),
         ),
       ),
@@ -370,14 +389,14 @@ void onSaveError(String message) {
                     ? null
                     : () {
                         _presenter.updateDocument(
-                          id: widget.documentId,
+                          id: widget.document.id,
                           clientName: _nameController.text,
                           phone: _phoneController.text,
 
                           documentTypeId: _selectedDocumentTypeId!,
 
                           deadline: _deadlineController.text,
-                          status: _document!.status,
+                          status: widget.document.status,
 
                           initialFee:
                               double.tryParse(

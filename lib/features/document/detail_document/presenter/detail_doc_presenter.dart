@@ -21,6 +21,8 @@ class DetailDocPresenter {
     .eq('id', id)
     .single();
       final doc = DocumentModel.fromMap(data);
+      print("===== DETAIL DOCUMENT =====");
+      print(data);
       final notes = data['notes'] ?? '';
       _view.hideLoading();
       _view.onDocumentLoaded(doc, notes);
