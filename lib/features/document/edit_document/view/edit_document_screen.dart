@@ -37,6 +37,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   bool _isLoading = false;
   double _totalPrice = 0;
   String _staffName = "-";
+  String? _selectedStatus;
   late EditDocPresenter _presenter;
   final _rupiah = NumberFormat.currency(
     locale: 'id_ID',
@@ -52,10 +53,13 @@ void initState() {
 
   _presenter = EditDocPresenter(this);
 
+  _staffName = doc.staffName;
+
   _nameController.text = doc.clientName;
   _phoneController.text = doc.phone;
   _deadlineController.text = doc.deadline;
   _noteController.text = doc.notes;
+  _selectedStatus = widget.document.status;
 
   _initialFeeController.text =
       doc.initialFee.toStringAsFixed(0);
@@ -69,6 +73,8 @@ void initState() {
   _calculateTotal();
 
   _loadDocumentTypes();
+
+  _presenter.fetchDocument(widget.document.id);
 }
 
   Future<void> _loadDocumentTypes() async {
@@ -137,6 +143,7 @@ void initState() {
   @override
   void onDocumentLoaded(DocumentModel document) {
 
+    _staffName = document.staffName;
     _nameController.text = document.clientName;
     _phoneController.text = document.phone;
     _deadlineController.text = document.deadline;
@@ -272,6 +279,37 @@ void onSaveError(String message) {
               ),
             ),
 
+            const SizedBox(height: 10),
+
+            _buildLabel("Status"),
+
+            DropdownButtonFormField<String>(
+              value: _selectedStatus,
+              decoration: const InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                border: InputBorder.none,
+              ),
+              items: const [
+                DropdownMenuItem(
+                  value: "Belum Diproses",
+                  child: Text("Belum Diproses"),
+                ),
+                DropdownMenuItem(
+                  value: "Diproses",
+                  child: Text("Diproses"),
+                ),
+                DropdownMenuItem(
+                  value: "Selesai",
+                  child: Text("Selesai"),
+                ),
+              ],
+              onChanged: (value) {
+                setState(() {
+                  _selectedStatus = value;
+                });
+              },
+            ),
             const SizedBox(height: 10),
             _buildLabel('Deadline'),
             TextField(
