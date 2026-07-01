@@ -285,7 +285,7 @@ void onSaveError(String message) {
             _buildLabel("Status"),
 
             DropdownButtonFormField<String>(
-              value: _selectedStatus,
+              initialValue: _selectedStatus,
               decoration: const InputDecoration(
                 filled: true,
                 fillColor: Colors.white,

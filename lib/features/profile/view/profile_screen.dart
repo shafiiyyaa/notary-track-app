@@ -57,11 +57,34 @@ class _ProfileScreenState extends State<ProfileScreen>
 
                       const SizedBox(height: 30),
 
-                      const CircleAvatar(
-                        radius: 70,
-                        backgroundImage: NetworkImage(
-                          "assets/images/0e9da6a3619b0ce0eea22849978221c2.jpg",
-                        ),
+                      Stack(
+                        alignment: Alignment.bottomRight,
+                        children: [
+                          const CircleAvatar(
+                            radius: 70,
+                            backgroundImage: AssetImage(
+                              "assets/images/0e9da6a3619b0ce0eea22849978221c2.jpg",
+                            ),
+                          ),
+
+                          GestureDetector(
+                            onTap: () {
+                              // Nanti di sini kita buka galeri HP
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: const BoxDecoration(
+                                color: AppColors.primaryBlue,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.edit,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       
                       const SizedBox(height: 20),
@@ -83,23 +106,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                         ),
                       ),
 
-                      const SizedBox(height: 30),
-
-                      _menuTile(
-                        Icons.person,
-                        "Edit Profil",
-                        () {},
-                      ),
-
-                      _menuTile(
-                        Icons.notifications,
-                        "Notifikasi",
-                        () {},
-                      ),
+                      const SizedBox(height: 70),
 
                       _menuTile(
                         Icons.lock,
-                        "Ubah Kata Sandi",
+                        "Tentang Aplikasi",
                         () {},
                       ),
 
