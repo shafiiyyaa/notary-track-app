@@ -49,12 +49,13 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
 void initState() {
   super.initState();
 
+  _presenter = EditDocPresenter(this);
+  _presenter.fetchDocument(widget.document.id);
+
   final doc = widget.document;
 
-  _presenter = EditDocPresenter(this);
-
   _staffName = doc.staffName;
-
+  
   _nameController.text = doc.clientName;
   _phoneController.text = doc.phone;
   _deadlineController.text = doc.deadline;
@@ -74,7 +75,6 @@ void initState() {
 
   _loadDocumentTypes();
 
-  _presenter.fetchDocument(widget.document.id);
 }
 
   Future<void> _loadDocumentTypes() async {
@@ -142,7 +142,8 @@ void initState() {
 
   @override
   void onDocumentLoaded(DocumentModel document) {
-
+    print("STAFF = ${document.staffName}");
+    
     _staffName = document.staffName;
     _nameController.text = document.clientName;
     _phoneController.text = document.phone;
