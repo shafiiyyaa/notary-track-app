@@ -1,0 +1,131 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import '../../../../constants/constants.dart';
+import '../model/about_app_model.dart';
+import '../presenter/about_app_presenter.dart';
+import 'about_app_view.dart';
+
+class AboutAppScreen extends StatefulWidget {
+  const AboutAppScreen({super.key});
+
+  @override
+  State<AboutAppScreen> createState() => _AboutAppScreenState();
+}
+
+class _AboutAppScreenState extends State<AboutAppScreen>
+    implements AboutAppViewContract {
+
+  late AboutAppPresenter presenter;
+  AboutAppModel? about;
+
+  @override
+  void initState() {
+    super.initState();
+
+    presenter = AboutAppPresenter(this);
+    presenter.loadData();
+  }
+
+  @override
+  void showData(AboutAppModel data) {
+    setState(() {
+      about = data;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (about == null) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Text(
+          "Tentang Aplikasi",
+          style: GoogleFonts.comfortaa(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+
+            Icon(
+              Icons.description_outlined,
+              size: 80,
+              color: AppColors.primaryBlue,
+            ),
+
+            const SizedBox(height: 20),
+
+            Text(
+              about!.appName,
+              style: GoogleFonts.comfortaa(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            Text(
+              about!.version,
+              style: const TextStyle(
+                color: Colors.grey,
+              ),
+            ),
+
+            const SizedBox(height: 25),
+
+            Expanded(
+              child: SingleChildScrollView(
+                child: Text(
+                  about!.description,
+                  textAlign: TextAlign.justify,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15,
+                    height: 1.8,
+                  ),
+                ),
+              ),
+            ),
+
+            const Divider(),
+
+            const SizedBox(height: 10),
+
+            Text(
+              "Dikembangkan sebagai aplikasi skripsi Program Studi Informatika\nuntuk mendukung digitalisasi administrasi pada\nKantor Notaris dan PPAT Saptadi Setya Nugraha.",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                color: Colors.grey[700],
+              ),
+            ),
+
+            const SizedBox(height: 15),
+
+            Text(
+              "© 2026 Notary Track",
+              style: GoogleFonts.comfortaa(
+                fontSize: 12,
+              ),
+            ),
+
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}

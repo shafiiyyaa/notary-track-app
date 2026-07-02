@@ -6,6 +6,8 @@ import '../../../constants/constants.dart';
 import '../model/profile_model.dart';
 import '../presenter/profile.presenter.dart';
 import 'profile_view.dart';
+import '../about_app/view/about_app_screen.dart';
+import '../../auth/login/view/login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -111,7 +113,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                       _menuTile(
                         Icons.lock,
                         "Tentang Aplikasi",
-                        () {},
+                        () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AboutAppScreen(),
+                            ),
+                          );
+                        },
                       ),
 
                       _menuTile(
@@ -122,9 +131,12 @@ class _ProfileScreenState extends State<ProfileScreen>
 
                           if (!mounted) return;
 
-                          Navigator.popUntil(
+                          Navigator.pushAndRemoveUntil(
                             context,
-                            (route) => route.isFirst,
+                            MaterialPageRoute(
+                              builder: (_) => const LoginScreen(),
+                            ),
+                            (route) => false,
                           );
                         },
                       ),

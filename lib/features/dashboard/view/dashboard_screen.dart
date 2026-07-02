@@ -16,6 +16,7 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
   late HomePresenter _presenter;
   int _totalDocs = 0;
   int _completedDocs = 0;
+  int _deadlineDocs = 0;
   String _username = "Admin";
 
 @override
@@ -29,6 +30,8 @@ void onUserLoaded(String username) {
     super.initState();
     _presenter = HomePresenter(this);
     _presenter.fetchDashboardSummary();
+    _presenter.fetchDeadlineDocuments();
+    _presenter.fetchUser();
   }
 
   @override
@@ -36,6 +39,15 @@ void onUserLoaded(String username) {
     setState(() {
       _totalDocs = summary.totalDocuments;
       _completedDocs = summary.completedDocuments;
+       _deadlineDocs = summary.totalDeadlines;
+    });
+  }
+  List<DeadlineItem> _deadlineList = [];
+
+  @override
+  void onDeadlineLoaded(List<DeadlineItem> deadlines) {
+    setState(() {
+      _deadlineList = deadlines;
     });
   }
 
@@ -70,7 +82,13 @@ void onUserLoaded(String username) {
                 children: [
                   Expanded(child: _buildSummaryCard("Total Dokumen", "$_totalDocs", Icons.description_outlined, AppColors.cardBlueLight)),
                   const SizedBox(width: 16),
-                  Expanded(child: _buildSummaryCard("Jumlah Deadline", "5", Icons.calendar_month_outlined, AppColors.cardBlueDark)),
+                  Expanded(
+                  child: _buildSummaryCard(
+                      "Jumlah Deadline",
+                      "$_deadlineDocs",
+                      Icons.calendar_month_outlined,
+                      AppColors.cardBlueDark),
+                ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -78,9 +96,19 @@ void onUserLoaded(String username) {
               const SizedBox(height: 32),
               Text('Deadline Mendatang', style: GoogleFonts.comfortaa(fontSize: 22, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
-              _buildDeadlineItem("PT. Bangkit Sendiri", "Deadline: 2 Hari lagi (AJB)", "10 Juni 2026"),
-              _buildDeadlineItem("Bpk. Rahmat Aji", "Deadline: 5 Hari lagi (SHM)", "13 Juni 2026"),
-              const SizedBox(height: 80),
+              ..._deadlineList.map(
+              (item) => _buildDeadlineItem(
+                item.clientName,
+                item.remainingDays == 0
+                    ? "Deadline Hari Ini (${item.documentType})"
+                    : item.remainingDays == 1
+                        ? "Deadline Besok (${item.documentType})"
+                        : "Deadline ${item.remainingDays} Hari Lagi (${item.documentType})",
+                "${item.deadline.day}/${item.deadline.month}/${item.deadline.year}",
+              ),
+            ),
+
+            const SizedBox(height: 80),
             ],
           ),
         ),

@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../model/dashboard_model.dart';
 import '../view/dashboard_view.dart';
+import '../../notification/model/notification_model.dart';
 
 class HomePresenter {
   final HomeViewContract _view;
@@ -10,30 +11,104 @@ class HomePresenter {
 
   /// Mengambil ringkasan data dokumen untuk halaman Dashboard (Home)
   Future<void> fetchDashboardSummary() async {
-    try {
-      // 1. Ambil semua baris id dari tabel 'documents' untuk tahu totalnya
-      final totalRes = await _supabase.from('documents').select('id');
+  try {
+    final totalRes =
+        await _supabase
+            .from('documents')
+            .select('id');
 
-      // 2. Ambil baris id yang kolom status-nya bernilai 'Selesai'
-      final completedRes = await _supabase
-          .from('documents')
-          .select('id')
-          .eq('status', 'Selesai');
+    final completedRes =
+        await _supabase
+            .from('documents')
+            .select('id')
+            .eq('status', 'Selesai');
 
-      // 3. Bungkus hasil perhitungan ke dalam entitas DashboardSummary Model
-      final summary = DashboardSummary(
-        totalDocuments: totalRes.length,
-        totalDeadlines: 0,
-        completedDocuments: completedRes.length,
-      );
+    final notifRes =
+        await _supabase
+            .from('documents')
+            .select('deadline');
 
-      // 4. Kirim data yang berhasil diambil kembali ke halaman View (UI)
-      _view.onSummaryLoaded(summary);
-    } catch (e) {
-      // Jika koneksi gagal atau tabel belum dibuat, kirim pesan galat ke View
-      _view.onSummaryError(e.toString());
+    int deadlineCount = 0;
+
+    final now = DateTime.now();
+
+    for (final item in notifRes) {
+      if (item['deadline'] == null) continue;
+
+      final deadline = DateTime.parse(item['deadline']);
+
+      final remain =
+          deadline.difference(now).inDays;
+
+      if (remain >= 0 && remain <= 7) {
+        deadlineCount++;
+      }
     }
+
+    final deadlineRes = await _supabase
+    .from('documents')
+    .select('deadline');
+
+    int totalDeadline = 0;
+
+    for (final item in deadlineRes) {
+      final deadline = DateTime.parse(item['deadline']);
+
+      final remaining =
+          deadline.difference(DateTime.now()).inDays;
+
+      if (remaining >= 0 && remaining <= 7) {
+        totalDeadline++;
+      }
+    }
+
+    final summary = DashboardSummary(
+      totalDocuments: totalRes.length,
+      totalDeadlines: totalDeadline,
+      completedDocuments: completedRes.length,
+    );
+
+    _view.onSummaryLoaded(summary);
+  } catch (e) {
+    _view.onSummaryError(e.toString());
   }
+}
+  Future<void> fetchDeadlineDocuments() async {
+  try {
+    final response = await _supabase
+        .from('documents')
+        .select('''
+          client_name,
+          deadline,
+          document_types(name)
+        ''')
+        .order('deadline');
+
+    List<DeadlineItem> deadlines = [];
+
+    for (final item in response) {
+      final deadline = DateTime.parse(item['deadline']);
+
+      final remaining =
+          deadline.difference(DateTime.now()).inDays;
+
+      if (remaining >= 0 && remaining <= 7) {
+        deadlines.add(
+          DeadlineItem(
+            clientName: item['client_name'],
+            documentType: item['document_types']['name'],
+            deadline: deadline,
+            remainingDays: remaining,
+          ),
+        );
+      }
+    }
+
+    _view.onDeadlineLoaded(deadlines);
+  } catch (e) {
+    print(e);
+  }
+}
   Future<void> fetchUser() async {
   try {
     final user = _supabase.auth.currentUser;
@@ -50,6 +125,50 @@ class HomePresenter {
     _view.onUserLoaded(profile['username']);
   } catch (e) {
     _view.onUserLoaded("Admin");
+  }
+}
+Future<List<NotificationModel>> fetchUpcomingDeadlines() async {
+  try {
+    final response = await _supabase
+        .from('documents')
+        .select('''
+          client_name,
+          deadline,
+          document_types(name)
+        ''')
+        .order('deadline', ascending: true);
+
+    List<NotificationModel> list = [];
+
+    for (final item in response) {
+      if (item['deadline'] == null) continue;
+
+      final deadline = DateTime.parse(item['deadline']);
+
+      final remainingDays =
+          deadline.difference(DateTime.now()).inDays;
+
+      if (remainingDays >= 0 && remainingDays <= 7) {
+        list.add(
+          NotificationModel(
+            clientName: item['client_name'] ?? '',
+            documentType:
+                item['document_types']?['name'] ?? '',
+            deadline: deadline,
+            remainingDays: remainingDays,
+          ),
+        );
+      }
+    }
+
+    list.sort(
+      (a, b) =>
+          a.remainingDays.compareTo(b.remainingDays),
+    );
+
+    return list;
+  } catch (e) {
+    return [];
   }
 }
 }
