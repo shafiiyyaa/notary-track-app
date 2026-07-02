@@ -10,14 +10,10 @@ import 'edit_document_view.dart';
 class EditDocumentScreen extends StatefulWidget {
   final DocumentModel document;
 
-  const EditDocumentScreen({
-    super.key,
-    required this.document,
-  });
+  const EditDocumentScreen({super.key, required this.document});
 
   @override
-  State<EditDocumentScreen> createState() =>
-      _EditDocumentScreenState();
+  State<EditDocumentScreen> createState() => _EditDocumentScreenState();
 }
 
 class _EditDocumentScreenState extends State<EditDocumentScreen>
@@ -36,7 +32,8 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
 
   bool _isLoading = false;
   double _totalPrice = 0;
-  String _staffName = "-";
+  List<Map<String, dynamic>> _staffs = [];
+  String? _selectedStaffId;
   String? _selectedStatus;
   late EditDocPresenter _presenter;
   final _rupiah = NumberFormat.currency(
@@ -45,50 +42,43 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
     decimalDigits: 0,
   );
 
-@override
-void initState() {
-  super.initState();
+  @override
+  void initState() {
+    super.initState();
 
-  _presenter = EditDocPresenter(this);
-  _presenter.fetchDocument(widget.document.id);
+    _loadDocumentTypes();
+    _loadStaffs();
+    _presenter = EditDocPresenter(this);
+    _presenter.fetchDocument(widget.document.id);
 
-  final doc = widget.document;
+    final doc = widget.document;
 
-  _staffName = doc.staffName;
-  
-  _nameController.text = doc.clientName;
-  _phoneController.text = doc.phone;
-  _deadlineController.text = doc.deadline;
-  _noteController.text = doc.notes;
-  _selectedStatus = widget.document.status;
+    _nameController.text = doc.clientName;
+    _phoneController.text = doc.phone;
+    _deadlineController.text = doc.deadline;
+    _noteController.text = doc.notes;
+    _selectedStatus = widget.document.status;
 
-  _initialFeeController.text =
-      doc.initialFee.toStringAsFixed(0);
+    _initialFeeController.text = doc.initialFee.toStringAsFixed(0);
 
-  _additionalFee1Controller.text =
-      doc.additionalFee1.toStringAsFixed(0);
+    _additionalFee1Controller.text = doc.additionalFee1.toStringAsFixed(0);
 
-  _additionalFee2Controller.text =
-      doc.additionalFee2.toStringAsFixed(0);
+    _additionalFee2Controller.text = doc.additionalFee2.toStringAsFixed(0);
 
-  _calculateTotal();
-
-  _loadDocumentTypes();
-
-}
+    _calculateTotal();
+  }
 
   Future<void> _loadDocumentTypes() async {
-  final data = await _presenter.getDocumentTypes();
+    final data = await _presenter.getDocumentTypes();
 
-  if (!mounted) return;
+    if (!mounted) return;
 
-  setState(() {
-    _documentTypes = data;
+    setState(() {
+      _documentTypes = data;
 
-    _selectedDocumentTypeId =
-        widget.document.documentTypeId;
-  });
-}
+      _selectedDocumentTypeId = widget.document.documentTypeId;
+    });
+  }
 
   void _calculateTotal() {
     final awal =
@@ -137,64 +127,57 @@ void initState() {
 
   @override
   void hideLoading() {
-      setState(() => _isLoading = false);
-    }
+    setState(() => _isLoading = false);
+  }
 
   @override
   void onDocumentLoaded(DocumentModel document) {
     print("STAFF = ${document.staffName}");
-    
-    _staffName = document.staffName;
+
     _nameController.text = document.clientName;
     _phoneController.text = document.phone;
     _deadlineController.text = document.deadline;
     _noteController.text = document.notes;
 
-    _initialFeeController.text =
-        document.initialFee.toStringAsFixed(0);
+    _initialFeeController.text = document.initialFee.toStringAsFixed(0);
 
-    _additionalFee1Controller.text =
-        document.additionalFee1.toStringAsFixed(0);
+    _additionalFee1Controller.text = document.additionalFee1.toStringAsFixed(0);
 
-    _additionalFee2Controller.text =
-        document.additionalFee2.toStringAsFixed(0);
+    _additionalFee2Controller.text = document.additionalFee2.toStringAsFixed(0);
 
-    _selectedDocumentTypeId =
-        document.documentTypeId;
-
-    _staffName = document.staffName;
+    _selectedDocumentTypeId = document.documentTypeId;
+    _selectedStaffId = document.staffId;
+    _selectedStatus = document.status;
 
     _totalPrice = document.totalPrice;
 
     setState(() {});
   }
 
-@override
-void onUpdateSuccess() {
+  @override
+  void onUpdateSuccess() {
     Navigator.pop(context, true);
   }
 
-@override
-void onError(String message) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(
-      SnackBar(content: Text(message)),
-    );
-  }
-
-@override
-void onSaveSuccess() {
-    Navigator.pop(context);
-  }
-
-@override
-void onSaveError(String message) {
+  @override
+  void onError(String message) {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-@override
+  Future<void> _loadStaffs() async {
+    final data = await _presenter.getStaffs();
+
+    if (!mounted) return;
+
+    setState(() {
+      _staffs = data;
+      _selectedStaffId = widget.document.staffId;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -258,28 +241,25 @@ void onSaveError(String message) {
             ),
             _buildLabel("Staff Penanggung Jawab"),
 
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+            DropdownButtonFormField<String>(
+              value: _selectedStaffId,
+              decoration: const InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                border: InputBorder.none,
               ),
-              child: Row(
-                children: [
-                  const Icon(Icons.person, color: AppColors.primaryBlue),
-                  const SizedBox(width: 10),
-                  Text(
-                    _staffName,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
+              items: _staffs.map((staff) {
+                return DropdownMenuItem<String>(
+                  value: staff['id'],
+                  child: Text(staff['username']),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() {
+                  _selectedStaffId = value;
+                });
+              },
             ),
-
             const SizedBox(height: 10),
 
             _buildLabel("Status"),
@@ -296,14 +276,8 @@ void onSaveError(String message) {
                   value: "Belum Diproses",
                   child: Text("Belum Diproses"),
                 ),
-                DropdownMenuItem(
-                  value: "Diproses",
-                  child: Text("Diproses"),
-                ),
-                DropdownMenuItem(
-                  value: "Selesai",
-                  child: Text("Selesai"),
-                ),
+                DropdownMenuItem(value: "Diproses", child: Text("Diproses")),
+                DropdownMenuItem(value: "Selesai", child: Text("Selesai")),
               ],
               onChanged: (value) {
                 setState(() {
@@ -433,9 +407,10 @@ void onSaveError(String message) {
                           phone: _phoneController.text,
 
                           documentTypeId: _selectedDocumentTypeId!,
+                          staffId: _selectedStaffId!,
 
                           deadline: _deadlineController.text,
-                          status: widget.document.status,
+                          status: _selectedStatus!,
 
                           initialFee:
                               double.tryParse(

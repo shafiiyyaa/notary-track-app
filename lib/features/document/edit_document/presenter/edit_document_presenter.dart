@@ -38,6 +38,7 @@ class EditDocPresenter {
     required String clientName,
     required String phone,
     required int documentTypeId,
+    required String staffId,
     required String deadline,
     required String status,
     required String notes,
@@ -57,6 +58,7 @@ class EditDocPresenter {
             'client_name': clientName,
             'phone': phone,
             'document_type_id': documentTypeId,
+            'staff_id': staffId,
             'deadline': deadline,
             'status': status,
             'notes': notes,
@@ -64,6 +66,7 @@ class EditDocPresenter {
             'additional_fee_1': additionalFee1,
             'additional_fee_2': additionalFee2,
             'total_price': totalPrice,
+            
           })
           .eq('id', id);
 
@@ -83,4 +86,15 @@ class EditDocPresenter {
 
     return List<Map<String, dynamic>>.from(response);
   }
+  Future<List<Map<String, dynamic>>> getStaffs() async {
+  final response = await _supabase
+      .from('profiles')
+      .select('id, username')
+      .order('username');
+
+  return List<Map<String, dynamic>>.from(response);
 }
+
+}
+
+
