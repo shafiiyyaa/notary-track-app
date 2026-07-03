@@ -20,6 +20,9 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+  provider: ^6.1.5
+  shared_preferences: ^2.5.3
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
   flutter_native_splash: ^2.2.11

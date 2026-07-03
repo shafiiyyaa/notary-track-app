@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
+import 'package:provider/provider.dart';
+import '../../../theme/theme_provider.dart';
 import '../../../constants/constants.dart';
 import '../model/profile_model.dart';
 import '../presenter/profile.presenter.dart';
@@ -47,7 +48,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     children: [
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 40),
 
                       Text(
                         "Akun Saya",
@@ -108,8 +109,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                         ),
                       ),
 
-                      const SizedBox(height: 70),
+                      const SizedBox(height: 40),
 
+                      _buildThemeTile(),
+                      
                       _menuTile(
                         Icons.lock,
                         "Tentang Aplikasi",
@@ -175,4 +178,35 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
     );
   }
+  Widget _buildThemeTile() {
+  return Consumer<ThemeProvider>(
+    builder: (context, themeProvider, child) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFD9E6F2),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: SwitchListTile(
+          secondary: Icon(
+            themeProvider.isDark
+                ? Icons.dark_mode
+                : Icons.light_mode,
+            color: AppColors.primaryBlue,
+          ),
+          title: Text(
+            "Dark Mode",
+            style: GoogleFonts.comfortaa(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          value: themeProvider.isDark,
+          onChanged: (_) {
+            themeProvider.toggleTheme();
+          },
+        ),
+      );
+    },
+  );
+}
 }

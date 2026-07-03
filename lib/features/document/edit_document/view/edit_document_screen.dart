@@ -46,9 +46,11 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   void initState() {
     super.initState();
 
+    _presenter = EditDocPresenter(this);
+
     _loadDocumentTypes();
     _loadStaffs();
-    _presenter = EditDocPresenter(this);
+
     _presenter.fetchDocument(widget.document.id);
 
     final doc = widget.document;
@@ -79,6 +81,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
       _selectedDocumentTypeId = widget.document.documentTypeId;
     });
   }
+
 
   void _calculateTotal() {
     final awal =
@@ -236,13 +239,16 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
               onChanged: (value) {
                 setState(() {
                   _selectedDocumentTypeId = value;
+                  
                 });
+                
               },
+              
             ),
             _buildLabel("Staff Penanggung Jawab"),
 
             DropdownButtonFormField<String>(
-              value: _selectedStaffId,
+              initialValue: _selectedStaffId,
               decoration: const InputDecoration(
                 filled: true,
                 fillColor: Colors.white,
