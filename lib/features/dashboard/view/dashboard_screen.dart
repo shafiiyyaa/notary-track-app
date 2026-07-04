@@ -74,25 +74,27 @@ void onUserLoaded(String username) {
                       Text('Aplikasi Pemantauan Dokumen Notaris', style: TextStyle(color: Colors.black54)),
                     ],
                   ),
-                  const CircleAvatar(radius: 24, backgroundColor: AppColors.primaryBlue, child: Icon(Icons.person, color: Colors.white))
+                  const CircleAvatar(radius: 24, 
+                  backgroundColor:  AppColors.primaryBlue,
+                   child: Icon(Icons.person, color: Colors.white))
                 ],
               ),
               const SizedBox(height: 28),
               Row(
                 children: [
-                  Expanded(child: _buildSummaryCard("Total Dokumen", "$_totalDocs", Icons.description_outlined, AppColors.cardBlueLight)),
+                  Expanded(child: _buildSummaryCard("Total Dokumen", "$_totalDocs", Icons.description_outlined, Theme.of(context).cardColor)),
                   const SizedBox(width: 16),
                   Expanded(
                   child: _buildSummaryCard(
                       "Jumlah Deadline",
                       "$_deadlineDocs",
                       Icons.calendar_month_outlined,
-                      AppColors.cardBlueDark),
+                      Theme.of(context).cardColor),
                 ),
                 ],
               ),
               const SizedBox(height: 16),
-              _buildWideSummaryCard("Dokumen Selesai", "$_completedDocs", Icons.assignment_turned_in_outlined, AppColors.cardBlueLight.withValues(alpha: 0.7)),
+              _buildWideSummaryCard("Dokumen Selesai", "$_completedDocs", Icons.assignment_turned_in_outlined, Theme.of(context).cardColor.withValues(alpha: 0.7)),
               const SizedBox(height: 32),
               Text('Deadline Mendatang', style: GoogleFonts.comfortaa(fontSize: 22, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),

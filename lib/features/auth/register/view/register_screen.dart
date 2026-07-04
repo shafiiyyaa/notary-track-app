@@ -95,7 +95,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                 controller: _usernameController,
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: AppColors.textFieldBg,
+                  fillColor: Theme.of(context).inputDecorationTheme.fillColor,
                   prefixIcon: const Icon(Icons.person_outline),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -113,7 +113,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: AppColors.textFieldBg,
+                  fillColor: Theme.of(context).inputDecorationTheme.fillColor,
                   prefixIcon: const Icon(Icons.email_outlined),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -131,7 +131,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                 obscureText: _obscurePassword,
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: AppColors.textFieldBg,
+                  fillColor: Theme.of(context).inputDecorationTheme.fillColor,
                   prefixIcon: const Icon(Icons.lock_outline),
                   suffixIcon: IconButton(
                     icon: Icon(
@@ -168,7 +168,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                           );
                         },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlue,
+                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(28),
                     ),

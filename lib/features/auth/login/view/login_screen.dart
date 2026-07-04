@@ -89,7 +89,7 @@ class _LoginScreenState extends State<LoginScreen>
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.email_outlined),
                   filled: true,
-                  fillColor: AppColors.textFieldBg,
+                  fillColor: Theme.of(context).inputDecorationTheme.fillColor,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                     borderSide: BorderSide.none,
@@ -117,7 +117,7 @@ class _LoginScreenState extends State<LoginScreen>
                     },
                   ),
                   filled: true,
-                  fillColor: AppColors.textFieldBg,
+                  fillColor: Theme.of(context).inputDecorationTheme.fillColor,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                     borderSide: BorderSide.none,
@@ -140,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen>
                           );
                         },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlue,
+                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(28),
                     ),

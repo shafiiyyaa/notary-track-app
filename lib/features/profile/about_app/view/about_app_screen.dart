@@ -45,7 +45,7 @@ class _AboutAppScreenState extends State<AboutAppScreen>
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           "Tentang Aplikasi",
@@ -81,7 +81,7 @@ class _AboutAppScreenState extends State<AboutAppScreen>
             Text(
               about!.version,
               style: const TextStyle(
-                color: Colors.grey,
+                color: Color(0xFFFFFFFF),
               ),
             ),
 
@@ -109,7 +109,7 @@ class _AboutAppScreenState extends State<AboutAppScreen>
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 12,
-                color: Colors.grey[700],
+                color: const Color(0xFFFFFCFC),
               ),
             ),
 

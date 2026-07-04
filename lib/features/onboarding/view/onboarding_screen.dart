@@ -58,7 +58,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -95,7 +95,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                           width: 240,
                           height: 240,
                           decoration: BoxDecoration(
-                            color: AppColors.cardBlueLight,
+                            color: Theme.of(context).cardColor,
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -159,7 +159,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   FloatingActionButton(
                     onPressed: () =>
                         _presenter.handleNextAction(_onboardingData.length),
-                    backgroundColor: AppColors.primaryBlue,
+                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                     shape: const CircleBorder(),
                     child: Icon(
                       _presenter.currentPage == _onboardingData.length - 1
