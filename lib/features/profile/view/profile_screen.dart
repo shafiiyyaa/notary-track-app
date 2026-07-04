@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:provider/provider.dart';
-import '../../../theme/theme_provider.dart';
-import '../../../constants/constants.dart';
 import '../model/profile_model.dart';
 import '../presenter/profile.presenter.dart';
 import 'profile_view.dart';
@@ -53,6 +50,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         style: GoogleFonts.comfortaa(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
+                          color: Theme.of(context).textTheme.titleLarge?.color,
                         ),
                       ),
 
@@ -67,15 +65,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                               "assets/images/0e9da6a3619b0ce0eea22849978221c2.jpg",
                             ),
                           ),
-
                           GestureDetector(
                             onTap: () {
                               // Nanti di sini kita buka galeri HP
                             },
                             child: Container(
                               padding: const EdgeInsets.all(8),
-                              decoration: const BoxDecoration(
-                                color: AppColors.primaryBlue,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary,
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
@@ -87,7 +84,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 20),
 
                       Text(
@@ -95,6 +92,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         style: GoogleFonts.comfortaa(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
                         ),
                       ),
 
@@ -104,14 +102,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                         _profile!.email,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 14,
+                          color: Theme.of(context).textTheme.bodyMedium?.color,
                         ),
                       ),
 
                       const SizedBox(height: 50),
 
-                      _buildThemeTile(),
-                      
                       _menuTile(
+                        context,
                         Icons.lock,
                         "Tentang Aplikasi",
                         () {
@@ -125,18 +123,15 @@ class _ProfileScreenState extends State<ProfileScreen>
                       ),
 
                       _menuTile(
+                        context,
                         Icons.logout,
                         "Keluar",
                         () async {
                           await Supabase.instance.client.auth.signOut();
-
                           if (!mounted) return;
-
                           Navigator.pushAndRemoveUntil(
                             context,
-                            MaterialPageRoute(
-                              builder: (_) => const LoginScreen(),
-                            ),
+                            MaterialPageRoute(builder: (_) => const LoginScreen()),
                             (route) => false,
                           );
                         },
@@ -150,6 +145,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _menuTile(
+    BuildContext context,
     IconData icon,
     String title,
     VoidCallback onTap,
@@ -157,54 +153,24 @@ class _ProfileScreenState extends State<ProfileScreen>
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFFD9E6F2),
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
       ),
       child: ListTile(
-        leading: Icon(
-          icon,
-          color: AppColors.primaryBlue,
-        ),
+        leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
         title: Text(
           title,
           style: GoogleFonts.comfortaa(
             fontWeight: FontWeight.bold,
+            color: Theme.of(context).textTheme.bodyLarge?.color,
           ),
         ),
-        trailing: const Icon(Icons.chevron_right),
+        trailing: Icon(
+          Icons.chevron_right,
+          color: Theme.of(context).textTheme.bodyLarge?.color,
+        ),
         onTap: onTap,
       ),
     );
   }
-  Widget _buildThemeTile() {
-  return Consumer<ThemeProvider>(
-    builder: (context, themeProvider, child) {
-      return Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: const Color(0xFFD9E6F2),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: SwitchListTile(
-          secondary: Icon(
-            themeProvider.isDark
-                ? Icons.dark_mode
-                : Icons.light_mode,
-            color: AppColors.primaryBlue,
-          ),
-          title: Text(
-            "Dark Mode",
-            style: GoogleFonts.comfortaa(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          value: themeProvider.isDark,
-          onChanged: (_) {
-            themeProvider.toggleTheme();
-          },
-        ),
-      );
-    },
-  );
-}
 }

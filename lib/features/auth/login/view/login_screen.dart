@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../../constants/constants.dart';
 import '../../../dashboard/main_navigation.dart';
 import '../presenter/login_presenter.dart';
 import '../view/login_view.dart';
@@ -37,14 +36,10 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   @override
-  void showLoading() {
-    setState(() => _isLoading = true);
-  }
+  void showLoading() => setState(() => _isLoading = true);
 
   @override
-  void hideLoading() {
-    setState(() => _isLoading = false);
-  }
+  void hideLoading() => setState(() => _isLoading = false);
 
   @override
   void onLoginSuccess() {
@@ -64,6 +59,7 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -75,21 +71,20 @@ class _LoginScreenState extends State<LoginScreen>
                 style: GoogleFonts.comfortaa(
                   fontSize: 36,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.primaryBlueDark,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
 
               const SizedBox(height: 40),
 
-              _buildFieldLabel("Email"),
-
+              _buildFieldLabel(context, "Email"),
               TextField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.email_outlined),
                   filled: true,
-                  fillColor: Theme.of(context).inputDecorationTheme.fillColor,
+                  fillColor: Theme.of(context).cardColor,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                     borderSide: BorderSide.none,
@@ -99,8 +94,7 @@ class _LoginScreenState extends State<LoginScreen>
 
               const SizedBox(height: 20),
 
-              _buildFieldLabel("Kata Sandi"),
-
+              _buildFieldLabel(context, "Kata Sandi"),
               TextField(
                 controller: _passwordController,
                 obscureText: _obscureText,
@@ -117,7 +111,7 @@ class _LoginScreenState extends State<LoginScreen>
                     },
                   ),
                   filled: true,
-                  fillColor: Theme.of(context).inputDecorationTheme.fillColor,
+                  fillColor: Theme.of(context).cardColor,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                     borderSide: BorderSide.none,
@@ -140,7 +134,7 @@ class _LoginScreenState extends State<LoginScreen>
                           );
                         },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlue,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(28),
                     ),
@@ -159,14 +153,16 @@ class _LoginScreenState extends State<LoginScreen>
               ),
 
               const SizedBox(height: 20),
-              
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
+                  Text(
                     "Belum punya akun?",
-                    style: TextStyle(fontSize: 15, color: Colors.black),
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                    ),
                   ),
                   TextButton(
                     onPressed: () {
@@ -177,12 +173,12 @@ class _LoginScreenState extends State<LoginScreen>
                         ),
                       );
                     },
-                    child: const Text(
+                    child: Text(
                       "Daftar",
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.primaryBlue,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ),
@@ -195,12 +191,18 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildFieldLabel(String label) {
+  Widget _buildFieldLabel(BuildContext context, String label) {
     return Align(
       alignment: Alignment.centerLeft,
       child: Padding(
         padding: const EdgeInsets.only(bottom: 8),
-        child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).textTheme.bodyLarge?.color,
+          ),
+        ),
       ),
     );
   }

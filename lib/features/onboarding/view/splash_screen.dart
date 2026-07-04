@@ -13,7 +13,6 @@ class _CustomSplashScreenState extends State<CustomSplashScreen> {
   @override
   void initState() {
     super.initState();
-    // Jeda 3 detik lalu pindah ke halaman Onboarding
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
         Navigator.pushReplacement(
@@ -27,27 +26,26 @@ class _CustomSplashScreenState extends State<CustomSplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF5B8DB8),
+      backgroundColor: Theme.of(context).colorScheme.primary,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // 1. Bagian Logo Gambar
             Image.asset(
               'assets/images/logo.png',
-              width: 180, // ukuran lebar logo di sini
-              height: 180, // ukuran tinggi logo di sini
+              width: 180,
+              height: 180,
               fit: BoxFit.contain,
             ),
 
-            const SizedBox(height: 16), // Jarak antara logo dan tulisan teks
+            const SizedBox(height: 16),
 
             Text(
               'Notary Track',
               style: GoogleFonts.cinzel(
                 fontSize: 24,
                 fontWeight: FontWeight.w500,
-                color: const Color(0xFFEFECE3),
+                color: const Color(0xFFF5F3E7), // cream, sama kayak background app
                 letterSpacing: 1.2,
               ),
             ),

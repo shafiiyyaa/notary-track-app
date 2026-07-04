@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../constants/constants.dart';
 import '../model/about_app_model.dart';
 import '../presenter/about_app_presenter.dart';
 import 'about_app_view.dart';
@@ -36,7 +35,10 @@ class _AboutAppScreenState extends State<AboutAppScreen>
   @override
   Widget build(BuildContext context) {
     if (about == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: const Center(child: CircularProgressIndicator()),
+      );
     }
 
     return Scaffold(
@@ -52,12 +54,12 @@ class _AboutAppScreenState extends State<AboutAppScreen>
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.arrow_back),
                   ),
-
                   Text(
                     "Tentang Aplikasi",
                     style: GoogleFonts.comfortaa(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
+                      color: Theme.of(context).textTheme.titleLarge?.color,
                     ),
                   ),
                 ],
@@ -68,7 +70,7 @@ class _AboutAppScreenState extends State<AboutAppScreen>
               Icon(
                 Icons.description_outlined,
                 size: 80,
-                color: AppColors.primaryBlue,
+                color: Theme.of(context).colorScheme.primary,
               ),
 
               const SizedBox(height: 20),
@@ -78,6 +80,7 @@ class _AboutAppScreenState extends State<AboutAppScreen>
                 style: GoogleFonts.comfortaa(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
+                  color: Theme.of(context).textTheme.titleLarge?.color,
                 ),
               ),
 
@@ -98,6 +101,7 @@ class _AboutAppScreenState extends State<AboutAppScreen>
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 15,
                       height: 1.8,
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
                     ),
                   ),
                 ),
@@ -110,14 +114,20 @@ class _AboutAppScreenState extends State<AboutAppScreen>
               Text(
                 "Dikembangkan sebagai aplikasi skripsi Program Studi Informatika\nuntuk mendukung digitalisasi administrasi pada\nKantor Notaris dan PPAT Saptadi Setya Nugraha.",
                 textAlign: TextAlign.center,
-                style: GoogleFonts.plusJakartaSans(fontSize: 12),
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  color: Theme.of(context).textTheme.bodyMedium?.color,
+                ),
               ),
 
               const SizedBox(height: 15),
 
               Text(
                 "© 2026 Notary Track",
-                style: GoogleFonts.comfortaa(fontSize: 12),
+                style: GoogleFonts.comfortaa(
+                  fontSize: 12,
+                  color: Theme.of(context).textTheme.bodyMedium?.color,
+                ),
               ),
             ],
           ),

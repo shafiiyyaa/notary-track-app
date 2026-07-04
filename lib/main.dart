@@ -43,7 +43,6 @@ class NotaryTrackApp extends StatelessWidget {
           title: 'NotaryTrackApp',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
           themeMode: themeProvider.themeMode,
           home: const CustomSplashScreen(),
         );

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../../constants/constants.dart';
 import '../presenter/add_doc_presenter.dart';
 import 'add_doc_view.dart';
 
@@ -204,7 +203,10 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
                   filled: true,
                   fillColor: Theme.of(context).cardColor,
                   border: InputBorder.none,
-                  prefixIcon: const Icon(Icons.person, color: AppColors.primaryBlue),
+                  prefixIcon: Icon(
+                    Icons.person,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 ),
                 items: _staffList.map((staff) {
                   return DropdownMenuItem<String>(
@@ -316,10 +318,10 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
                     ),
                     Text(
                       _rupiah.format(_totalPrice),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
-                        color: AppColors.primaryBlue,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ],
@@ -334,6 +336,7 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
                   fontSize: 12,
                 ),
               ),
+              const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 height: 50,
@@ -376,7 +379,7 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
                           );
                         },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlue,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                   ),
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)

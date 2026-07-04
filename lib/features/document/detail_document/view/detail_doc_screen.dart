@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:notarytrackapp/constants/constants.dart';
 import '../../document_list/model/document_model.dart';
 import '../presenter/detail_doc_presenter.dart';
 import 'detail_doc_view.dart';
@@ -49,7 +48,7 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Dokumen berhasil dihapus')),
     );
-    Navigator.pop(context, true); // true = sinyal ke halaman list biar refresh
+    Navigator.pop(context, true);
   }
 
   void _confirmDelete() {
@@ -68,7 +67,7 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
             ),
             TextButton(
               onPressed: () {
-                Navigator.pop(dialogContext); // tutup dialog dulu
+                Navigator.pop(dialogContext);
                 _presenter.deleteDocument(widget.documentId);
               },
               style: TextButton.styleFrom(foregroundColor: Colors.red),
@@ -83,10 +82,14 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
   @override
   Widget build(BuildContext context) {
     if (_isLoading || _document == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: const Center(child: CircularProgressIndicator()),
+      );
     }
 
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -105,6 +108,7 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                     style: GoogleFonts.comfortaa(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
+                      color: Theme.of(context).textTheme.titleLarge?.color,
                     ),
                   ),
                 ],
@@ -116,6 +120,7 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                 style: GoogleFonts.comfortaa(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
+                  color: Theme.of(context).textTheme.titleLarge?.color,
                 ),
               ),
 
@@ -123,6 +128,7 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
 
               Card(
                 elevation: 2,
+                color: Theme.of(context).cardColor,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -130,14 +136,15 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
-                      _buildItem("Nama Klien", _document!.clientName),
-                      _buildItem("Deadline", _document!.deadline),
-                      _buildItem("Status", _document!.status),
+                      _buildItem(context, "Nama Klien", _document!.clientName),
+                      _buildItem(context, "Deadline", _document!.deadline),
+                      _buildItem(context, "Status", _document!.status),
                       _buildItem(
+                        context,
                         "Total Pembayaran",
                         "Rp ${_document!.totalPrice.toStringAsFixed(0)}",
                       ),
-                      _buildItem("Catatan", _notes),
+                      _buildItem(context, "Catatan", _notes),
                     ],
                   ),
                 ),
@@ -150,12 +157,13 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                 style: GoogleFonts.comfortaa(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
+                  color: Theme.of(context).textTheme.titleLarge?.color,
                 ),
               ),
 
               const SizedBox(height: 15),
 
-              _buildProgress(),
+              _buildProgress(context),
 
               const SizedBox(height: 30),
 
@@ -166,13 +174,10 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                   icon: const Icon(Icons.edit, color: Colors.white),
                   label: const Text(
                     "Edit Dokumen",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlue,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -181,11 +186,9 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                     await Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) =>
-                            EditDocumentScreen(document: _document!),
+                        builder: (_) => EditDocumentScreen(document: _document!),
                       ),
                     );
-
                     _presenter.fetchDocumentDetail(widget.documentId);
                   },
                 ),
@@ -200,10 +203,7 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                   icon: const Icon(Icons.delete_outline, color: Colors.red),
                   label: const Text(
                     "Hapus Dokumen",
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
                   ),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Colors.red),
@@ -221,7 +221,7 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
     );
   }
 
-  Widget _buildItem(String title, String value) {
+  Widget _buildItem(BuildContext context, String title, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
@@ -231,16 +231,24 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
             width: 120,
             child: Text(
               title,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
+              ),
             ),
           ),
-          Expanded(child: Text(value)),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildProgress() {
+  Widget _buildProgress(BuildContext context) {
     int step = 0;
     if (_document!.status == "Diproses") step = 1;
     if (_document!.status == "Selesai") step = 2;
@@ -248,26 +256,26 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        _circle("Belum", step >= 0),
+        _circle(context, "Belum", step >= 0),
         Expanded(
           child: Divider(
             thickness: 2,
-            color: step >= 1 ? Colors.green : Colors.grey,
+            color: step >= 1 ? Colors.green : Theme.of(context).dividerColor,
           ),
         ),
-        _circle("Proses", step >= 1),
+        _circle(context, "Proses", step >= 1),
         Expanded(
           child: Divider(
             thickness: 2,
-            color: step >= 2 ? Colors.green : Colors.grey,
+            color: step >= 2 ? Colors.green : Theme.of(context).dividerColor,
           ),
         ),
-        _circle("Selesai", step >= 2),
+        _circle(context, "Selesai", step >= 2),
       ],
     );
   }
 
-  Widget _circle(String title, bool active) {
+  Widget _circle(BuildContext context, String title, bool active) {
     return Column(
       children: [
         CircleAvatar(
@@ -276,7 +284,7 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
           child: const Icon(Icons.check, color: Colors.white),
         ),
         const SizedBox(height: 5),
-        Text(title),
+        Text(title, style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
       ],
     );
   }

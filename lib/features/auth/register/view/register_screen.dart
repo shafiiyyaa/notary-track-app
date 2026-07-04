@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../../constants/constants.dart';
 import '../presenter/register_presenter.dart';
 import 'register_view.dart';
 
@@ -37,42 +36,33 @@ class _RegisterScreenState extends State<RegisterScreen>
   }
 
   @override
-  void showLoading() {
-    setState(() => _isLoading = true);
-  }
+  void showLoading() => setState(() => _isLoading = true);
 
   @override
-  void hideLoading() {
-    setState(() => _isLoading = false);
-  }
+  void hideLoading() => setState(() => _isLoading = false);
 
   @override
   void onRegisterSuccess() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text(
-          "Registrasi berhasil! Silakan login menggunakan akunmu.",
-        ),
+        content: Text("Registrasi berhasil! Silakan login menggunakan akunmu."),
         backgroundColor: Colors.green,
       ),
     );
-
     Navigator.pop(context);
   }
 
   @override
   void onRegisterError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -84,18 +74,18 @@ class _RegisterScreenState extends State<RegisterScreen>
                 style: GoogleFonts.comfortaa(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
+                  color: Theme.of(context).textTheme.titleLarge?.color,
                 ),
               ),
 
               const SizedBox(height: 30),
 
-              _buildLabel("Username"),
-
+              _buildLabel(context, "Username"),
               TextField(
                 controller: _usernameController,
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: Theme.of(context).inputDecorationTheme.fillColor,
+                  fillColor: Theme.of(context).cardColor,
                   prefixIcon: const Icon(Icons.person_outline),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -106,14 +96,13 @@ class _RegisterScreenState extends State<RegisterScreen>
 
               const SizedBox(height: 16),
 
-              _buildLabel("Email"),
-
+              _buildLabel(context, "Email"),
               TextField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: Theme.of(context).inputDecorationTheme.fillColor,
+                  fillColor: Theme.of(context).cardColor,
                   prefixIcon: const Icon(Icons.email_outlined),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -124,20 +113,17 @@ class _RegisterScreenState extends State<RegisterScreen>
 
               const SizedBox(height: 16),
 
-              _buildLabel("Password"),
-
+              _buildLabel(context, "Password"),
               TextField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: Theme.of(context).inputDecorationTheme.fillColor,
+                  fillColor: Theme.of(context).cardColor,
                   prefixIcon: const Icon(Icons.lock_outline),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_off
-                          : Icons.visibility,
+                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
                     ),
                     onPressed: () {
                       setState(() {
@@ -168,21 +154,16 @@ class _RegisterScreenState extends State<RegisterScreen>
                           );
                         },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlue,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(28),
                     ),
                   ),
                   child: _isLoading
-                      ? const CircularProgressIndicator(
-                          color: Colors.white,
-                        )
+                      ? const CircularProgressIndicator(color: Colors.white)
                       : const Text(
                           "Buat Akun",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                          ),
+                          style: TextStyle(color: Colors.white, fontSize: 18),
                         ),
                 ),
               ),
@@ -192,19 +173,20 @@ class _RegisterScreenState extends State<RegisterScreen>
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
+                  Text(
                     "Sudah punya akun?",
-                    style: TextStyle(fontSize: 15),
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                    ),
                   ),
                   TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    child: const Text(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(
                       "Masuk",
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: AppColors.primaryBlue,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ),
@@ -217,15 +199,16 @@ class _RegisterScreenState extends State<RegisterScreen>
     );
   }
 
-  Widget _buildLabel(String text) {
+  Widget _buildLabel(BuildContext context, String text) {
     return Align(
       alignment: Alignment.centerLeft,
       child: Padding(
         padding: const EdgeInsets.only(bottom: 6),
         child: Text(
           text,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
+            color: Theme.of(context).textTheme.bodyLarge?.color,
           ),
         ),
       ),

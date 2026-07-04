@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../../constants/constants.dart';
 import '../../document_list/model/document_model.dart';
 import '../presenter/edit_document_presenter.dart';
 import 'edit_document_view.dart';
@@ -244,6 +243,10 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                   filled: true,
                   fillColor: Theme.of(context).cardColor,
                   border: InputBorder.none,
+                  prefixIcon: Icon(
+                    Icons.person,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 ),
                 items: _staffs.map((staff) {
                   return DropdownMenuItem<String>(
@@ -383,10 +386,10 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                     ),
                     Text(
                       _rupiah.format(_totalPrice),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
-                        color: AppColors.primaryBlue,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ],
@@ -461,7 +464,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                           );
                         },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlue,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                   ),
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)

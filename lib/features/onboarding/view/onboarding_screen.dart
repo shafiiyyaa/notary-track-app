@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../constants/constants.dart';
 import '../../auth/login/view/login_screen.dart';
 import '../presenter/onboarding_presenter.dart';
 import 'onboarding_view.dart';
@@ -17,7 +16,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   final PageController _pageController = PageController();
   late OnboardingPresenter _presenter;
 
-  // Data konten onboarding sesuai gambar 2 & 3 milikmu
   final List<Map<String, String>> _onboardingData = [
     {
       "title": "Mudah Memantau Progres Dokumen Notaris",
@@ -71,7 +69,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   child: Text(
                     'Lewati',
                     style: GoogleFonts.plusJakartaSans(
-                      color: AppColors.primaryBlueDark,
+                      color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -79,7 +77,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               ),
             ),
 
-            // Konten Slider Halaman
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
@@ -103,7 +100,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                                 ? Icons.assignment_outlined
                                 : Icons.alarm_on_outlined,
                             size: 100,
-                            color: AppColors.primaryBlueDark,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                         const SizedBox(height: 48),
@@ -113,7 +110,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                           style: GoogleFonts.comfortaa(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.primaryBlueDark,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -122,7 +119,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                           textAlign: TextAlign.center,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 14,
-                            color: Colors.black54,
+                            color: Theme.of(context).textTheme.bodyMedium?.color,
                             height: 1.5,
                           ),
                         ),
@@ -147,25 +144,22 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                         height: 8,
                         decoration: BoxDecoration(
                           color: _presenter.currentPage == index
-                              ? AppColors.primaryBlue
-                              : Colors.black26,
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).dividerColor,
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
                     ),
                   ),
 
-                  // Tombol Panah Keluar / Lanjut
                   FloatingActionButton(
                     onPressed: () =>
                         _presenter.handleNextAction(_onboardingData.length),
-                    backgroundColor: AppColors.primaryBlue,
                     shape: const CircleBorder(),
                     child: Icon(
                       _presenter.currentPage == _onboardingData.length - 1
                           ? Icons.check
                           : Icons.arrow_forward,
-                      color: Colors.white,
                     ),
                   ),
                 ],
