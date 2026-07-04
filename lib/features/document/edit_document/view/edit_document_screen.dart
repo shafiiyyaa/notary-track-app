@@ -62,9 +62,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
     _selectedStatus = widget.document.status;
 
     _initialFeeController.text = doc.initialFee.toStringAsFixed(0);
-
     _additionalFee1Controller.text = doc.additionalFee1.toStringAsFixed(0);
-
     _additionalFee2Controller.text = doc.additionalFee2.toStringAsFixed(0);
 
     _calculateTotal();
@@ -72,34 +70,34 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
 
   Future<void> _loadDocumentTypes() async {
     final data = await _presenter.getDocumentTypes();
-
     if (!mounted) return;
-
     setState(() {
       _documentTypes = data;
-
       _selectedDocumentTypeId = widget.document.documentTypeId;
     });
   }
 
+  Future<void> _loadStaffs() async {
+    final data = await _presenter.getStaffs();
+    if (!mounted) return;
+    setState(() {
+      _staffs = data;
+      _selectedStaffId = widget.document.staffId;
+    });
+  }
 
   void _calculateTotal() {
-    final awal =
-        double.tryParse(
+    final awal = double.tryParse(
           _initialFeeController.text.replaceAll('.', '').replaceAll(',', '.'),
         ) ??
         0;
-
-    final tambah1 =
-        double.tryParse(
+    final tambah1 = double.tryParse(
           _additionalFee1Controller.text
               .replaceAll('.', '')
               .replaceAll(',', '.'),
         ) ??
         0;
-
-    final tambah2 =
-        double.tryParse(
+    final tambah2 = double.tryParse(
           _additionalFee2Controller.text
               .replaceAll('.', '')
               .replaceAll(',', '.'),
@@ -124,29 +122,23 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   }
 
   @override
-  void showLoading() {
-    setState(() => _isLoading = true);
-  }
+  void showLoading() => setState(() => _isLoading = true);
 
   @override
-  void hideLoading() {
-    setState(() => _isLoading = false);
-  }
+  void hideLoading() => setState(() => _isLoading = false);
 
   @override
   void onDocumentLoaded(DocumentModel document) {
-    print("STAFF = ${document.staffName}");
-
     _nameController.text = document.clientName;
     _phoneController.text = document.phone;
     _deadlineController.text = document.deadline;
     _noteController.text = document.notes;
 
     _initialFeeController.text = document.initialFee.toStringAsFixed(0);
-
-    _additionalFee1Controller.text = document.additionalFee1.toStringAsFixed(0);
-
-    _additionalFee2Controller.text = document.additionalFee2.toStringAsFixed(0);
+    _additionalFee1Controller.text =
+        document.additionalFee1.toStringAsFixed(0);
+    _additionalFee2Controller.text =
+        document.additionalFee2.toStringAsFixed(0);
 
     _selectedDocumentTypeId = document.documentTypeId;
     _selectedStaffId = document.staffId;
@@ -164,296 +156,338 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
 
   @override
   void onError(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  Future<void> _loadStaffs() async {
-    final data = await _presenter.getStaffs();
-
     if (!mounted) return;
-
-    setState(() {
-      _staffs = data;
-      _selectedStaffId = widget.document.staffId;
-    });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
-      Widget build(BuildContext context) {
-        return Scaffold(
-          body: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.arrow_back),
-                        splashRadius: 22,
-                      ),
-                    Text(
-                      "Edit Dokumen",
-                      style: GoogleFonts.comfortaa(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                  const SizedBox(height: 24),
-
-                  _buildLabel('Nama Klien'),
-                  TextField(
-                    controller: _nameController,
-                    textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: InputBorder.none,
-                    ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.arrow_back),
+                    splashRadius: 22,
                   ),
-
-                  _buildLabel('Nomor Telepon'),
-                  TextField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
-                    textInputAction: TextInputAction.next,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(15),
-                    ],
-                    decoration: const InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: InputBorder.none,
-                    ),
-                  ),
-
-                  _buildLabel('Jenis Dokumen'),
-
-                  DropdownButtonFormField<int>(
-                    initialValue: _selectedDocumentTypeId,
-                    decoration: const InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: InputBorder.none,
-                    ),
-                    items: _documentTypes.map((doc) {
-                      return DropdownMenuItem<int>(
-                        value: doc['id'],
-                        child: Text(doc['name']),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedDocumentTypeId = value;
-                      });
-                    },
-                  ),
-
-                  _buildLabel("Staff Penanggung Jawab"),
-
-                  DropdownButtonFormField<String>(
-                    initialValue: _selectedStaffId,
-                    decoration: const InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: InputBorder.none,
-                    ),
-                    items: _staffs.map((staff) {
-                      return DropdownMenuItem<String>(
-                        value: staff['id'],
-                        child: Text(staff['username']),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedStaffId = value;
-                      });
-                    },
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  _buildLabel("Status"),
-
-                  DropdownButtonFormField<String>(
-                    initialValue: _selectedStatus,
-                    decoration: const InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: InputBorder.none,
-                    ),
-                    items: const [
-                      DropdownMenuItem(
-                        value: "Belum Diproses",
-                        child: Text("Belum Diproses"),
-                      ),
-                      DropdownMenuItem(
-                        value: "Diproses",
-                        child: Text("Diproses"),
-                      ),
-                      DropdownMenuItem(
-                        value: "Selesai",
-                        child: Text("Selesai"),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedStatus = value;
-                      });
-                    },
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  _buildLabel('Deadline'),
-                  TextField(
-                    controller: _deadlineController,
-                    readOnly: true,
-                    decoration: const InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: InputBorder.none,
-                      suffixIcon: Icon(Icons.calendar_today),
-                    ),
-                    onTap: () async {
-                      DateTime? picked = await showDatePicker(
-                        context: context,
-                        initialDate: DateTime.now(),
-                        firstDate: DateTime(2024),
-                        lastDate: DateTime(2100),
-                      );
-
-                      if (picked != null) {
-                        _deadlineController.text =
-                            "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
-                      }
-                    },
-                  ),
-
-                  _buildLabel('Biaya Awal'),
-                  TextField(
-                    controller: _initialFeeController,
-                    keyboardType: TextInputType.number,
-                    onChanged: (_) => _calculateTotal(),
-                    decoration: const InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: InputBorder.none,
-                    ),
-                  ),
-
-                  _buildLabel('Biaya Tambahan 1'),
-                  TextField(
-                    controller: _additionalFee1Controller,
-                    keyboardType: TextInputType.number,
-                    onChanged: (_) => _calculateTotal(),
-                    decoration: const InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: InputBorder.none,
-                    ),
-                  ),
-
-                  _buildLabel('Biaya Tambahan 2'),
-                  TextField(
-                    controller: _additionalFee2Controller,
-                    keyboardType: TextInputType.number,
-                    onChanged: (_) => _calculateTotal(),
-                    decoration: const InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: InputBorder.none,
-                    ),
-                  ),
-
-                  _buildLabel('Catatan'),
-                  TextField(
-                    controller: _noteController,
-                    maxLines: 3,
-                    decoration: const InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: InputBorder.none,
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          "Total Biaya",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
-                        ),
-                        Text(
-                          _rupiah.format(_totalPrice),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                            color: AppColors.primaryBlue,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
                   Text(
-                    "*Total biaya dihitung otomatis",
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 12,
-                    ),
-                  ),
-
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () {
-                              // updateDocument()
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryBlue,
-                      ),
-                      child: _isLoading
-                          ? const CircularProgressIndicator()
-                          : const Text(
-                              "Update Dokumen",
-                              style: TextStyle(color: Colors.white),
-                            ),
+                    "Edit Dokumen",
+                    style: GoogleFonts.comfortaa(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).textTheme.titleLarge?.color,
                     ),
                   ),
                 ],
               ),
-            ),
+              const SizedBox(height: 24),
+
+              _buildLabel(context, 'Nama Klien'),
+              TextField(
+                controller: _nameController,
+                textInputAction: TextInputAction.next,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
+                  border: InputBorder.none,
+                ),
+              ),
+
+              _buildLabel(context, 'Nomor Telepon'),
+              TextField(
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                textInputAction: TextInputAction.next,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(15),
+                ],
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
+                  border: InputBorder.none,
+                ),
+              ),
+
+              _buildLabel(context, 'Jenis Dokumen'),
+              DropdownButtonFormField<int>(
+                initialValue: _selectedDocumentTypeId,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
+                  border: InputBorder.none,
+                ),
+                items: _documentTypes.map((doc) {
+                  return DropdownMenuItem<int>(
+                    value: doc['id'],
+                    child: Text(doc['name']),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedDocumentTypeId = value;
+                  });
+                },
+              ),
+
+              _buildLabel(context, "Staff Penanggung Jawab"),
+              DropdownButtonFormField<String>(
+                initialValue: _selectedStaffId,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
+                  border: InputBorder.none,
+                ),
+                items: _staffs.map((staff) {
+                  return DropdownMenuItem<String>(
+                    value: staff['id'],
+                    child: Text(staff['name']),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedStaffId = value;
+                  });
+                },
+              ),
+
+              const SizedBox(height: 10),
+
+              _buildLabel(context, "Status"),
+              DropdownButtonFormField<String>(
+                initialValue: _selectedStatus,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
+                  border: InputBorder.none,
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: "Belum Diproses",
+                    child: Text("Belum Diproses"),
+                  ),
+                  DropdownMenuItem(
+                    value: "Diproses",
+                    child: Text("Diproses"),
+                  ),
+                  DropdownMenuItem(
+                    value: "Selesai",
+                    child: Text("Selesai"),
+                  ),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _selectedStatus = value;
+                  });
+                },
+              ),
+
+              const SizedBox(height: 10),
+
+              _buildLabel(context, 'Deadline'),
+              TextField(
+                controller: _deadlineController,
+                readOnly: true,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
+                  border: InputBorder.none,
+                  suffixIcon: const Icon(Icons.calendar_today),
+                ),
+                onTap: () async {
+                  DateTime? picked = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now(),
+                    firstDate: DateTime(2024),
+                    lastDate: DateTime(2100),
+                  );
+                  if (picked != null) {
+                    _deadlineController.text =
+                        "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+                  }
+                },
+              ),
+
+              _buildLabel(context, 'Biaya Awal'),
+              TextField(
+                controller: _initialFeeController,
+                keyboardType: TextInputType.number,
+                onChanged: (_) => _calculateTotal(),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
+                  border: InputBorder.none,
+                ),
+              ),
+
+              _buildLabel(context, 'Biaya Tambahan 1'),
+              TextField(
+                controller: _additionalFee1Controller,
+                keyboardType: TextInputType.number,
+                onChanged: (_) => _calculateTotal(),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
+                  border: InputBorder.none,
+                ),
+              ),
+
+              _buildLabel(context, 'Biaya Tambahan 2'),
+              TextField(
+                controller: _additionalFee2Controller,
+                keyboardType: TextInputType.number,
+                onChanged: (_) => _calculateTotal(),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
+                  border: InputBorder.none,
+                ),
+              ),
+
+              _buildLabel(context, 'Catatan'),
+              TextField(
+                controller: _noteController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
+                  border: InputBorder.none,
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Total Biaya",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                      ),
+                    ),
+                    Text(
+                      _rupiah.format(_totalPrice),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: AppColors.primaryBlue,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              Text(
+                "*Total biaya dihitung otomatis",
+                style: TextStyle(
+                  color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.5),
+                  fontSize: 12,
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _isLoading
+                      ? null
+                      : () {
+                          if (_selectedDocumentTypeId == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Pilih jenis dokumen dulu')),
+                            );
+                            return;
+                          }
+                          if (_selectedStaffId == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Pilih staff penanggung jawab dulu')),
+                            );
+                            return;
+                          }
+                          if (_selectedStatus == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Pilih status dulu')),
+                            );
+                            return;
+                          }
+
+                          _presenter.updateDocument(
+                            id: widget.document.id,
+                            clientName: _nameController.text,
+                            phone: _phoneController.text,
+                            documentTypeId: _selectedDocumentTypeId!,
+                            staffId: _selectedStaffId!,
+                            deadline: _deadlineController.text,
+                            status: _selectedStatus!,
+                            notes: _noteController.text,
+                            initialFee: double.tryParse(
+                                  _initialFeeController.text
+                                      .replaceAll('.', '')
+                                      .replaceAll(',', '.'),
+                                ) ??
+                                0,
+                            additionalFee1: double.tryParse(
+                                  _additionalFee1Controller.text
+                                      .replaceAll('.', '')
+                                      .replaceAll(',', '.'),
+                                ) ??
+                                0,
+                            additionalFee2: double.tryParse(
+                                  _additionalFee2Controller.text
+                                      .replaceAll('.', '')
+                                      .replaceAll(',', '.'),
+                                ) ??
+                                0,
+                          );
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryBlue,
+                  ),
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text(
+                          "Update Dokumen",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                ),
+              ),
+            ],
           ),
-        );
-      } 
-       Widget _buildLabel(String text) {
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLabel(BuildContext context, String text) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Text(text, style: const TextStyle(fontWeight: FontWeight.bold)),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).textTheme.bodyLarge?.color,
+        ),
+      ),
     );
   }
 }

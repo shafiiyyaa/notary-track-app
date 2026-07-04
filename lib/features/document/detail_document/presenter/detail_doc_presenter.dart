@@ -16,10 +16,11 @@ class DetailDocPresenter {
           .select('''
         *,
         document_types(name),
-        profiles!staff_id(full_name)
+        staff(name)
       ''')
           .eq('id', id)
           .single();
+
       final doc = DocumentModel.fromMap(data);
       final notes = data['notes'] ?? '';
       _view.hideLoading();

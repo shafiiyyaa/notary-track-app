@@ -3,9 +3,9 @@ class DocumentModel {
 
   final String clientName;
   final String phone;
-  
+
   final int documentTypeId;
-  
+
   final String docType;
 
   final String staffId;
@@ -28,7 +28,7 @@ class DocumentModel {
     required this.clientName,
     required this.phone,
     required this.documentTypeId,
-    required this.docType,  
+    required this.docType,
     required this.staffId,
     required this.staffName,
     required this.dateIn,
@@ -54,13 +54,9 @@ class DocumentModel {
       docType: map['document_types']?['name'] ?? '',
 
       staffId: map['staff_id'] ?? '',
-      staffName: map['profiles']?['username'] ?? '-',
+      staffName: map['staff']?['name'] ?? '-',
 
-      dateIn:
-          map['created_at']
-              ?.toString()
-              .substring(0, 10) ??
-          '',
+      dateIn: map['created_at']?.toString().substring(0, 10) ?? '',
 
       deadline: map['deadline'] ?? '',
 
@@ -68,17 +64,13 @@ class DocumentModel {
 
       notes: map['notes'] ?? '',
 
-      initialFee:
-          (map['initial_fee'] as num?)?.toDouble() ?? 0,
+      initialFee: (map['initial_fee'] as num?)?.toDouble() ?? 0,
 
-      additionalFee1:
-          (map['additional_fee_1'] as num?)?.toDouble() ?? 0,
+      additionalFee1: (map['additional_fee_1'] as num?)?.toDouble() ?? 0,
 
-      additionalFee2:
-          (map['additional_fee_2'] as num?)?.toDouble() ?? 0,
+      additionalFee2: (map['additional_fee_2'] as num?)?.toDouble() ?? 0,
 
-      totalPrice:
-          (map['total_price'] as num?)?.toDouble() ?? 0,
+      totalPrice: (map['total_price'] as num?)?.toDouble() ?? 0,
     );
   }
 }

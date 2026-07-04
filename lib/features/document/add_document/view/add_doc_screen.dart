@@ -27,9 +27,11 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
   List<Map<String, dynamic>> _documentTypes = [];
   int? _selectedDocumentTypeId;
 
+  List<Map<String, dynamic>> _staffList = [];
+  String? _selectedStaffId;
+
   bool _isLoading = false;
   double _totalPrice = 0;
-  String _staffName = "-";
   late AddDocPresenter _presenter;
   final _rupiah = NumberFormat.currency(
     locale: 'id_ID',
@@ -42,50 +44,43 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
     super.initState();
     _presenter = AddDocPresenter(this);
     _loadDocumentTypes();
-    _loadCurrentStaff();
+    _loadStaffList();
   }
 
   Future<void> _loadDocumentTypes() async {
     final data = await _presenter.getDocumentTypes();
-
     if (!mounted) return;
-
     setState(() {
       _documentTypes = data;
-
       if (data.isNotEmpty) {
         _selectedDocumentTypeId = data.first['id'];
       }
     });
   }
 
-  Future<void> _loadCurrentStaff() async {
-    final name = await _presenter.getCurrentStaffName();
-
+  Future<void> _loadStaffList() async {
+    final data = await _presenter.getStaffList();
     if (!mounted) return;
-
     setState(() {
-      _staffName = name;
+      _staffList = data;
+      if (data.isNotEmpty) {
+        _selectedStaffId = data.first['id'];
+      }
     });
   }
 
   void _calculateTotal() {
-    final awal =
-        double.tryParse(
+    final awal = double.tryParse(
           _initialFeeController.text.replaceAll('.', '').replaceAll(',', '.'),
         ) ??
         0;
-
-    final tambah1 =
-        double.tryParse(
+    final tambah1 = double.tryParse(
           _additionalFee1Controller.text
               .replaceAll('.', '')
               .replaceAll(',', '.'),
         ) ??
         0;
-
-    final tambah2 =
-        double.tryParse(
+    final tambah2 = double.tryParse(
           _additionalFee2Controller.text
               .replaceAll('.', '')
               .replaceAll(',', '.'),
@@ -110,30 +105,24 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
   }
 
   @override
-  void showLoading() {
-    setState(() => _isLoading = true);
-  }
+  void showLoading() => setState(() => _isLoading = true);
 
   @override
-  void hideLoading() {
-    setState(() => _isLoading = false);
-  }
+  void hideLoading() => setState(() => _isLoading = false);
 
   @override
-  void onSaveSuccess() {
-    Navigator.pop(context);
-  }
+  void onSaveSuccess() => Navigator.pop(context);
 
   @override
   void onSaveError(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -147,31 +136,31 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
                     icon: const Icon(Icons.arrow_back),
                     splashRadius: 22,
                   ),
-
                   Text(
                     "Tambah Dokumen",
                     style: GoogleFonts.comfortaa(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
+                      color: Theme.of(context).textTheme.titleLarge?.color,
                     ),
                   ),
                 ],
               ),
 
               const SizedBox(height: 24),
-              
-              _buildLabel('Nama Klien'),
+
+              _buildLabel(context, 'Nama Klien'),
               TextField(
                 controller: _nameController,
                 textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: Theme.of(context).cardColor,
                   border: InputBorder.none,
                 ),
               ),
 
-              _buildLabel('Nomor Telepon'),
+              _buildLabel(context, 'Nomor Telepon'),
               TextField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
@@ -180,20 +169,19 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
                   FilteringTextInputFormatter.digitsOnly,
                   LengthLimitingTextInputFormatter(15),
                 ],
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: Theme.of(context).cardColor,
                   border: InputBorder.none,
                 ),
               ),
 
-              _buildLabel('Jenis Dokumen'),
-
+              _buildLabel(context, 'Jenis Dokumen'),
               DropdownButtonFormField<int>(
                 initialValue: _selectedDocumentTypeId,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: Theme.of(context).cardColor,
                   border: InputBorder.none,
                 ),
                 items: _documentTypes.map((doc) {
@@ -208,40 +196,39 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
                   });
                 },
               ),
-              _buildLabel("Staff Penanggung Jawab"),
 
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+              _buildLabel(context, "Staff Penanggung Jawab"),
+              DropdownButtonFormField<String>(
+                initialValue: _selectedStaffId,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
+                  border: InputBorder.none,
+                  prefixIcon: const Icon(Icons.person, color: AppColors.primaryBlue),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.person, color: AppColors.primaryBlue),
-                    const SizedBox(width: 10),
-                    Text(
-                      _staffName,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
+                items: _staffList.map((staff) {
+                  return DropdownMenuItem<String>(
+                    value: staff['id'],
+                    child: Text(staff['name']),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedStaffId = value;
+                  });
+                },
               ),
 
               const SizedBox(height: 10),
-              _buildLabel('Deadline'),
+              _buildLabel(context, 'Deadline'),
               TextField(
                 controller: _deadlineController,
                 readOnly: true,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: Theme.of(context).cardColor,
                   border: InputBorder.none,
-                  suffixIcon: Icon(Icons.calendar_today),
+                  suffixIcon: const Icon(Icons.calendar_today),
                 ),
                 onTap: () async {
                   DateTime? picked = await showDatePicker(
@@ -250,7 +237,6 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
                     firstDate: DateTime(2024),
                     lastDate: DateTime(2100),
                   );
-
                   if (picked != null) {
                     _deadlineController.text =
                         "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
@@ -258,53 +244,53 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
                 },
               ),
 
-              _buildLabel('Biaya Awal'),
+              _buildLabel(context, 'Biaya Awal'),
               TextField(
                 controller: _initialFeeController,
                 textInputAction: TextInputAction.next,
                 keyboardType: TextInputType.number,
                 onChanged: (_) => _calculateTotal(),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: Theme.of(context).cardColor,
                   border: InputBorder.none,
                 ),
               ),
 
-              _buildLabel('Biaya Tambahan 1'),
+              _buildLabel(context, 'Biaya Tambahan 1'),
               TextField(
                 controller: _additionalFee1Controller,
                 textInputAction: TextInputAction.next,
                 keyboardType: TextInputType.number,
                 onChanged: (_) => _calculateTotal(),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: Theme.of(context).cardColor,
                   border: InputBorder.none,
                 ),
               ),
 
-              _buildLabel('Biaya Tambahan 2'),
+              _buildLabel(context, 'Biaya Tambahan 2'),
               TextField(
                 controller: _additionalFee2Controller,
                 textInputAction: TextInputAction.next,
                 keyboardType: TextInputType.number,
                 onChanged: (_) => _calculateTotal(),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: Theme.of(context).cardColor,
                   border: InputBorder.none,
                 ),
               ),
 
-              _buildLabel('Catatan'),
+              _buildLabel(context, 'Catatan'),
               TextField(
                 controller: _noteController,
                 textInputAction: TextInputAction.next,
                 maxLines: 3,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: Theme.of(context).cardColor,
                   border: InputBorder.none,
                 ),
               ),
@@ -314,17 +300,18 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       "Total Biaya",
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
                       ),
                     ),
                     Text(
@@ -342,7 +329,10 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
               const SizedBox(height: 20),
               Text(
                 "*Total biaya dihitung otomatis",
-                style: TextStyle(color: Colors.grey, fontSize: 12),
+                style: TextStyle(
+                  color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.5),
+                  fontSize: 12,
+                ),
               ),
               SizedBox(
                 width: double.infinity,
@@ -351,46 +341,45 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
                   onPressed: _isLoading
                       ? null
                       : () {
+                          if (_selectedStaffId == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Pilih staff penanggung jawab dulu')),
+                            );
+                            return;
+                          }
+
                           _presenter.saveDocument(
                             name: _nameController.text,
                             phone: _phoneController.text,
-
                             documentTypeId: _selectedDocumentTypeId!,
-
                             deadline: _deadlineController.text,
-
-                            initialFee:
-                                double.tryParse(
+                            initialFee: double.tryParse(
                                   _initialFeeController.text
                                       .replaceAll('.', '')
                                       .replaceAll(',', '.'),
                                 ) ??
                                 0,
-
-                            additionalFee1:
-                                double.tryParse(
+                            additionalFee1: double.tryParse(
                                   _additionalFee1Controller.text
                                       .replaceAll('.', '')
                                       .replaceAll(',', '.'),
                                 ) ??
                                 0,
-
-                            additionalFee2:
-                                double.tryParse(
+                            additionalFee2: double.tryParse(
                                   _additionalFee2Controller.text
                                       .replaceAll('.', '')
                                       .replaceAll(',', '.'),
                                 ) ??
                                 0,
-
                             note: _noteController.text,
+                            staffId: _selectedStaffId!,
                           );
                         },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryBlue,
                   ),
                   child: _isLoading
-                      ? const CircularProgressIndicator()
+                      ? const CircularProgressIndicator(color: Colors.white)
                       : const Text(
                           'Simpan Dokumen',
                           style: TextStyle(color: Colors.white),
@@ -404,10 +393,16 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
     );
   }
 
-  Widget _buildLabel(String text) {
+  Widget _buildLabel(BuildContext context, String text) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Text(text, style: const TextStyle(fontWeight: FontWeight.bold)),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).textTheme.bodyLarge?.color,
+        ),
+      ),
     );
   }
 }

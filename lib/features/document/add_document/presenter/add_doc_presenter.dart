@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../view/add_doc_view.dart';
 
@@ -16,6 +17,7 @@ class AddDocPresenter {
     required double additionalFee1,
     required double additionalFee2,
     required String note,
+    required String staffId,
   }) async {
     if (name.isEmpty || deadline.isEmpty) {
       _view.onSaveError("Nama Klien dan Deadline wajib diisi!");
@@ -29,8 +31,7 @@ class AddDocPresenter {
       return;
     }
 
-    final totalPrice =
-        initialFee + additionalFee1 + additionalFee2;
+    final totalPrice = initialFee + additionalFee1 + additionalFee2;
 
     _view.showLoading();
 
@@ -46,7 +47,7 @@ class AddDocPresenter {
         'additional_fee_1': additionalFee1,
         'additional_fee_2': additionalFee2,
         'total_price': totalPrice,
-        'staff_id': user.id,
+        'staff_id': staffId,
       });
 
       _view.hideLoading();
@@ -57,35 +58,29 @@ class AddDocPresenter {
     }
   }
 
-Future<List<Map<String, dynamic>>> getDocumentTypes() async {
-  try {
-    final response = await _supabase
-        .from('document_types')
-        .select()
-        .order('name');
-
-    print("===== DOCUMENT TYPES =====");
-    print(response);
-
-    return List<Map<String, dynamic>>.from(response);
-  } catch (e) {
-    print("ERROR DOCUMENT TYPES");
-    print(e);
-    return [];
+  Future<List<Map<String, dynamic>>> getDocumentTypes() async {
+    try {
+      final response = await _supabase
+          .from('document_types')
+          .select()
+          .order('name');
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      debugPrint('ERROR DOCUMENT TYPES: $e');
+      return [];
+    }
   }
-}
 
-Future<String> getCurrentStaffName() async {
-  final user = _supabase.auth.currentUser;
-
-  if (user == null) return "-";
-
-  final data = await _supabase
-      .from('profiles')
-      .select('full_name')
-      .eq('id', user.id)
-      .single();
-
-  return data['full_name'] ?? "-";
-}
+  Future<List<Map<String, dynamic>>> getStaffList() async {
+    try {
+      final response = await _supabase
+          .from('staff')
+          .select('id, name')
+          .order('name');
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      debugPrint('ERROR STAFF LIST: $e');
+      return [];
+    }
+  }
 }
