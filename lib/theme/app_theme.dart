@@ -10,7 +10,7 @@ class AppTheme {
     primaryColor: const Color(0xFF5B8DB8),
 
     appBarTheme: const AppBarTheme(
-    backgroundColor: Color(0xff113C67),
+    backgroundColor: Color(0xFFF6F3E8),
     foregroundColor: Colors.white,
     elevation: 0,
     surfaceTintColor: Colors.transparent,
@@ -25,17 +25,17 @@ class AppTheme {
     brightness: Brightness.dark,
       useMaterial3: false,
 
-    scaffoldBackgroundColor: const Color(0xFF121212),
+    scaffoldBackgroundColor: const Color(0xFF44557E),
 
     primaryColor: const Color(0xFF7EB6E6),
 
     appBarTheme: const AppBarTheme(
-      backgroundColor: Color(0xFF181818),
+      backgroundColor: Color(0xFF44557E),
       foregroundColor: Colors.white,
       elevation: 0,
     ),
 
-    cardColor: const Color(0xFF1E1E1E),
+    cardColor: const Color(0xFF7CA0BF),
 
     dividerColor: const Color(0xFF303030),
   );

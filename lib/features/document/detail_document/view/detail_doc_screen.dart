@@ -38,14 +38,53 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
     _notes = notes;
   });
   @override
-  void onDocumentError(String message) => ScaffoldMessenger.of(
-    context,
-  ).showSnackBar(SnackBar(content: Text(message)));
+  void onDocumentError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  @override
+  void onDocumentDeleted() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Dokumen berhasil dihapus')),
+    );
+    Navigator.pop(context, true); // true = sinyal ke halaman list biar refresh
+  }
+
+  void _confirmDelete() {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Hapus Dokumen?'),
+          content: Text(
+            'Dokumen "${_document?.docType ?? ''}" untuk ${_document?.clientName ?? ''} akan dihapus permanen dan tidak bisa dikembalikan.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext); // tutup dialog dulu
+                _presenter.deleteDocument(widget.documentId);
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Hapus'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading || _document == null)
+    if (_isLoading || _document == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
     return Scaffold(
       body: SafeArea(
@@ -54,25 +93,24 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-             Row(
-              children: [
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.arrow_back),
-                  splashRadius: 22,
-                ),
-
-                Text(
-                  "Detail Dokumen",
-                  style: GoogleFonts.comfortaa(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.arrow_back),
+                    splashRadius: 22,
                   ),
-                ),
-              ],
-            ),
+                  Text(
+                    "Detail Dokumen",
+                    style: GoogleFonts.comfortaa(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
 
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
               Text(
                 _document!.docType,
                 style: GoogleFonts.comfortaa(
@@ -93,16 +131,12 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                   child: Column(
                     children: [
                       _buildItem("Nama Klien", _document!.clientName),
-
                       _buildItem("Deadline", _document!.deadline),
-
                       _buildItem("Status", _document!.status),
-
                       _buildItem(
                         "Total Pembayaran",
                         "Rp ${_document!.totalPrice.toStringAsFixed(0)}",
                       ),
-
                       _buildItem("Catatan", _notes),
                     ],
                   ),
@@ -156,6 +190,30 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                   },
                 ),
               ),
+
+              const SizedBox(height: 12),
+
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                  label: const Text(
+                    "Hapus Dokumen",
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.red),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: _confirmDelete,
+                ),
+              ),
             ],
           ),
         ),
@@ -176,7 +234,6 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
-
           Expanded(child: Text(value)),
         ],
       ),
@@ -185,36 +242,26 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
 
   Widget _buildProgress() {
     int step = 0;
-
-    if (_document!.status == "Diproses") {
-      step = 1;
-    }
-
-    if (_document!.status == "Selesai") {
-      step = 2;
-    }
+    if (_document!.status == "Diproses") step = 1;
+    if (_document!.status == "Selesai") step = 2;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
         _circle("Belum", step >= 0),
-
         Expanded(
           child: Divider(
             thickness: 2,
             color: step >= 1 ? Colors.green : Colors.grey,
           ),
         ),
-
         _circle("Proses", step >= 1),
-
         Expanded(
           child: Divider(
             thickness: 2,
             color: step >= 2 ? Colors.green : Colors.grey,
           ),
         ),
-
         _circle("Selesai", step >= 2),
       ],
     );
@@ -228,9 +275,7 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
           backgroundColor: active ? Colors.green : Colors.grey.shade400,
           child: const Icon(Icons.check, color: Colors.white),
         ),
-
         const SizedBox(height: 5),
-
         Text(title),
       ],
     );

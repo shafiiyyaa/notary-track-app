@@ -4,6 +4,7 @@ import '../../../../constants/constants.dart';
 import '../model/dashboard_model.dart';
 import '../presenter/dashboard_presenter.dart';
 import 'dashboard_view.dart';
+import '../../profile/view/profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,13 +19,15 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
   int _completedDocs = 0;
   int _deadlineDocs = 0;
   String _username = "Admin";
+  String? _avatarUrl; // <-- tampung URL foto profil, null kalau belum ada
 
-@override
-void onUserLoaded(String username) {
-  setState(() {
-    _username = username;
-  });
-}
+  @override
+  void onUserLoaded(String username) {
+    setState(() {
+      _username = username;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -39,9 +42,10 @@ void onUserLoaded(String username) {
     setState(() {
       _totalDocs = summary.totalDocuments;
       _completedDocs = summary.completedDocuments;
-       _deadlineDocs = summary.totalDeadlines;
+      _deadlineDocs = summary.totalDeadlines;
     });
   }
+
   List<DeadlineItem> _deadlineList = [];
 
   @override
@@ -57,6 +61,7 @@ void onUserLoaded(String username) {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20.0),
@@ -69,48 +74,106 @@ void onUserLoaded(String username) {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Halo,  $_username!', style: GoogleFonts.comfortaa(fontSize: 26, fontWeight: FontWeight.bold)),
+                      Text(
+                        'Halo,  $_username!',
+                        style: GoogleFonts.comfortaa(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).textTheme.titleLarge?.color,
+                        ),
+                      ),
                       const SizedBox(height: 8),
-                      Text('Aplikasi Pemantauan Dokumen Notaris', style: TextStyle(color: Colors.black54)),
+                      Text(
+                        'Aplikasi Pemantauan Dokumen Notaris',
+                        style: TextStyle(
+                          color: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                        ),
+                      ),
                     ],
                   ),
-                  const CircleAvatar(radius: 24, 
-                  backgroundColor:  AppColors.primaryBlue,
-                   child: Icon(Icons.person, color: Colors.white))
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ProfileScreen(),
+                        ),
+                      ).then((_) {
+                        // refresh data profil (nama/foto) kalau habis diedit
+                        _presenter.fetchUser();
+                      });
+                    },
+                    child: CircleAvatar(
+                      radius: 24,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      backgroundImage: _avatarUrl != null
+                          ? NetworkImage(_avatarUrl!)
+                          : null,
+                      child: _avatarUrl == null
+                          ? const Icon(Icons.person, color: Colors.white)
+                          : null,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 28),
               Row(
                 children: [
-                  Expanded(child: _buildSummaryCard("Total Dokumen", "$_totalDocs", Icons.description_outlined, Theme.of(context).cardColor)),
+                  Expanded(
+                    child: _buildSummaryCard(
+                      context,
+                      "Total Dokumen",
+                      "$_totalDocs",
+                      Icons.description_outlined,
+                      Theme.of(context).cardColor,
+                    ),
+                  ),
                   const SizedBox(width: 16),
                   Expanded(
-                  child: _buildSummaryCard(
+                    child: _buildSummaryCard(
+                      context,
                       "Jumlah Deadline",
                       "$_deadlineDocs",
                       Icons.calendar_month_outlined,
-                      Theme.of(context).cardColor),
-                ),
+                      Theme.of(context).cardColor,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
-              _buildWideSummaryCard("Dokumen Selesai", "$_completedDocs", Icons.assignment_turned_in_outlined, Theme.of(context).cardColor.withValues(alpha: 0.7)),
+              _buildWideSummaryCard(
+                context,
+                "Dokumen Selesai",
+                "$_completedDocs",
+                Icons.assignment_turned_in_outlined,
+                Theme.of(context).cardColor.withValues(alpha: 0.7),
+              ),
               const SizedBox(height: 32),
-              Text('Deadline Mendatang', style: GoogleFonts.comfortaa(fontSize: 22, fontWeight: FontWeight.bold)),
+              Text(
+                'Deadline Mendatang',
+                style: GoogleFonts.comfortaa(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).textTheme.titleLarge?.color,
+                ),
+              ),
               const SizedBox(height: 16),
               ..._deadlineList.map(
-              (item) => _buildDeadlineItem(
-                item.clientName,
-                item.remainingDays == 0
-                    ? "Deadline Hari Ini (${item.documentType})"
-                    : item.remainingDays == 1
-                        ? "Deadline Besok (${item.documentType})"
-                        : "Deadline ${item.remainingDays} Hari Lagi (${item.documentType})",
-                "${item.deadline.day}/${item.deadline.month}/${item.deadline.year}",
+                (item) => _buildDeadlineItem(
+                  context,
+                  item.clientName,
+                  item.remainingDays == 0
+                      ? "Deadline Hari Ini (${item.documentType})"
+                      : item.remainingDays == 1
+                      ? "Deadline Besok (${item.documentType})"
+                      : "Deadline ${item.remainingDays} Hari Lagi (${item.documentType})",
+                  "${item.deadline.day}/${item.deadline.month}/${item.deadline.year}",
+                ),
               ),
-            ),
 
-            const SizedBox(height: 80),
+              const SizedBox(height: 80),
             ],
           ),
         ),
@@ -118,40 +181,142 @@ void onUserLoaded(String username) {
     );
   }
 
-  Widget _buildSummaryCard(String title, String value, IconData icon, Color color) {
+  Widget _buildSummaryCard(
+    BuildContext context,
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(20)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(title, style: const TextStyle(fontWeight: FontWeight.bold)), Icon(icon)]),
-        const SizedBox(height: 12),
-        Text(value, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
-      ]),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                ),
+              ),
+              Icon(icon, color: Theme.of(context).textTheme.bodyLarge?.color),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).textTheme.bodyLarge?.color,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildWideSummaryCard(String title, String value, IconData icon, Color color) {
+  Widget _buildWideSummaryCard(
+    BuildContext context,
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(20)),
-      child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontWeight: FontWeight.bold)), const SizedBox(height: 8), Text(value, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold))]),
-        Icon(icon, size: 36),
-      ]),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                ),
+              ),
+            ],
+          ),
+          Icon(icon, size: 36, color: Theme.of(context).textTheme.bodyLarge?.color),
+        ],
+      ),
     );
   }
 
-  Widget _buildDeadlineItem(String title, String desc, String date) {
+  Widget _buildDeadlineItem(
+    BuildContext context,
+    String title,
+    String desc,
+    String date,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-      child: Row(children: [
-        Container(width: 6, height: 40, color: AppColors.statusBelumProses),
-        const SizedBox(width: 12),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontWeight: FontWeight.bold)), Text(desc, style: const TextStyle(color: Colors.black54, fontSize: 12))])),
-        Text(date, style: const TextStyle(color: AppColors.statusBelumProses, fontWeight: FontWeight.bold, fontSize: 12)),
-      ]),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Container(width: 6, height: 40, color: AppColors.statusBelumProses),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                  ),
+                ),
+                Text(
+                  desc,
+                  style: TextStyle(
+                    color: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            date,
+            style: const TextStyle(
+              color: AppColors.statusBelumProses,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

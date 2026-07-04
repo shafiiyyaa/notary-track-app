@@ -168,7 +168,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                           );
                         },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                    backgroundColor: AppColors.primaryBlue,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(28),
                     ),

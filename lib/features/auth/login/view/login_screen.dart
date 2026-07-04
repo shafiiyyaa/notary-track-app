@@ -140,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen>
                           );
                         },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                    backgroundColor: AppColors.primaryBlue,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(28),
                     ),
@@ -159,6 +159,7 @@ class _LoginScreenState extends State<LoginScreen>
               ),
 
               const SizedBox(height: 20),
+              
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,

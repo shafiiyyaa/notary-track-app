@@ -11,24 +11,34 @@ class DetailDocPresenter {
   Future<void> fetchDocumentDetail(String id) async {
     _view.showLoading();
     try {
-     final data = await _supabase
-    .from('documents')
-    .select('''
-      *,
-      document_types(name),
-      profiles!staff_id(full_name)
-    ''')
-    .eq('id', id)
-    .single();
+      final data = await _supabase
+          .from('documents')
+          .select('''
+        *,
+        document_types(name),
+        profiles!staff_id(full_name)
+      ''')
+          .eq('id', id)
+          .single();
       final doc = DocumentModel.fromMap(data);
-      print("===== DETAIL DOCUMENT =====");
-      print(data);
       final notes = data['notes'] ?? '';
       _view.hideLoading();
       _view.onDocumentLoaded(doc, notes);
     } catch (e) {
       _view.hideLoading();
       _view.onDocumentError(e.toString());
+    }
+  }
+
+  Future<void> deleteDocument(String id) async {
+    _view.showLoading();
+    try {
+      await _supabase.from('documents').delete().eq('id', id);
+      _view.hideLoading();
+      _view.onDocumentDeleted();
+    } catch (e) {
+      _view.hideLoading();
+      _view.onDocumentError('Gagal menghapus dokumen: ${e.toString()}');
     }
   }
 }

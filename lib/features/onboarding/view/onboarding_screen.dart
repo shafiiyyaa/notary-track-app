@@ -147,7 +147,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                         height: 8,
                         decoration: BoxDecoration(
                           color: _presenter.currentPage == index
-                              ? AppColors.primaryBlueDark
+                              ? AppColors.primaryBlue
                               : Colors.black26,
                           borderRadius: BorderRadius.circular(4),
                         ),
@@ -159,7 +159,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   FloatingActionButton(
                     onPressed: () =>
                         _presenter.handleNextAction(_onboardingData.length),
-                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                    backgroundColor: AppColors.primaryBlue,
                     shape: const CircleBorder(),
                     child: Icon(
                       _presenter.currentPage == _onboardingData.length - 1

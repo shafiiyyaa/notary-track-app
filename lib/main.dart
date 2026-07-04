@@ -9,24 +9,24 @@ import 'theme/theme_provider.dart';
 import 'theme/app_theme.dart';
 
 void main() async {
-
   WidgetsFlutterBinding.ensureInitialized();
+
   await Supabase.initialize(
-
     url: 'https://bwmixsdyqmrkdbxalzyr.supabase.co',
-
     anonKey:
-
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ3bWl4c2R5cW1ya2RieGFsenlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzODYyMzIsImV4cCI6MjA5NTk2MjIzMn0.ZVm6ZEDlN2tooY1x2NGhZGnA3_uqGVwcu7arcz0Fm0Y',
-
   );
 
   // Inisialisasi Notification
   await NotificationService.init();
 
+  // Load tema tersimpan SEBELUM runApp, biar nggak ada flicker light->dark
+  final themeProvider = ThemeProvider();
+  await themeProvider.initTheme();
+
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => ThemeProvider(),
+    ChangeNotifierProvider.value(
+      value: themeProvider,
       child: const NotaryTrackApp(),
     ),
   );
