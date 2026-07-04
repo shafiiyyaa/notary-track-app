@@ -48,8 +48,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     children: [
-                      const SizedBox(height: 40),
-
                       Text(
                         "Akun Saya",
                         style: GoogleFonts.comfortaa(
@@ -109,7 +107,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         ),
                       ),
 
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 50),
 
                       _buildThemeTile(),
                       

@@ -54,16 +54,25 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "Detail Dokumen",
-                style: GoogleFonts.comfortaa(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+             Row(
+              children: [
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.arrow_back),
+                  splashRadius: 22,
                 ),
-              ),
 
-              const SizedBox(height: 24),
+                Text(
+                  "Detail Dokumen",
+                  style: GoogleFonts.comfortaa(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
 
+            const SizedBox(height: 24),
               Text(
                 _document!.docType,
                 style: GoogleFonts.comfortaa(

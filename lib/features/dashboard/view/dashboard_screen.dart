@@ -70,7 +70,7 @@ void onUserLoaded(String username) {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Halo,  $_username!', style: GoogleFonts.comfortaa(fontSize: 26, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 8),
                       Text('Aplikasi Pemantauan Dokumen Notaris', style: TextStyle(color: Colors.black54)),
                     ],
                   ),

@@ -89,9 +89,11 @@ void onDocumentsLoaded(List<DocumentModel> documents) {
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('Nama: ${doc.clientName}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 5),
                 Text('Dokumen: ${doc.docType}'),
+                const SizedBox(height: 5),
                 Text('Deadline: ${doc.deadline}', style: const TextStyle(color: Colors.black54, fontSize: 13)),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(color: statusColor, borderRadius: BorderRadius.circular(12)),

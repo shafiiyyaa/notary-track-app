@@ -15,7 +15,6 @@ class AboutAppScreen extends StatefulWidget {
 
 class _AboutAppScreenState extends State<AboutAppScreen>
     implements AboutAppViewContract {
-
   late AboutAppPresenter presenter;
   AboutAppModel? about;
 
@@ -37,93 +36,91 @@ class _AboutAppScreenState extends State<AboutAppScreen>
   @override
   Widget build(BuildContext context) {
     if (about == null) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(
-          "Tentang Aplikasi",
-          style: GoogleFonts.comfortaa(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.arrow_back),
+                  ),
 
-            Icon(
-              Icons.description_outlined,
-              size: 80,
-              color: AppColors.primaryBlue,
-            ),
-
-            const SizedBox(height: 20),
-
-            Text(
-              about!.appName,
-              style: GoogleFonts.comfortaa(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
+                  Text(
+                    "Tentang Aplikasi",
+                    style: GoogleFonts.comfortaa(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
-            ),
 
-            const SizedBox(height: 8),
+              const SizedBox(height: 30),
 
-            Text(
-              about!.version,
-              style: const TextStyle(
-                color: Color(0xFFFFFFFF),
+              Icon(
+                Icons.description_outlined,
+                size: 80,
+                color: AppColors.primaryBlue,
               ),
-            ),
 
-            const SizedBox(height: 25),
+              const SizedBox(height: 20),
 
-            Expanded(
-              child: SingleChildScrollView(
-                child: Text(
-                  about!.description,
-                  textAlign: TextAlign.justify,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 15,
-                    height: 1.8,
+              Text(
+                about!.appName,
+                style: GoogleFonts.comfortaa(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              Text(
+                about!.version,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+
+              const SizedBox(height: 25),
+
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Text(
+                    about!.description,
+                    textAlign: TextAlign.justify,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15,
+                      height: 1.8,
+                    ),
                   ),
                 ),
               ),
-            ),
 
-            const Divider(),
+              Divider(color: Theme.of(context).dividerColor),
 
-            const SizedBox(height: 10),
+              const SizedBox(height: 10),
 
-            Text(
-              "Dikembangkan sebagai aplikasi skripsi Program Studi Informatika\nuntuk mendukung digitalisasi administrasi pada\nKantor Notaris dan PPAT Saptadi Setya Nugraha.",
-              textAlign: TextAlign.center,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 12,
-                color: const Color(0xFFFFFCFC),
+              Text(
+                "Dikembangkan sebagai aplikasi skripsi Program Studi Informatika\nuntuk mendukung digitalisasi administrasi pada\nKantor Notaris dan PPAT Saptadi Setya Nugraha.",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(fontSize: 12),
               ),
-            ),
 
-            const SizedBox(height: 15),
+              const SizedBox(height: 15),
 
-            Text(
-              "© 2026 Notary Track",
-              style: GoogleFonts.comfortaa(
-                fontSize: 12,
+              Text(
+                "© 2026 Notary Track",
+                style: GoogleFonts.comfortaa(fontSize: 12),
               ),
-            ),
-
-            const SizedBox(height: 20),
-          ],
+            ],
+          ),
         ),
       ),
     );

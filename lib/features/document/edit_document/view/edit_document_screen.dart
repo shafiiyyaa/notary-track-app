@@ -189,14 +189,22 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    "Edit Dokumen",
-                    style: GoogleFonts.comfortaa(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.arrow_back),
+                        splashRadius: 22,
+                      ),
+                    Text(
+                      "Edit Dokumen",
+                      style: GoogleFonts.comfortaa(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-
+                  ],
+                ),
                   const SizedBox(height: 24),
 
                   _buildLabel('Nama Klien'),

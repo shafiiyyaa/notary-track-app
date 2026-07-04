@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../constants/constants.dart';
 import '../model/notification_model.dart';
 import '../presenter/notification_presenter.dart';
 import 'notification_view.dart';

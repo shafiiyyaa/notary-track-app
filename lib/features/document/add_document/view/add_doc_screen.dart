@@ -140,16 +140,26 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "Tambah Dokumen",
-                style: GoogleFonts.comfortaa(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.arrow_back),
+                    splashRadius: 22,
+                  ),
+
+                  Text(
+                    "Tambah Dokumen",
+                    style: GoogleFonts.comfortaa(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 24),
-
+              
               _buildLabel('Nama Klien'),
               TextField(
                 controller: _nameController,
