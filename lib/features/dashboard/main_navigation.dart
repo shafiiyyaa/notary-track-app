@@ -23,6 +23,8 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return Scaffold(
       body: IndexedStack(index: _selectedIndex, children: _screens),
       floatingActionButton: FloatingActionButton(
@@ -30,7 +32,7 @@ class _MainNavigationState extends State<MainNavigation> {
           context,
           MaterialPageRoute(builder: (context) => const AddDocumentScreen()),
         ),
-        backgroundColor: const Color(0xFFABC8E2),
+        backgroundColor: primaryColor,
         shape: const CircleBorder(),
         child: const Icon(Icons.add, size: 36, color: Colors.white),
       ),
@@ -38,16 +40,16 @@ class _MainNavigationState extends State<MainNavigation> {
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
         notchMargin: 8.0,
-        color: const Color(0xFF5B8DB8),
+        color: primaryColor,
         child: SizedBox(
           height: 64,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildNavItem(Icons.home, 'Home', 0),
-              _buildNavItem(Icons.assignment, 'Dokumen', 1),
-              _buildNavItem(Icons.notifications_active_outlined, 'Notifikasi', 2),
-              _buildNavItem(Icons.person, 'Akun', 3),
+              _buildNavItem(context, Icons.home, 'Home', 0),
+              _buildNavItem(context, Icons.assignment, 'Dokumen', 1),
+              _buildNavItem(context, Icons.notifications_active_outlined, 'Notifikasi', 2),
+              _buildNavItem(context, Icons.person, 'Akun', 3),
             ],
           ),
         ),
@@ -55,7 +57,7 @@ class _MainNavigationState extends State<MainNavigation> {
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, int index) {
+  Widget _buildNavItem(BuildContext context, IconData icon, String label, int index) {
     final isSelected = _selectedIndex == index;
     return GestureDetector(
       onTap: () => setState(() => _selectedIndex = index),
@@ -64,13 +66,13 @@ class _MainNavigationState extends State<MainNavigation> {
         children: [
           Icon(
             icon,
-            color: isSelected ? const Color(0xFF1E3A5F) : Colors.white70,
+            color: isSelected ? Colors.white : Colors.white70,
             size: 26,
           ),
           Text(
             label,
             style: TextStyle(
-              color: isSelected ? const Color(0xFF1E3A5F) : Colors.white70,
+              color: isSelected ? Colors.white : Colors.white70,
               fontSize: 11,
             ),
           ),
