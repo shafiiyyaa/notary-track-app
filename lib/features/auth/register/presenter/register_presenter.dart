@@ -21,24 +21,16 @@ class RegisterPresenter {
     _view.showLoading();
 
     try {
-      final response = await _supabase.auth.signUp(
+      await _supabase.auth.signUp(
         email: email,
         password: password,
         data: {'username': username},
       );
 
-      if (response.user != null) {
-        await _supabase.from('profiles').insert({
-          'id': response.user!.id,
-          'username': username,
-        });
-      }
-
       _view.hideLoading();
       _view.onRegisterSuccess();
     } catch (e) {
       debugPrint("ERROR REGISTER: $e");
-
       _view.hideLoading();
       _view.onRegisterError(e.toString());
     }
