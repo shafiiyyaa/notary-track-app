@@ -19,6 +19,8 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
   final _phoneController = TextEditingController();
   final _deadlineController = TextEditingController();
   final _noteController = TextEditingController();
+  final _kesepakatanBiayaController = TextEditingController();
+  final _progressTerakhirController = TextEditingController();
 
   final _uangMukaJumlahController = TextEditingController();
   final _tambahanJumlahController = TextEditingController();
@@ -93,6 +95,8 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
     _phoneController.dispose();
     _deadlineController.dispose();
     _noteController.dispose();
+    _kesepakatanBiayaController.dispose();
+    _progressTerakhirController.dispose();
     _uangMukaJumlahController.dispose();
     _tambahanJumlahController.dispose();
     _kasBesarJumlahController.dispose();
@@ -106,7 +110,7 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
   void hideLoading() => setState(() => _isLoading = false);
 
   @override
-  void onSaveSuccess() => Navigator.pop(context);
+  void onSaveSuccess() => Navigator.pop(context, true);
 
   @override
   void onSaveError(String message) {
@@ -234,6 +238,22 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
               Divider(color: Theme.of(context).dividerColor),
               const SizedBox(height: 12),
 
+              _buildLabel(context, 'Kesepakatan Biaya'),
+              TextField(
+                controller: _kesepakatanBiayaController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
+                  border: InputBorder.none,
+                  hintText: 'Nominal kesepakatan awal dengan klien',
+                ),
+              ),
+
+              const SizedBox(height: 24),
+              Divider(color: Theme.of(context).dividerColor),
+              const SizedBox(height: 12),
+
               Text(
                 "Uang Masuk dari Pemohon",
                 style: GoogleFonts.comfortaa(
@@ -350,6 +370,21 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
               ),
 
               const SizedBox(height: 24),
+              Divider(color: Theme.of(context).dividerColor),
+              const SizedBox(height: 12),
+
+              _buildLabel(context, 'Progress Dokumen Terakhir'),
+              TextField(
+                controller: _progressTerakhirController,
+                maxLines: 2,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
+                  border: InputBorder.none,
+                  hintText: 'Contoh: menunggu tanda tangan klien',
+                ),
+              ),
+
               _buildLabel(context, 'Keterangan'),
               TextField(
                 controller: _noteController,
@@ -401,6 +436,8 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
                             deadline: _deadlineController.text,
                             staffId: _selectedStaffId!,
                             note: _noteController.text,
+                            kesepakatanBiaya: _parseAmount(_kesepakatanBiayaController.text),
+                            progressTerakhir: _progressTerakhirController.text,
                             uangMukaTanggal: _uangMukaTanggal,
                             uangMukaJumlah: _uangMukaJumlah,
                             tambahanTanggal: _tambahanTanggal,

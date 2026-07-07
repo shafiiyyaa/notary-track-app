@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 enum DynamicFieldType { text, number, date }
 
@@ -35,6 +36,11 @@ class DynamicListField extends StatefulWidget {
 class _DynamicListFieldState extends State<DynamicListField> {
   late List<Map<String, dynamic>> _rows;
   final Map<int, Map<String, TextEditingController>> _controllers = {};
+  final _rupiah = NumberFormat.currency(
+    locale: 'id_ID',
+    symbol: 'Rp ',
+    decimalDigits: 0,
+  );
 
   @override
   void initState() {
@@ -152,7 +158,7 @@ class _DynamicListFieldState extends State<DynamicListField> {
                 ),
               ),
               Text(
-                'Rp ${_total.toStringAsFixed(0)}',
+                _rupiah.format(_total),
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Theme.of(context).colorScheme.primary,

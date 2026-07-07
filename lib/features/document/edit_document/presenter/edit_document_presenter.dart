@@ -68,6 +68,8 @@ class EditDocPresenter {
     required String deadline,
     required String status,
     required String notes,
+    required double kesepakatanBiaya,
+    required String progressTerakhir,
     String? uangMukaTanggal,
     required double uangMukaJumlah,
     String? tambahanTanggal,
@@ -89,6 +91,8 @@ class EditDocPresenter {
         'deadline': deadline,
         'status': status,
         'notes': notes,
+        'kesepakatan_biaya': kesepakatanBiaya,
+        'progress_terakhir': progressTerakhir,
         'uang_muka_tanggal': uangMukaTanggal,
         'uang_muka_jumlah': uangMukaJumlah,
         'tambahan_tanggal': tambahanTanggal,
@@ -139,12 +143,24 @@ class EditDocPresenter {
   }
 
   Future<List<Map<String, dynamic>>> getDocumentTypes() async {
-    final response = await _supabase.from('document_types').select().order('name');
-    return List<Map<String, dynamic>>.from(response);
+    try {
+      final response =
+          await _supabase.from('document_types').select().order('name');
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      debugPrint('ERROR DOCUMENT TYPES: $e');
+      return [];
+    }
   }
 
   Future<List<Map<String, dynamic>>> getStaffs() async {
-    final response = await _supabase.from('staff').select('id, name').order('name');
-    return List<Map<String, dynamic>>.from(response);
+    try {
+      final response =
+          await _supabase.from('staff').select('id, name').order('name');
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      debugPrint('ERROR STAFF LIST: $e');
+      return [];
+    }
   }
 }

@@ -19,19 +19,19 @@ class DocumentModel {
   final String status;
   final String notes;
 
-  // Uang Masuk dari Pemohon
+  final double kesepakatanBiaya;
+  final String progressTerakhir;
+
   final String? uangMukaTanggal;
   final double uangMukaJumlah;
   final String? tambahanTanggal;
   final double tambahanJumlah;
 
-  // Uang Masuk dari Kas Besar
   final String? kasBesarTanggal;
   final double kasBesarJumlah;
 
   final String keteranganKeuangan;
 
-  // List dinamis
   final List<IncomeDetailModel> incomeDetails;
   final List<ExpenseModel> expenses;
 
@@ -47,6 +47,8 @@ class DocumentModel {
     required this.deadline,
     required this.status,
     required this.notes,
+    this.kesepakatanBiaya = 0,
+    this.progressTerakhir = '',
     this.uangMukaTanggal,
     this.uangMukaJumlah = 0,
     this.tambahanTanggal,
@@ -58,18 +60,14 @@ class DocumentModel {
     this.expenses = const [],
   });
 
-  // Total Uang Masuk dari Pemohon (Uang Muka + Tambahan)
   double get totalPemohon => uangMukaJumlah + tambahanJumlah;
 
-  // Total Rincian Uang Masuk (dari list dinamis)
   double get totalRincian =>
       incomeDetails.fold(0, (sum, item) => sum + item.amount);
 
-  // Total Pengeluaran (dari list dinamis)
   double get totalPengeluaran =>
       expenses.fold(0, (sum, item) => sum + item.amount);
 
-  // Sisa Kas = Total Pemohon + Kas Besar - Total Pengeluaran
   double get sisaKas => totalPemohon + kasBesarJumlah - totalPengeluaran;
 
   factory DocumentModel.fromMap(
@@ -89,6 +87,8 @@ class DocumentModel {
       deadline: map['deadline'] ?? '',
       status: map['status'] ?? 'Belum Diproses',
       notes: map['notes'] ?? '',
+      kesepakatanBiaya: (map['kesepakatan_biaya'] as num?)?.toDouble() ?? 0,
+      progressTerakhir: map['progress_terakhir'] ?? '',
       uangMukaTanggal: map['uang_muka_tanggal']?.toString(),
       uangMukaJumlah: (map['uang_muka_jumlah'] as num?)?.toDouble() ?? 0,
       tambahanTanggal: map['tambahan_tanggal']?.toString(),

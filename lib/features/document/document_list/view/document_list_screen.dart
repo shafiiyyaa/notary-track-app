@@ -10,10 +10,10 @@ class DocumentListScreen extends StatefulWidget {
   const DocumentListScreen({super.key});
 
   @override
-  State<DocumentListScreen> createState() => _DocumentListScreenState();
+  State<DocumentListScreen> createState() => DocumentListScreenState();
 }
 
-class _DocumentListScreenState extends State<DocumentListScreen>
+class DocumentListScreenState extends State<DocumentListScreen>
     implements DocumentListViewContract {
   late DocListPresenter _presenter;
   List<DocumentModel> _documentList = [];
@@ -23,6 +23,12 @@ class _DocumentListScreenState extends State<DocumentListScreen>
   void initState() {
     super.initState();
     _presenter = DocListPresenter(this);
+    _presenter.fetchAllDocuments();
+  }
+
+  // Dipanggil dari luar (misal dari MainNavigation lewat GlobalKey)
+  // untuk refresh data tanpa perlu keluar-masuk tab.
+  void refreshDocuments() {
     _presenter.fetchAllDocuments();
   }
 
@@ -79,12 +85,15 @@ class _DocumentListScreenState extends State<DocumentListScreen>
                               ),
                             ),
                           )
-                        : ListView.builder(
-                            itemCount: _documentList.length,
-                            itemBuilder: (context, index) {
-                              final doc = _documentList[index];
-                              return _buildDocCard(context, doc);
-                            },
+                        : RefreshIndicator(
+                            onRefresh: () => _presenter.fetchAllDocuments(),
+                            child: ListView.builder(
+                              itemCount: _documentList.length,
+                              itemBuilder: (context, index) {
+                                final doc = _documentList[index];
+                                return _buildDocCard(context, doc);
+                              },
+                            ),
                           ),
               )
             ],
@@ -108,7 +117,6 @@ class _DocumentListScreenState extends State<DocumentListScreen>
           ),
         );
 
-        // kalau dokumen dihapus di halaman detail, refresh list ini
         if (result == true) {
           _presenter.fetchAllDocuments();
         }

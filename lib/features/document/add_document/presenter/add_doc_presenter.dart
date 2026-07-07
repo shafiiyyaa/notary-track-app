@@ -15,6 +15,8 @@ class AddDocPresenter {
     required String deadline,
     required String staffId,
     required String note,
+    required double kesepakatanBiaya,
+    required String progressTerakhir,
     String? uangMukaTanggal,
     required double uangMukaJumlah,
     String? tambahanTanggal,
@@ -49,6 +51,8 @@ class AddDocPresenter {
             'notes': note,
             'status': 'Belum Diproses',
             'staff_id': staffId,
+            'kesepakatan_biaya': kesepakatanBiaya,
+            'progress_terakhir': progressTerakhir,
             'uang_muka_tanggal': uangMukaTanggal,
             'uang_muka_jumlah': uangMukaJumlah,
             'tambahan_tanggal': tambahanTanggal,
@@ -100,8 +104,7 @@ class AddDocPresenter {
 
   Future<List<Map<String, dynamic>>> getDocumentTypes() async {
     try {
-      final response =
-          await _supabase.from('document_types').select().order('name');
+      final response = await _supabase.from('document_types').select().order('name');
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       debugPrint('ERROR DOCUMENT TYPES: $e');
@@ -111,8 +114,7 @@ class AddDocPresenter {
 
   Future<List<Map<String, dynamic>>> getStaffList() async {
     try {
-      final response =
-          await _supabase.from('staff').select('id, name').order('name');
+      final response = await _supabase.from('staff').select('id, name').order('name');
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       debugPrint('ERROR STAFF LIST: $e');

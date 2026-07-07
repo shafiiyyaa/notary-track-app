@@ -14,9 +14,12 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
-  final List<Widget> _screens = [
+  final GlobalKey<DocumentListScreenState> _documentListKey =
+      GlobalKey<DocumentListScreenState>();
+
+  late final List<Widget> _screens = [
     const HomeScreen(),
-    const DocumentListScreen(),
+    DocumentListScreen(key: _documentListKey),
     const NotificationScreen(),
     const ProfileScreen(),
   ];
@@ -28,10 +31,15 @@ class _MainNavigationState extends State<MainNavigation> {
     return Scaffold(
       body: IndexedStack(index: _selectedIndex, children: _screens),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const AddDocumentScreen()),
-        ),
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddDocumentScreen()),
+          );
+          if (result == true) {
+            _documentListKey.currentState?.refreshDocuments();
+          }
+        },
         backgroundColor: primaryColor,
         shape: const CircleBorder(),
         child: const Icon(Icons.add, size: 36, color: Colors.white),
@@ -64,18 +72,8 @@ class _MainNavigationState extends State<MainNavigation> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            color: isSelected ? Colors.white : Colors.white70,
-            size: 26,
-          ),
-          Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? Colors.white : Colors.white70,
-              fontSize: 11,
-            ),
-          ),
+          Icon(icon, color: isSelected ? Colors.white : Colors.white70, size: 26),
+          Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.white70, fontSize: 11)),
         ],
       ),
     );
