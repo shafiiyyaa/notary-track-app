@@ -133,6 +133,13 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                       _buildItem(context, "Deadline", doc.deadline),
                       _buildItem(context, "Status", doc.status),
                       _buildItem(context, "Staff", doc.staffName),
+                      _buildItem(
+                        context,
+                        "Kesepakatan Biaya",
+                        doc.kesepakatanBiaya == 0
+                            ? '-'
+                            : _rupiah.format(doc.kesepakatanBiaya),
+                      ),
                       _buildItem(context, "Catatan", _notes),
                     ],
                   ),
@@ -150,6 +157,35 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
               ),
               const SizedBox(height: 15),
               _buildProgress(context, doc),
+
+              if (doc.progressTerakhir.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Progress Dokumen Terakhir",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        doc.progressTerakhir,
+                        style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
 
               const SizedBox(height: 30),
               Text(
@@ -278,7 +314,7 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 120,
+            width: 130,
             child: Text(title,
                 style: TextStyle(
                     fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
