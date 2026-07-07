@@ -1,5 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../document_list/model/document_model.dart';
+import '../../document_list/model/income_detail_model.dart';
+import '../../document_list/model/expense_model.dart';
 import '../view/detail_doc_view.dart';
 
 class DetailDocPresenter {
@@ -14,18 +17,37 @@ class DetailDocPresenter {
       final data = await _supabase
           .from('documents')
           .select('''
-        *,
-        document_types(name),
-        staff(name)
-      ''')
+            *,
+            document_types(name),
+            staff(name)
+          ''')
           .eq('id', id)
           .single();
 
-      final doc = DocumentModel.fromMap(data);
+      final incomeData =
+          await _supabase.from('document_income_details').select().eq('document_id', id);
+      final expenseData =
+          await _supabase.from('document_expenses').select().eq('document_id', id);
+
+      final incomeDetails = List<Map<String, dynamic>>.from(incomeData)
+          .map((m) => IncomeDetailModel.fromMap(m))
+          .toList();
+
+      final expenses = List<Map<String, dynamic>>.from(expenseData)
+          .map((m) => ExpenseModel.fromMap(m))
+          .toList();
+
+      final doc = DocumentModel.fromMap(
+        data,
+        incomeDetails: incomeDetails,
+        expenses: expenses,
+      );
+
       final notes = data['notes'] ?? '';
       _view.hideLoading();
       _view.onDocumentLoaded(doc, notes);
     } catch (e) {
+      debugPrint('ERROR FETCH DETAIL: $e');
       _view.hideLoading();
       _view.onDocumentError(e.toString());
     }
