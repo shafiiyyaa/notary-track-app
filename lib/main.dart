@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:notarytrackapp/features/onboarding/view/splash_screen.dart';
 import 'package:notarytrackapp/services/notification_service.dart';
 
-import 'theme/theme_provider.dart';
 import 'theme/app_theme.dart';
 
 void main() async {
@@ -20,16 +18,7 @@ void main() async {
   // Inisialisasi Notification
   await NotificationService.init();
 
-  // Load tema tersimpan SEBELUM runApp, biar nggak ada flicker light->dark
-  final themeProvider = ThemeProvider();
-  await themeProvider.initTheme();
-
-  runApp(
-    ChangeNotifierProvider.value(
-      value: themeProvider,
-      child: const NotaryTrackApp(),
-    ),
-  );
+  runApp(const NotaryTrackApp());
 }
 
 class NotaryTrackApp extends StatelessWidget {
@@ -37,17 +26,11 @@ class NotaryTrackApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return MaterialApp(
-          title: 'NotaryTrackApp',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
-          themeMode: themeProvider.themeMode,
-          home: const CustomSplashScreen(),
-        );
-      },
+    return MaterialApp(
+      title: 'NotaryTrackApp',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      home: const CustomSplashScreen(),
     );
   }
 }

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:provider/provider.dart';
-import '../../../theme/theme_provider.dart';
 import '../model/profile_model.dart';
 import '../presenter/profile.presenter.dart';
 import 'profile_view.dart';
@@ -110,8 +108,6 @@ class _ProfileScreenState extends State<ProfileScreen>
 
                       const SizedBox(height: 50),
 
-                      _buildThemeTile(context),
-
                       _menuTile(
                         context,
                         Icons.lock,
@@ -175,35 +171,6 @@ class _ProfileScreenState extends State<ProfileScreen>
         ),
         onTap: onTap,
       ),
-    );
-  }
-
-  Widget _buildThemeTile(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: SwitchListTile(
-            secondary: Icon(
-              themeProvider.isDark ? Icons.dark_mode : Icons.light_mode,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            title: Text(
-              "Dark Mode",
-              style: GoogleFonts.comfortaa(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).textTheme.bodyLarge?.color,
-              ),
-            ),
-            value: themeProvider.isDark,
-            onChanged: (_) => themeProvider.toggleTheme(),
-          ),
-        );
-      },
     );
   }
 }
