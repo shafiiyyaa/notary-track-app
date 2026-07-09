@@ -106,6 +106,8 @@ class DocumentListScreenState extends State<DocumentListScreen>
   Widget _buildDocCard(BuildContext context, DocumentModel doc) {
     Color statusColor = AppColors.statusBelumProses;
     if (doc.status == 'Diproses') statusColor = AppColors.statusDiproses;
+    if (doc.status == 'Tertunda') statusColor = AppColors.statusTertunda;
+    if (doc.status == 'Batal') statusColor = AppColors.statusBatal;
     if (doc.status == 'Selesai') statusColor = AppColors.statusSelesai;
 
     return GestureDetector(

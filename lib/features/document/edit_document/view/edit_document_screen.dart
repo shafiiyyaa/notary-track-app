@@ -288,6 +288,8 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                   DropdownMenuItem(value: "Belum Diproses", child: Text("Belum Diproses")),
                   DropdownMenuItem(value: "Diproses", child: Text("Diproses")),
                   DropdownMenuItem(value: "Selesai", child: Text("Selesai")),
+                  DropdownMenuItem(value: "Tertunda", child: Text("Tertunda")),
+                  DropdownMenuItem(value: "Batal", child: Text("Batal")),
                 ],
                 onChanged: (value) => setState(() => _selectedStatus = value),
               ),

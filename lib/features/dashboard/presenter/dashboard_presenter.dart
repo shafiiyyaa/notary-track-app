@@ -1,7 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../model/dashboard_model.dart';
 import '../view/dashboard_view.dart';
-import '../../notification/model/notification_model.dart';
 
 class HomePresenter {
   final HomeViewContract _view;
@@ -9,166 +9,124 @@ class HomePresenter {
 
   HomePresenter(this._view);
 
-  /// Mengambil ringkasan data dokumen untuk halaman Dashboard (Home)
-  Future<void> fetchDashboardSummary() async {
-  try {
-    final totalRes =
-        await _supabase
-            .from('documents')
-            .select('id');
-
-    final completedRes =
-        await _supabase
-            .from('documents')
-            .select('id')
-            .eq('status', 'Selesai');
-
-    final notifRes =
-        await _supabase
-            .from('documents')
-            .select('deadline');
-
-    int deadlineCount = 0;
-
-    final now = DateTime.now();
-
-    for (final item in notifRes) {
-      if (item['deadline'] == null) continue;
-
-      final deadline = DateTime.parse(item['deadline']);
-
-      final remain =
-          deadline.difference(now).inDays;
-
-      if (remain >= 0 && remain <= 7) {
-        deadlineCount++;
-      }
-    }
-
-    final deadlineRes = await _supabase
-    .from('documents')
-    .select('deadline');
-
-    int totalDeadline = 0;
-
-    for (final item in deadlineRes) {
-      final deadline = DateTime.parse(item['deadline']);
-
-      final remaining =
-          deadline.difference(DateTime.now()).inDays;
-
-      if (remaining >= 0 && remaining <= 7) {
-        totalDeadline++;
-      }
-    }
-
-    final summary = DashboardSummary(
-      totalDocuments: totalRes.length,
-      totalDeadlines: totalDeadline,
-      completedDocuments: completedRes.length,
-    );
-
-    _view.onSummaryLoaded(summary);
-  } catch (e) {
-    _view.onSummaryError(e.toString());
-  }
-}
-  Future<void> fetchDeadlineDocuments() async {
-  try {
-    final response = await _supabase
-        .from('documents')
-        .select('''
-          client_name,
-          deadline,
-          document_types(name)
-        ''')
-        .order('deadline');
-
-    List<DeadlineItem> deadlines = [];
-
-    for (final item in response) {
-      final deadline = DateTime.parse(item['deadline']);
-
-      final remaining =
-          deadline.difference(DateTime.now()).inDays;
-
-      if (remaining >= 0 && remaining <= 7) {
-        deadlines.add(
-          DeadlineItem(
-            clientName: item['client_name'],
-            documentType: item['document_types']['name'],
-            deadline: deadline,
-            remainingDays: remaining,
-          ),
-        );
-      }
-    }
-
-    _view.onDeadlineLoaded(deadlines);
-  } catch (e) {
-    print(e);
-  }
-}
   Future<void> fetchUser() async {
-  try {
-    final user = _supabase.auth.currentUser;
-
-    if (user == null) return;
-
-    final profile =
-        await _supabase
-            .from('profiles')
-            .select('username')
-            .eq('id', user.id)
-            .single();
-
-    _view.onUserLoaded(profile['username']);
-  } catch (e) {
-    _view.onUserLoaded("Admin");
-  }
-}
-Future<List<NotificationModel>> fetchUpcomingDeadlines() async {
-  try {
-    final response = await _supabase
-        .from('documents')
-        .select('''
-          client_name,
-          deadline,
-          document_types(name)
-        ''')
-        .order('deadline', ascending: true);
-
-    List<NotificationModel> list = [];
-
-    for (final item in response) {
-      if (item['deadline'] == null) continue;
-
-      final deadline = DateTime.parse(item['deadline']);
-
-      final remainingDays =
-          deadline.difference(DateTime.now()).inDays;
-
-      if (remainingDays >= 0 && remainingDays <= 7) {
-        list.add(
-          NotificationModel(
-            clientName: item['client_name'] ?? '',
-            documentType:
-                item['document_types']?['name'] ?? '',
-            deadline: deadline,
-            remainingDays: remainingDays,
-          ),
-        );
-      }
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) return;
+      final data = await _supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', user.id)
+          .single();
+      _view.onUserLoaded(data['username'] ?? 'Admin');
+    } catch (e) {
+      debugPrint('ERROR FETCH USER: $e');
     }
-
-    list.sort(
-      (a, b) =>
-          a.remainingDays.compareTo(b.remainingDays),
-    );
-
-    return list;
-  } catch (e) {
-    return [];
   }
-}
+
+  Future<void> fetchDashboardSummary() async {
+    try {
+      final data = await _supabase.from('documents').select('''
+            status,
+            deadline,
+            kesepakatan_biaya,
+            uang_muka_jumlah,
+            tambahan_jumlah,
+            document_types(name)
+          ''');
+
+      final docs = List<Map<String, dynamic>>.from(data);
+      final today = DateTime.now();
+
+      int aktif = 0, selesai = 0, tertunda = 0, batal = 0, terlambat = 0;
+      double totalNilaiJasa = 0, totalLunas = 0;
+      final statusComposition = <String, int>{};
+      final categoryComposition = <String, int>{};
+
+      for (final doc in docs) {
+        final status = doc['status'] ?? 'Belum Diproses';
+        statusComposition[status] = (statusComposition[status] ?? 0) + 1;
+
+        final typeName = doc['document_types']?['name'] ?? 'Lainnya';
+        categoryComposition[typeName] = (categoryComposition[typeName] ?? 0) + 1;
+
+        if (status == 'Diproses') aktif++;
+        if (status == 'Selesai') selesai++;
+        if (status == 'Tertunda') tertunda++;
+        if (status == 'Batal') batal++;
+
+        final kesepakatan = (doc['kesepakatan_biaya'] as num?)?.toDouble() ?? 0;
+        final uangMuka = (doc['uang_muka_jumlah'] as num?)?.toDouble() ?? 0;
+        final tambahan = (doc['tambahan_jumlah'] as num?)?.toDouble() ?? 0;
+        final totalMasukPemohon = uangMuka + tambahan;
+
+        totalNilaiJasa += kesepakatan;
+        if (kesepakatan > 0 && totalMasukPemohon >= kesepakatan) {
+          totalLunas += kesepakatan;
+        }
+
+        final deadlineStr = doc['deadline'];
+        if (deadlineStr != null && status != 'Selesai' && status != 'Batal') {
+          final deadlineDate = DateTime.tryParse(deadlineStr);
+          if (deadlineDate != null && deadlineDate.isBefore(today)) {
+            terlambat++;
+          }
+        }
+      }
+
+      final total = docs.length;
+      final progressPercent = total == 0 ? 0.0 : (selesai / total) * 100;
+
+      final summary = DashboardSummary(
+        totalDocuments: total,
+        aktif: aktif,
+        selesai: selesai,
+        tertunda: tertunda,
+        batal: batal,
+        terlambat: terlambat,
+        totalNilaiJasa: totalNilaiJasa,
+        totalLunas: totalLunas,
+        totalBelumLunas: totalNilaiJasa - totalLunas,
+        progressPercent: progressPercent,
+        statusComposition: statusComposition,
+        categoryComposition: categoryComposition,
+      );
+
+      _view.onSummaryLoaded(summary);
+    } catch (e) {
+      debugPrint('ERROR FETCH SUMMARY: $e');
+      _view.onSummaryError(e.toString());
+    }
+  }
+
+  Future<void> fetchDeadlineDocuments() async {
+    try {
+      final data = await _supabase
+          .from('documents')
+          .select('''
+            client_name,
+            deadline,
+            document_types(name)
+          ''')
+          .not('status', 'in', '("Selesai","Batal")')
+          .order('deadline', ascending: true)
+          .limit(5);
+
+      final today = DateTime.now();
+      final list = List<Map<String, dynamic>>.from(data).map((row) {
+        final deadline = DateTime.tryParse(row['deadline'] ?? '') ?? today;
+        final remaining = deadline.difference(DateTime(today.year, today.month, today.day)).inDays;
+        return DeadlineItem(
+          clientName: row['client_name'] ?? '',
+          documentType: row['document_types']?['name'] ?? '',
+          deadline: deadline,
+          remainingDays: remaining,
+        );
+      }).toList();
+
+      _view.onDeadlineLoaded(list);
+    } catch (e) {
+      debugPrint('ERROR FETCH DEADLINE: $e');
+    }
+  }
 }
