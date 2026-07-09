@@ -59,31 +59,20 @@ class _ProfileScreenState extends State<ProfileScreen>
                       Stack(
                         alignment: Alignment.bottomRight,
                         children: [
-                          const CircleAvatar(
+                          CircleAvatar(
                             radius: 70,
-                            backgroundImage: AssetImage(
-                              "assets/images/0e9da6a3619b0ce0eea22849978221c2.jpg",
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () {
-                              // Nanti di sini kita buka galeri HP
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primary,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.edit,
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            child: Padding(
+                              padding: const EdgeInsets.all(20),
+                              child: Image.asset(
+                                "assets/images/logo.png",
+                                fit: BoxFit.contain,
                                 color: Colors.white,
-                                size: 18,
                               ),
                             ),
                           ),
                         ],
-                      ),
+                      ),   
 
                       const SizedBox(height: 20),
 
