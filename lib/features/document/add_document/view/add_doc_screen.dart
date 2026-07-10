@@ -36,6 +36,9 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
   List<Map<String, dynamic>> _documentTypes = [];
   int? _selectedDocumentTypeId;
 
+  String? _selectedKategori;
+  final List<String> _kategoriList = ['Notaris', 'PPAT', 'Waarmerking', 'Legalisasi'];
+
   List<Map<String, dynamic>> _staffList = [];
   String? _selectedStaffId;
 
@@ -183,6 +186,21 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
                   fillColor: Theme.of(context).cardColor,
                   border: InputBorder.none,
                 ),
+              ),
+
+              _buildLabel(context, 'Kategori'),
+              DropdownButtonFormField<String>(
+                initialValue: _selectedKategori,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
+                  border: InputBorder.none,
+                ),
+                hint: const Text('Pilih kategori'),
+                items: _kategoriList
+                    .map((k) => DropdownMenuItem<String>(value: k, child: Text(k)))
+                    .toList(),
+                onChanged: (value) => setState(() => _selectedKategori = value),
               ),
 
               _buildLabel(context, 'Jenis Dokumen'),
@@ -422,6 +440,12 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
                   onPressed: _isLoading
                       ? null
                       : () {
+                          if (_selectedKategori == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Pilih kategori dulu')),
+                            );
+                            return;
+                          }
                           if (_selectedStaffId == null) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Pilih staff penanggung jawab dulu')),
@@ -433,6 +457,7 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
                             name: _nameController.text,
                             phone: _phoneController.text,
                             documentTypeId: _selectedDocumentTypeId!,
+                            kategori: _selectedKategori!,
                             deadline: _deadlineController.text,
                             staffId: _selectedStaffId!,
                             note: _noteController.text,

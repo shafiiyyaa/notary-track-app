@@ -129,6 +129,7 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
+                      _buildItem(context, "Kategori", doc.kategori.isEmpty ? '-' : doc.kategori),
                       _buildItem(context, "Nama Klien", doc.clientName),
                       _buildItem(context, "Deadline", doc.deadline),
                       _buildItem(context, "Status", doc.status),

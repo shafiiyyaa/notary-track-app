@@ -40,6 +40,9 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   List<Map<String, dynamic>> _documentTypes = [];
   int? _selectedDocumentTypeId;
 
+  String? _selectedKategori;
+  final List<String> _kategoriList = ['Notaris', 'PPAT', 'Waarmerking', 'Legalisasi'];
+
   bool _isLoading = false;
   List<Map<String, dynamic>> _staffs = [];
   String? _selectedStaffId;
@@ -158,6 +161,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         .toList();
 
     _selectedDocumentTypeId = document.documentTypeId;
+    _selectedKategori = document.kategori.isNotEmpty ? document.kategori : null;
     _selectedStaffId = document.staffId;
     _selectedStatus = document.status;
     _financialLoaded = true;
@@ -241,6 +245,21 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                 ),
               ),
 
+              _buildLabel(context, 'Kategori'),
+              DropdownButtonFormField<String>(
+                initialValue: _selectedKategori,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
+                  border: InputBorder.none,
+                ),
+                hint: const Text('Pilih kategori'),
+                items: _kategoriList
+                    .map((k) => DropdownMenuItem<String>(value: k, child: Text(k)))
+                    .toList(),
+                onChanged: (value) => setState(() => _selectedKategori = value),
+              ),
+
               _buildLabel(context, 'Jenis Dokumen'),
               DropdownButtonFormField<int>(
                 initialValue: _selectedDocumentTypeId,
@@ -287,9 +306,9 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                 items: const [
                   DropdownMenuItem(value: "Belum Diproses", child: Text("Belum Diproses")),
                   DropdownMenuItem(value: "Diproses", child: Text("Diproses")),
-                  DropdownMenuItem(value: "Selesai", child: Text("Selesai")),
                   DropdownMenuItem(value: "Tertunda", child: Text("Tertunda")),
                   DropdownMenuItem(value: "Batal", child: Text("Batal")),
+                  DropdownMenuItem(value: "Selesai", child: Text("Selesai")),
                 ],
                 onChanged: (value) => setState(() => _selectedStatus = value),
               ),
@@ -503,6 +522,12 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                             );
                             return;
                           }
+                          if (_selectedKategori == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Pilih kategori dulu')),
+                            );
+                            return;
+                          }
                           if (_selectedStaffId == null) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Pilih staff penanggung jawab dulu')),
@@ -521,6 +546,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                             clientName: _nameController.text,
                             phone: _phoneController.text,
                             documentTypeId: _selectedDocumentTypeId!,
+                            kategori: _selectedKategori!,
                             staffId: _selectedStaffId!,
                             deadline: _deadlineController.text,
                             status: _selectedStatus!,

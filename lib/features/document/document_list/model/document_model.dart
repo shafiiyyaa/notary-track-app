@@ -10,6 +10,8 @@ class DocumentModel {
   final int documentTypeId;
   final String docType;
 
+  final String kategori;
+
   final String staffId;
   final String staffName;
 
@@ -41,6 +43,7 @@ class DocumentModel {
     required this.phone,
     required this.documentTypeId,
     required this.docType,
+    this.kategori = '',
     required this.staffId,
     required this.staffName,
     required this.dateIn,
@@ -81,6 +84,7 @@ class DocumentModel {
       phone: map['phone'] ?? '',
       documentTypeId: map['document_type_id'],
       docType: map['document_types']?['name'] ?? '',
+      kategori: map['kategori'] ?? '',
       staffId: map['staff_id'] ?? '',
       staffName: map['staff']?['name'] ?? '-',
       dateIn: map['created_at']?.toString().substring(0, 10) ?? '',
