@@ -6,6 +6,7 @@ import '../presenter/profile.presenter.dart';
 import 'profile_view.dart';
 import '../about_app/view/about_app_screen.dart';
 import '../../auth/login/view/login_screen.dart';
+import '../../notification/view/notification_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -97,6 +98,18 @@ class _ProfileScreenState extends State<ProfileScreen>
 
                       const SizedBox(height: 50),
 
+                      _menuTile(
+                        context,
+                        Icons.notifications_outlined,
+                        "Notifikasi",
+                        () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const NotificationScreen()),
+                          );
+                        },
+                      ),
+                      
                       _menuTile(
                         context,
                         Icons.lock,

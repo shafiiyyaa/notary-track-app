@@ -31,16 +31,28 @@ class DashboardSummary {
   });
 }
 
-class DeadlineItem {
+class PriorityDeadlineItem {
   final String clientName;
   final String documentType;
   final DateTime deadline;
   final int remainingDays;
 
-  DeadlineItem({
+  PriorityDeadlineItem({
     required this.clientName,
     required this.documentType,
     required this.deadline,
     required this.remainingDays,
+  });
+}
+
+class UnpaidItem {
+  final String clientName;
+  final String documentType;
+  final double sisaTagihan;
+
+  UnpaidItem({
+    required this.clientName,
+    required this.documentType,
+    required this.sisaTagihan,
   });
 }

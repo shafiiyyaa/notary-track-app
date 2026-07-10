@@ -9,21 +9,6 @@ class HomePresenter {
 
   HomePresenter(this._view);
 
-  Future<void> fetchUser() async {
-    try {
-      final user = _supabase.auth.currentUser;
-      if (user == null) return;
-      final data = await _supabase
-          .from('profiles')
-          .select('username')
-          .eq('id', user.id)
-          .single();
-      _view.onUserLoaded(data['username'] ?? 'Admin');
-    } catch (e) {
-      debugPrint('ERROR FETCH USER: $e');
-    }
-  }
-
   Future<void> fetchDashboardSummary() async {
     try {
       final data = await _supabase.from('documents').select('''
@@ -99,34 +84,72 @@ class HomePresenter {
     }
   }
 
-  Future<void> fetchDeadlineDocuments() async {
+  Future<void> fetchPriorityData() async {
     try {
-      final data = await _supabase
-          .from('documents')
-          .select('''
+      final data = await _supabase.from('documents').select('''
             client_name,
             deadline,
+            status,
+            kesepakatan_biaya,
+            uang_muka_jumlah,
+            tambahan_jumlah,
             document_types(name)
-          ''')
-          .not('status', 'in', '("Selesai","Batal")')
-          .order('deadline', ascending: true)
-          .limit(5);
+          ''');
 
-      final today = DateTime.now();
-      final list = List<Map<String, dynamic>>.from(data).map((row) {
-        final deadline = DateTime.tryParse(row['deadline'] ?? '') ?? today;
-        final remaining = deadline.difference(DateTime(today.year, today.month, today.day)).inDays;
-        return DeadlineItem(
-          clientName: row['client_name'] ?? '',
-          documentType: row['document_types']?['name'] ?? '',
-          deadline: deadline,
-          remainingDays: remaining,
-        );
-      }).toList();
+      final docs = List<Map<String, dynamic>>.from(data);
+      final now = DateTime.now();
+      final todayDate = DateTime(now.year, now.month, now.day);
 
-      _view.onDeadlineLoaded(list);
+      final mendekati = <PriorityDeadlineItem>[];
+      final terlambat = <PriorityDeadlineItem>[];
+      final belumLunas = <UnpaidItem>[];
+
+      for (final doc in docs) {
+        final status = doc['status'] ?? 'Belum Diproses';
+        final typeName = doc['document_types']?['name'] ?? '-';
+        final clientName = doc['client_name'] ?? '-';
+
+        if (status != 'Selesai' && status != 'Batal') {
+          final deadlineStr = doc['deadline'];
+          if (deadlineStr != null) {
+            final deadlineDate = DateTime.tryParse(deadlineStr);
+            if (deadlineDate != null) {
+              final remaining = deadlineDate.difference(todayDate).inDays;
+              final item = PriorityDeadlineItem(
+                clientName: clientName,
+                documentType: typeName,
+                deadline: deadlineDate,
+                remainingDays: remaining,
+              );
+              if (remaining < 0) {
+                terlambat.add(item);
+              } else if (remaining <= 14) {
+                mendekati.add(item);
+              }
+            }
+          }
+        }
+
+        final kesepakatan = (doc['kesepakatan_biaya'] as num?)?.toDouble() ?? 0;
+        final uangMuka = (doc['uang_muka_jumlah'] as num?)?.toDouble() ?? 0;
+        final tambahan = (doc['tambahan_jumlah'] as num?)?.toDouble() ?? 0;
+        final totalMasuk = uangMuka + tambahan;
+
+        if (kesepakatan > 0 && totalMasuk < kesepakatan) {
+          belumLunas.add(UnpaidItem(
+            clientName: clientName,
+            documentType: typeName,
+            sisaTagihan: kesepakatan - totalMasuk,
+          ));
+        }
+      }
+
+      mendekati.sort((a, b) => a.remainingDays.compareTo(b.remainingDays));
+      terlambat.sort((a, b) => a.remainingDays.compareTo(b.remainingDays));
+
+      _view.onPriorityLoaded(mendekati, terlambat, belumLunas);
     } catch (e) {
-      debugPrint('ERROR FETCH DEADLINE: $e');
+      debugPrint('ERROR FETCH PRIORITY: $e');
     }
   }
 }

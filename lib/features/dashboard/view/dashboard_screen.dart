@@ -6,7 +6,6 @@ import '../../../../constants/constants.dart';
 import '../model/dashboard_model.dart';
 import '../presenter/dashboard_presenter.dart';
 import 'dashboard_view.dart';
-import '../../profile/view/profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,9 +16,10 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
   late HomePresenter _presenter;
-  String _username = "Admin";
   DashboardSummary? _summary;
-  List<DeadlineItem> _deadlineList = [];
+  List<PriorityDeadlineItem> _mendekati = [];
+  List<PriorityDeadlineItem> _terlambatList = [];
+  List<UnpaidItem> _belumLunasList = [];
   final _rupiah = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
 
   @override
@@ -27,19 +27,24 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
     super.initState();
     _presenter = HomePresenter(this);
     _presenter.fetchDashboardSummary();
-    _presenter.fetchDeadlineDocuments();
-    _presenter.fetchUser();
+    _presenter.fetchPriorityData();
   }
-
-  @override
-  void onUserLoaded(String username) => setState(() => _username = username);
 
   @override
   void onSummaryLoaded(DashboardSummary summary) => setState(() => _summary = summary);
 
   @override
-  void onDeadlineLoaded(List<DeadlineItem> deadlines) =>
-      setState(() => _deadlineList = deadlines);
+  void onPriorityLoaded(
+    List<PriorityDeadlineItem> mendekati,
+    List<PriorityDeadlineItem> terlambat,
+    List<UnpaidItem> belumLunas,
+  ) {
+    setState(() {
+      _mendekati = mendekati;
+      _terlambatList = terlambat;
+      _belumLunasList = belumLunas;
+    });
+  }
 
   @override
   void onSummaryError(String message) {}
@@ -62,7 +67,7 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildHeader(context),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 18),
                         isWide
                             ? _buildWideLayout(context, summary)
                             : _buildNarrowLayout(context, summary),
@@ -77,88 +82,72 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Halo,  $_username!',
-              style: GoogleFonts.comfortaa(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).textTheme.titleLarge?.color,
-              ),
+    final today = DateFormat('dd/MM/yyyy').format(DateTime.now());
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "SAPTADI SETYA NUGRAHA, S.H., M.M., M.Kn.",
+            style: GoogleFonts.comfortaa(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Monitoring Pekerjaan Kantor Notaris/PPAT',
-              style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
-              ),
-            ),
-          ],
-        ),
-        GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ProfileScreen()),
-            ).then((_) => _presenter.fetchUser());
-          },
-          child: CircleAvatar(
-            radius: 20,
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            child: const Icon(Icons.person, color: Colors.white, size: 20),
           ),
-        ),
-      ],
+          const SizedBox(height: 4),
+          Text(
+            "Monitoring Pekerjaan Kantor Notaris/PPAT — $today",
+            style: const TextStyle(fontSize: 11, color: Colors.white70),
+          ),
+        ],
+      ),
     );
   }
 
-  // Layout HP: semua ditumpuk vertikal
   Widget _buildNarrowLayout(BuildContext context, DashboardSummary summary) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildStatGrid(context, summary, crossAxisCount: 2),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
         _buildFinanceSection(context, summary),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
         _buildStatisticSection(context, summary),
-        const SizedBox(height: 24),
-        _buildDeadlineSection(context),
+        const SizedBox(height: 20),
+        _buildPrioritySection(context),
       ],
     );
   }
 
-  // Layout web/tablet lebar: 2 kolom sejajar
   Widget _buildWideLayout(BuildContext context, DashboardSummary summary) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          flex: 1,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildStatGrid(context, summary, crossAxisCount: 3),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
               _buildFinanceSection(context, summary),
             ],
           ),
         ),
-        const SizedBox(width: 20),
+        const SizedBox(width: 16),
         Expanded(
-          flex: 1,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildStatisticSection(context, summary),
-              const SizedBox(height: 24),
-              _buildDeadlineSection(context),
+              const SizedBox(height: 20),
+              _buildPrioritySection(context),
             ],
           ),
         ),
@@ -171,9 +160,9 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisCount: crossAxisCount,
-      crossAxisSpacing: 10,
-      mainAxisSpacing: 10,
-      childAspectRatio: 2.1,
+      crossAxisSpacing: 8,
+      mainAxisSpacing: 8,
+      childAspectRatio: 2.6,
       children: [
         _statCard(context, "Total Masuk", "${summary.totalDocuments}",
             Icons.inbox_outlined, Theme.of(context).colorScheme.primary),
@@ -195,28 +184,19 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          "Keuangan & Progress",
-          style: GoogleFonts.comfortaa(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).textTheme.titleLarge?.color,
-          ),
-        ),
-        const SizedBox(height: 10),
-        _financeCard(context, "Total Nilai Jasa", summary.totalNilaiJasa,
-            Theme.of(context).colorScheme.primary),
+        Text("Keuangan & Progress",
+            style: GoogleFonts.comfortaa(
+                fontSize: 15, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.titleLarge?.color)),
         const SizedBox(height: 8),
+        _financeCard(context, "Total Nilai Jasa", summary.totalNilaiJasa, Theme.of(context).colorScheme.primary),
+        const SizedBox(height: 6),
         _financeCard(context, "Lunas", summary.totalLunas, AppColors.statusSelesai),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         _financeCard(context, "Belum Lunas", summary.totalBelumLunas, AppColors.statusBelumProses),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(14),
-          ),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(12)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -225,21 +205,19 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
                 children: [
                   Text("Progress Keseluruhan",
                       style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 12,
                           fontWeight: FontWeight.bold,
                           color: Theme.of(context).textTheme.bodyLarge?.color)),
                   Text("${summary.progressPercent.toStringAsFixed(0)}%",
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary)),
+                      style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: LinearProgressIndicator(
                   value: summary.progressPercent / 100,
-                  minHeight: 8,
+                  minHeight: 7,
                   backgroundColor: Theme.of(context).dividerColor,
                   color: Theme.of(context).colorScheme.primary,
                 ),
@@ -255,64 +233,114 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          "Statistik",
-          style: GoogleFonts.comfortaa(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).textTheme.titleLarge?.color,
-          ),
-        ),
-        const SizedBox(height: 10),
+        Text("Statistik",
+            style: GoogleFonts.comfortaa(
+                fontSize: 15, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.titleLarge?.color)),
+        const SizedBox(height: 8),
         _buildStatusPieChart(context, summary),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
         _buildCategoryBarChart(context, summary),
       ],
     );
   }
 
-  Widget _buildDeadlineSection(BuildContext context) {
+  Widget _buildPrioritySection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Deadline Mendatang',
-          style: GoogleFonts.comfortaa(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).textTheme.titleLarge?.color,
-          ),
+        Text("Prioritas & Perhatian",
+            style: GoogleFonts.comfortaa(
+                fontSize: 15, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.titleLarge?.color)),
+        const SizedBox(height: 8),
+        _priorityCard(
+          context,
+          "Mendekati Deadline (≤14 hari)",
+          Icons.calendar_today,
+          AppColors.statusDiproses,
+          _mendekati.isEmpty
+              ? null
+              : _mendekati
+                  .map((e) => "${e.clientName} • ${e.documentType} • ${e.remainingDays} hari lagi")
+                  .toList(),
         ),
         const SizedBox(height: 10),
-        if (_deadlineList.isEmpty)
-          Text(
-            'Tidak ada deadline mendatang',
-            style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6)),
-          )
-        else
-          ..._deadlineList.map((item) => _buildDeadlineItem(
-                context,
-                item.clientName,
-                item.remainingDays < 0
-                    ? "Terlambat ${item.remainingDays.abs()} Hari (${item.documentType})"
-                    : item.remainingDays == 0
-                        ? "Deadline Hari Ini (${item.documentType})"
-                        : item.remainingDays == 1
-                            ? "Deadline Besok (${item.documentType})"
-                            : "Deadline ${item.remainingDays} Hari Lagi (${item.documentType})",
-                "${item.deadline.day}/${item.deadline.month}/${item.deadline.year}",
-              )),
+        _priorityCard(
+          context,
+          "Terlambat",
+          Icons.error_outline,
+          AppColors.statusBelumProses,
+          _terlambatList.isEmpty
+              ? null
+              : _terlambatList
+                  .map((e) => "${e.clientName} • ${e.documentType} • ${e.remainingDays.abs()} hari lewat")
+                  .toList(),
+        ),
+        const SizedBox(height: 10),
+        _priorityCard(
+          context,
+          "Belum Lunas",
+          Icons.attach_money,
+          AppColors.statusTertunda,
+          _belumLunasList.isEmpty
+              ? null
+              : _belumLunasList
+                  .map((e) => "${e.clientName} • ${e.documentType} • ${_rupiah.format(e.sisaTagihan)}")
+                  .toList(),
+        ),
       ],
+    );
+  }
+
+  Widget _priorityCard(
+    BuildContext context,
+    String title,
+    IconData icon,
+    Color accent,
+    List<String>? items,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(14)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 16, color: accent),
+              const SizedBox(width: 6),
+              Text(title,
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).textTheme.bodyLarge?.color)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (items == null)
+            Text("Tidak ada 🎉",
+                style: TextStyle(
+                    fontSize: 12, color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6)))
+          else
+            ...items.map(
+              (t) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text("• $t",
+                    style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodyLarge?.color)),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
   Widget _statCard(BuildContext context, String title, String value, IconData icon, Color accent) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border(left: BorderSide(color: accent, width: 4)),
+        borderRadius: BorderRadius.circular(10),
+        border: Border(left: BorderSide(color: accent, width: 3)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -321,26 +349,15 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).textTheme.bodyMedium?.color,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).textTheme.bodyLarge?.color,
-                ),
-              ),
+              Text(title,
+                  style: TextStyle(
+                      fontSize: 9, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyMedium?.color)),
+              Text(value,
+                  style: TextStyle(
+                      fontSize: 17, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
             ],
           ),
-          Icon(icon, size: 16, color: accent),
+          Icon(icon, size: 14, color: accent),
         ],
       ),
     );
@@ -348,22 +365,19 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
 
   Widget _financeCard(BuildContext context, String title, double value, Color accent) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border(left: BorderSide(color: accent, width: 4)),
+        borderRadius: BorderRadius.circular(10),
+        border: Border(left: BorderSide(color: accent, width: 3)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(title,
               style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).textTheme.bodyMedium?.color)),
-          Text(_rupiah.format(value),
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: accent)),
+                  fontSize: 12, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyMedium?.color)),
+          Text(_rupiah.format(value), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: accent)),
         ],
       ),
     );
@@ -385,51 +399,46 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
     final entries = summary.statusComposition.entries.toList();
 
     return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(14),
-      ),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(14)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text("Komposisi Status",
               style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).textTheme.bodyLarge?.color)),
-          const SizedBox(height: 12),
+                  fontSize: 12, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
+          const SizedBox(height: 10),
           SizedBox(
-            height: 150,
+            height: 130,
             child: PieChart(
               PieChartData(
                 sectionsSpace: 2,
-                centerSpaceRadius: 32,
+                centerSpaceRadius: 28,
                 sections: entries.map((e) {
                   final color = colorMap[e.key] ?? Colors.grey;
                   return PieChartSectionData(
                     value: e.value.toDouble(),
                     color: color,
                     title: '${e.value}',
-                    radius: 45,
-                    titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
+                    radius: 38,
+                    titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10),
                   );
                 }).toList(),
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Wrap(
-            spacing: 10,
-            runSpacing: 6,
+            spacing: 8,
+            runSpacing: 5,
             children: entries.map((e) {
               final color = colorMap[e.key] ?? Colors.grey;
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-                  const SizedBox(width: 5),
-                  Text(e.key, style: TextStyle(fontSize: 11, color: Theme.of(context).textTheme.bodyMedium?.color)),
+                  Container(width: 7, height: 7, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+                  const SizedBox(width: 4),
+                  Text(e.key, style: TextStyle(fontSize: 10, color: Theme.of(context).textTheme.bodyMedium?.color)),
                 ],
               );
             }).toList(),
@@ -441,33 +450,26 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
 
   Widget _buildCategoryBarChart(BuildContext context, DashboardSummary summary) {
     if (summary.categoryComposition.isEmpty) {
-      return _emptyChartBox(context, "Pekerjaan per Kategori");
+      return _emptyChartBox(context, "Pekerjaan per Jenis Dokumen");
     }
 
     final entries = summary.categoryComposition.entries.toList();
     final maxCount = entries.map((e) => e.value).reduce((a, b) => a > b ? a : b);
-
-    // Interval sumbu Y dipaksa bilangan bulat, biar nggak muncul 0.5 / 1.5
     final interval = maxCount <= 5 ? 1.0 : (maxCount / 5).ceilToDouble();
     final maxY = ((maxCount / interval).ceil() * interval) + interval;
 
     return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(14),
-      ),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(14)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Pekerjaan per Kategori",
+          Text("Pekerjaan per Jenis Dokumen",
               style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).textTheme.bodyLarge?.color)),
-          const SizedBox(height: 12),
+                  fontSize: 12, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
+          const SizedBox(height: 10),
           SizedBox(
-            height: 170,
+            height: 150,
             child: BarChart(
               BarChartData(
                 maxY: maxY,
@@ -477,14 +479,12 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 24,
+                      reservedSize: 22,
                       interval: interval,
                       getTitlesWidget: (value, meta) {
                         if (value % interval != 0) return const SizedBox();
-                        return Text(
-                          value.toInt().toString(),
-                          style: TextStyle(fontSize: 10, color: Theme.of(context).textTheme.bodyMedium?.color),
-                        );
+                        return Text(value.toInt().toString(),
+                            style: TextStyle(fontSize: 9, color: Theme.of(context).textTheme.bodyMedium?.color));
                       },
                     ),
                   ),
@@ -497,11 +497,9 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
                         final index = value.toInt();
                         if (index < 0 || index >= entries.length) return const SizedBox();
                         return Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: Text(
-                            entries[index].key,
-                            style: TextStyle(fontSize: 9, color: Theme.of(context).textTheme.bodyMedium?.color),
-                          ),
+                          padding: const EdgeInsets.only(top: 5),
+                          child: Text(entries[index].key,
+                              style: TextStyle(fontSize: 8, color: Theme.of(context).textTheme.bodyMedium?.color)),
                         );
                       },
                     ),
@@ -512,23 +510,18 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
                   show: true,
                   horizontalInterval: interval,
                   drawVerticalLine: false,
-                  getDrawingHorizontalLine: (value) => FlLine(
-                    color: Theme.of(context).dividerColor,
-                    strokeWidth: 1,
-                  ),
+                  getDrawingHorizontalLine: (value) =>
+                      FlLine(color: Theme.of(context).dividerColor, strokeWidth: 1),
                 ),
                 barGroups: List.generate(entries.length, (i) {
-                  return BarChartGroupData(
-                    x: i,
-                    barRods: [
-                      BarChartRodData(
-                        toY: entries[i].value.toDouble(),
-                        color: Theme.of(context).colorScheme.primary,
-                        width: 18,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ],
-                  );
+                  return BarChartGroupData(x: i, barRods: [
+                    BarChartRodData(
+                      toY: entries[i].value.toDouble(),
+                      color: Theme.of(context).colorScheme.primary,
+                      width: 16,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ]);
                 }),
               ),
             ),
@@ -540,60 +533,19 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
 
   Widget _emptyChartBox(BuildContext context, String title) {
     return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(14),
-      ),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(14)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title,
               style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).textTheme.bodyLarge?.color)),
-          const SizedBox(height: 16),
+                  fontSize: 12, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
+          const SizedBox(height: 14),
           Center(
-            child: Text('Belum ada data',
-                style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.5))),
-          ),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDeadlineItem(BuildContext context, String title, String desc, String date) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          Container(width: 5, height: 34, color: AppColors.statusBelumProses),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).textTheme.bodyLarge?.color)),
-                Text(desc,
-                    style: TextStyle(
-                        color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6), fontSize: 11)),
-              ],
-            ),
-          ),
-          Text(date,
-              style: const TextStyle(
-                  color: AppColors.statusBelumProses, fontWeight: FontWeight.bold, fontSize: 11)),
+              child: Text('Belum ada data',
+                  style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.5)))),
+          const SizedBox(height: 14),
         ],
       ),
     );
