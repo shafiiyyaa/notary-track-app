@@ -20,18 +20,36 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
   List<PriorityDeadlineItem> _mendekati = [];
   List<PriorityDeadlineItem> _terlambatList = [];
   List<UnpaidItem> _belumLunasList = [];
-  final _rupiah = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+  bool _isRefreshing = false;
+  final _rupiah = NumberFormat.currency(
+    locale: 'id_ID',
+    symbol: 'Rp ',
+    decimalDigits: 0,
+  );
 
   @override
   void initState() {
     super.initState();
     _presenter = HomePresenter(this);
+    _loadData();
+  }
+
+  void _loadData() {
     _presenter.fetchDashboardSummary();
     _presenter.fetchPriorityData();
   }
 
+  Future<void> _handleRefresh() async {
+    setState(() => _isRefreshing = true);
+    _loadData();
+    // beri jeda kecil biar animasi ikon refresh kelihatan, bukan cuma kedip
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (mounted) setState(() => _isRefreshing = false);
+  }
+
   @override
-  void onSummaryLoaded(DashboardSummary summary) => setState(() => _summary = summary);
+  void onSummaryLoaded(DashboardSummary summary) =>
+      setState(() => _summary = summary);
 
   @override
   void onPriorityLoaded(
@@ -85,26 +103,59 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
     final today = DateFormat('dd/MM/yyyy').format(DateTime.now());
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primary,
         borderRadius: BorderRadius.circular(14),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Text(
-            "SAPTADI SETYA NUGRAHA, S.H., M.M., M.Kn.",
-            style: GoogleFonts.comfortaa(
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
+          Container(
+            width: 42,
+            height: 42,
+            decoration: const BoxDecoration(
               color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            padding: const EdgeInsets.all(6),
+            child: Image.asset(
+              "assets/images/logo notaris.png",
+              fit: BoxFit.contain,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            "Monitoring Pekerjaan Kantor Notaris/PPAT — $today",
-            style: const TextStyle(fontSize: 11, color: Colors.white70),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "SAPTADI SETYA NUGRAHA, S.H., M.M., M.Kn.",
+                  style: GoogleFonts.comfortaa(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  "Monitoring Pekerjaan Kantor Notaris/PPAT — $today",
+                  style: const TextStyle(fontSize: 10, color: Colors.white70),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: _isRefreshing ? null : _handleRefresh,
+            icon: _isRefreshing
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.refresh, color: Colors.white),
           ),
         ],
       ),
@@ -155,7 +206,11 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
     );
   }
 
-  Widget _buildStatGrid(BuildContext context, DashboardSummary summary, {required int crossAxisCount}) {
+  Widget _buildStatGrid(
+    BuildContext context,
+    DashboardSummary summary, {
+    required int crossAxisCount,
+  }) {
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -164,18 +219,48 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
       mainAxisSpacing: 8,
       childAspectRatio: 2.6,
       children: [
-        _statCard(context, "Total Masuk", "${summary.totalDocuments}",
-            Icons.inbox_outlined, Theme.of(context).colorScheme.primary),
-        _statCard(context, "Aktif", "${summary.aktif}",
-            Icons.settings_outlined, AppColors.statusDiproses),
-        _statCard(context, "Selesai", "${summary.selesai}",
-            Icons.check_circle_outline, AppColors.statusSelesai),
-        _statCard(context, "Tertunda", "${summary.tertunda}",
-            Icons.pause_circle_outline, AppColors.statusTertunda),
-        _statCard(context, "Batal", "${summary.batal}",
-            Icons.cancel_outlined, AppColors.statusBatal),
-        _statCard(context, "Terlambat", "${summary.terlambat}",
-            Icons.error_outline, AppColors.statusBelumProses),
+        _statCard(
+          context,
+          "Total Masuk",
+          "${summary.totalDocuments}",
+          Icons.inbox_outlined,
+          Theme.of(context).colorScheme.primary,
+        ),
+        _statCard(
+          context,
+          "Aktif",
+          "${summary.aktif}",
+          Icons.settings_outlined,
+          AppColors.statusDiproses,
+        ),
+        _statCard(
+          context,
+          "Selesai",
+          "${summary.selesai}",
+          Icons.check_circle_outline,
+          AppColors.statusSelesai,
+        ),
+        _statCard(
+          context,
+          "Tertunda",
+          "${summary.tertunda}",
+          Icons.pause_circle_outline,
+          AppColors.statusTertunda,
+        ),
+        _statCard(
+          context,
+          "Batal",
+          "${summary.batal}",
+          Icons.cancel_outlined,
+          AppColors.statusBatal,
+        ),
+        _statCard(
+          context,
+          "Terlambat",
+          "${summary.terlambat}",
+          Icons.error_outline,
+          AppColors.statusBelumProses,
+        ),
       ],
     );
   }
@@ -184,32 +269,63 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("Keuangan & Progress",
-            style: GoogleFonts.comfortaa(
-                fontSize: 15, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.titleLarge?.color)),
+        Text(
+          "Keuangan & Progress",
+          style: GoogleFonts.comfortaa(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).textTheme.titleLarge?.color,
+          ),
+        ),
         const SizedBox(height: 8),
-        _financeCard(context, "Total Nilai Jasa", summary.totalNilaiJasa, Theme.of(context).colorScheme.primary),
+        _financeCard(
+          context,
+          "Total Nilai Jasa",
+          summary.totalNilaiJasa,
+          Theme.of(context).colorScheme.primary,
+        ),
         const SizedBox(height: 6),
-        _financeCard(context, "Lunas", summary.totalLunas, AppColors.statusSelesai),
+        _financeCard(
+          context,
+          "Lunas",
+          summary.totalLunas,
+          AppColors.statusSelesai,
+        ),
         const SizedBox(height: 6),
-        _financeCard(context, "Belum Lunas", summary.totalBelumLunas, AppColors.statusBelumProses),
+        _financeCard(
+          context,
+          "Belum Lunas",
+          summary.totalBelumLunas,
+          AppColors.statusBelumProses,
+        ),
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(12)),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text("Progress Keseluruhan",
-                      style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).textTheme.bodyLarge?.color)),
-                  Text("${summary.progressPercent.toStringAsFixed(0)}%",
-                      style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+                  Text(
+                    "Progress Keseluruhan",
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                    ),
+                  ),
+                  Text(
+                    "${summary.progressPercent.toStringAsFixed(0)}%",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 6),
@@ -229,13 +345,21 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
     );
   }
 
-  Widget _buildStatisticSection(BuildContext context, DashboardSummary summary) {
+  Widget _buildStatisticSection(
+    BuildContext context,
+    DashboardSummary summary,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("Statistik",
-            style: GoogleFonts.comfortaa(
-                fontSize: 15, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.titleLarge?.color)),
+        Text(
+          "Statistik",
+          style: GoogleFonts.comfortaa(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).textTheme.titleLarge?.color,
+          ),
+        ),
         const SizedBox(height: 8),
         _buildStatusPieChart(context, summary),
         const SizedBox(height: 14),
@@ -248,9 +372,14 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("Prioritas & Perhatian",
-            style: GoogleFonts.comfortaa(
-                fontSize: 15, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.titleLarge?.color)),
+        Text(
+          "Prioritas & Perhatian",
+          style: GoogleFonts.comfortaa(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).textTheme.titleLarge?.color,
+          ),
+        ),
         const SizedBox(height: 8),
         _priorityCard(
           context,
@@ -260,8 +389,11 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
           _mendekati.isEmpty
               ? null
               : _mendekati
-                  .map((e) => "${e.clientName} • ${e.documentType} • ${e.remainingDays} hari lagi")
-                  .toList(),
+                    .map(
+                      (e) =>
+                          "${e.clientName} • ${e.documentType} • ${e.remainingDays} hari lagi",
+                    )
+                    .toList(),
         ),
         const SizedBox(height: 10),
         _priorityCard(
@@ -272,8 +404,11 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
           _terlambatList.isEmpty
               ? null
               : _terlambatList
-                  .map((e) => "${e.clientName} • ${e.documentType} • ${e.remainingDays.abs()} hari lewat")
-                  .toList(),
+                    .map(
+                      (e) =>
+                          "${e.clientName} • ${e.documentType} • ${e.remainingDays.abs()} hari lewat",
+                    )
+                    .toList(),
         ),
         const SizedBox(height: 10),
         _priorityCard(
@@ -284,8 +419,11 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
           _belumLunasList.isEmpty
               ? null
               : _belumLunasList
-                  .map((e) => "${e.clientName} • ${e.documentType} • ${_rupiah.format(e.sisaTagihan)}")
-                  .toList(),
+                    .map(
+                      (e) =>
+                          "${e.clientName} • ${e.documentType} • ${_rupiah.format(e.sisaTagihan)}",
+                    )
+                    .toList(),
         ),
       ],
     );
@@ -301,7 +439,10 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(14)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(14),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -309,24 +450,38 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
             children: [
               Icon(icon, size: 16, color: accent),
               const SizedBox(width: 6),
-              Text(title,
-                  style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).textTheme.bodyLarge?.color)),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 10),
           if (items == null)
-            Text("Tidak ada 🎉",
-                style: TextStyle(
-                    fontSize: 12, color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6)))
+            Text(
+              "Tidak ada 🎉",
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.color?.withOpacity(0.6),
+              ),
+            )
           else
             ...items.map(
               (t) => Padding(
                 padding: const EdgeInsets.only(bottom: 4),
-                child: Text("• $t",
-                    style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodyLarge?.color)),
+                child: Text(
+                  "• $t",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                  ),
+                ),
               ),
             ),
         ],
@@ -334,7 +489,13 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
     );
   }
 
-  Widget _statCard(BuildContext context, String title, String value, IconData icon, Color accent) {
+  Widget _statCard(
+    BuildContext context,
+    String title,
+    String value,
+    IconData icon,
+    Color accent,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
@@ -349,12 +510,22 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(title,
-                  style: TextStyle(
-                      fontSize: 9, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyMedium?.color)),
-              Text(value,
-                  style: TextStyle(
-                      fontSize: 17, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).textTheme.bodyMedium?.color,
+                ),
+              ),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                ),
+              ),
             ],
           ),
           Icon(icon, size: 14, color: accent),
@@ -363,7 +534,12 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
     );
   }
 
-  Widget _financeCard(BuildContext context, String title, double value, Color accent) {
+  Widget _financeCard(
+    BuildContext context,
+    String title,
+    double value,
+    Color accent,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
@@ -374,10 +550,22 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(title,
-              style: TextStyle(
-                  fontSize: 12, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyMedium?.color)),
-          Text(_rupiah.format(value), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: accent)),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).textTheme.bodyMedium?.color,
+            ),
+          ),
+          Text(
+            _rupiah.format(value),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              color: accent,
+            ),
+          ),
         ],
       ),
     );
@@ -400,13 +588,21 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
 
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(14)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(14),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Komposisi Status",
-              style: TextStyle(
-                  fontSize: 12, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
+          Text(
+            "Komposisi Status",
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).textTheme.bodyLarge?.color,
+            ),
+          ),
           const SizedBox(height: 10),
           SizedBox(
             height: 130,
@@ -421,7 +617,11 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
                     color: color,
                     title: '${e.value}',
                     radius: 38,
-                    titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10),
+                    titleStyle: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10,
+                    ),
                   );
                 }).toList(),
               ),
@@ -436,9 +636,22 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(width: 7, height: 7, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
                   const SizedBox(width: 4),
-                  Text(e.key, style: TextStyle(fontSize: 10, color: Theme.of(context).textTheme.bodyMedium?.color)),
+                  Text(
+                    e.key,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
+                    ),
+                  ),
                 ],
               );
             }).toList(),
@@ -448,25 +661,38 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
     );
   }
 
-  Widget _buildCategoryBarChart(BuildContext context, DashboardSummary summary) {
+  Widget _buildCategoryBarChart(
+    BuildContext context,
+    DashboardSummary summary,
+  ) {
     if (summary.categoryComposition.isEmpty) {
       return _emptyChartBox(context, "Pekerjaan per Jenis Dokumen");
     }
 
     final entries = summary.categoryComposition.entries.toList();
-    final maxCount = entries.map((e) => e.value).reduce((a, b) => a > b ? a : b);
+    final maxCount = entries
+        .map((e) => e.value)
+        .reduce((a, b) => a > b ? a : b);
     final interval = maxCount <= 5 ? 1.0 : (maxCount / 5).ceilToDouble();
     final maxY = ((maxCount / interval).ceil() * interval) + interval;
 
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(14)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(14),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Pekerjaan per Jenis Dokumen",
-              style: TextStyle(
-                  fontSize: 12, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
+          Text(
+            "Pekerjaan per Jenis Dokumen",
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).textTheme.bodyLarge?.color,
+            ),
+          ),
           const SizedBox(height: 10),
           SizedBox(
             height: 150,
@@ -483,23 +709,42 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
                       interval: interval,
                       getTitlesWidget: (value, meta) {
                         if (value % interval != 0) return const SizedBox();
-                        return Text(value.toInt().toString(),
-                            style: TextStyle(fontSize: 9, color: Theme.of(context).textTheme.bodyMedium?.color));
+                        return Text(
+                          value.toInt().toString(),
+                          style: TextStyle(
+                            fontSize: 9,
+                            color: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.color,
+                          ),
+                        );
                       },
                     ),
                   ),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
                       getTitlesWidget: (value, meta) {
                         final index = value.toInt();
-                        if (index < 0 || index >= entries.length) return const SizedBox();
+                        if (index < 0 || index >= entries.length)
+                          return const SizedBox();
                         return Padding(
                           padding: const EdgeInsets.only(top: 5),
-                          child: Text(entries[index].key,
-                              style: TextStyle(fontSize: 8, color: Theme.of(context).textTheme.bodyMedium?.color)),
+                          child: Text(
+                            entries[index].key,
+                            style: TextStyle(
+                              fontSize: 8,
+                              color: Theme.of(
+                                context,
+                              ).textTheme.bodyMedium?.color,
+                            ),
+                          ),
                         );
                       },
                     ),
@@ -510,18 +755,23 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
                   show: true,
                   horizontalInterval: interval,
                   drawVerticalLine: false,
-                  getDrawingHorizontalLine: (value) =>
-                      FlLine(color: Theme.of(context).dividerColor, strokeWidth: 1),
+                  getDrawingHorizontalLine: (value) => FlLine(
+                    color: Theme.of(context).dividerColor,
+                    strokeWidth: 1,
+                  ),
                 ),
                 barGroups: List.generate(entries.length, (i) {
-                  return BarChartGroupData(x: i, barRods: [
-                    BarChartRodData(
-                      toY: entries[i].value.toDouble(),
-                      color: Theme.of(context).colorScheme.primary,
-                      width: 16,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ]);
+                  return BarChartGroupData(
+                    x: i,
+                    barRods: [
+                      BarChartRodData(
+                        toY: entries[i].value.toDouble(),
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 16,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ],
+                  );
                 }),
               ),
             ),
@@ -534,17 +784,32 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
   Widget _emptyChartBox(BuildContext context, String title) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(14)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(14),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style: TextStyle(
-                  fontSize: 12, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).textTheme.bodyLarge?.color,
+            ),
+          ),
           const SizedBox(height: 14),
           Center(
-              child: Text('Belum ada data',
-                  style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.5)))),
+            child: Text(
+              'Belum ada data',
+              style: TextStyle(
+                color: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.color?.withOpacity(0.5),
+              ),
+            ),
+          ),
           const SizedBox(height: 14),
         ],
       ),
