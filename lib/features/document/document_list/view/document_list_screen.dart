@@ -21,11 +21,26 @@ class DocumentListScreenState extends State<DocumentListScreen>
 
   final _searchController = TextEditingController();
   String _searchQuery = '';
+
+  // Filter yang sudah di-"apply" (dipakai buat filtering list).
   String? _selectedKategoriFilter;
   String? _selectedStatusFilter;
+  int? _selectedBulanFilter; // 1-12
+  String? _selectedTahunFilter;
 
   final List<String> _kategoriList = ['Notaris', 'PPAT', 'Waarmerking', 'Legalisasi'];
   final List<String> _statusList = ['Belum Diproses', 'Diproses', 'Tertunda', 'Batal', 'Selesai'];
+
+  static const List<String> _bulanList = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+  ];
+
+  bool get _hasActiveFilter =>
+      _selectedKategoriFilter != null ||
+      _selectedStatusFilter != null ||
+      _selectedBulanFilter != null ||
+      _selectedTahunFilter != null;
 
   @override
   void initState() {
@@ -68,15 +83,199 @@ class DocumentListScreenState extends State<DocumentListScreen>
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  DateTime? _parseDeadline(String deadline) => DateTime.tryParse(deadline);
+
+  // Tahun mulai dari 2026. Kalau butuh tahun lain, tinggal tambah manual di sini.
+  static const List<String> _tahunOptions = [
+    '2026',
+    '2027',
+    '2028',
+  ];
+
   List<DocumentModel> get _filteredList {
     return _documentList.where((doc) {
       final matchSearch = _searchQuery.isEmpty ||
           doc.clientName.toLowerCase().contains(_searchQuery) ||
           doc.docType.toLowerCase().contains(_searchQuery);
-      final matchKategori = _selectedKategoriFilter == null || doc.kategori == _selectedKategoriFilter;
-      final matchStatus = _selectedStatusFilter == null || doc.status == _selectedStatusFilter;
-      return matchSearch && matchKategori && matchStatus;
+      final matchKategori =
+          _selectedKategoriFilter == null || doc.kategori == _selectedKategoriFilter;
+      final matchStatus =
+          _selectedStatusFilter == null || doc.status == _selectedStatusFilter;
+
+      final date = _parseDeadline(doc.deadline);
+      final matchBulan = _selectedBulanFilter == null ||
+          (date != null && date.month == _selectedBulanFilter);
+      final matchTahun = _selectedTahunFilter == null ||
+          (date != null && date.year.toString() == _selectedTahunFilter);
+
+      return matchSearch && matchKategori && matchStatus && matchBulan && matchTahun;
     }).toList();
+  }
+
+  Future<void> _openFilterSheet() async {
+    // Nilai sementara di dalam sheet, baru di-commit ke state utama kalau user tekan "Filter".
+    String? tempKategori = _selectedKategoriFilter;
+    String? tempStatus = _selectedStatusFilter;
+    int? tempBulan = _selectedBulanFilter;
+    String? tempTahun = _selectedTahunFilter;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Tampilkan daftar pekerjaan sesuai dengan kebutuhan anda.',
+                    style: GoogleFonts.comfortaa(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).textTheme.titleLarge?.color,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  _buildFilterDropdown<String>(
+                    context: context,
+                    hint: 'Semua Kategori',
+                    value: tempKategori,
+                    items: _kategoriList,
+                    onChanged: (value) => setSheetState(() => tempKategori = value),
+                  ),
+                  const SizedBox(height: 12),
+
+                  _buildFilterDropdown<String>(
+                    context: context,
+                    hint: 'Semua Status',
+                    value: tempStatus,
+                    items: _statusList,
+                    onChanged: (value) => setSheetState(() => tempStatus = value),
+                  ),
+                  const SizedBox(height: 12),
+
+                  _buildFilterDropdown<int>(
+                    context: context,
+                    hint: 'Semua Bulan',
+                    value: tempBulan,
+                    items: List.generate(12, (i) => i + 1),
+                    itemLabelBuilder: (bulan) => _bulanList[bulan - 1],
+                    onChanged: (value) => setSheetState(() => tempBulan = value),
+                  ),
+                  const SizedBox(height: 12),
+
+                  _buildFilterDropdown<String>(
+                    context: context,
+                    hint: 'Semua Tahun',
+                    value: tempTahun,
+                    items: _tahunOptions,
+                    onChanged: (value) => setSheetState(() => tempTahun = value),
+                  ),
+                  const SizedBox(height: 24),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _selectedKategoriFilter = tempKategori;
+                              _selectedStatusFilter = tempStatus;
+                              _selectedBulanFilter = tempBulan;
+                              _selectedTahunFilter = tempTahun;
+                            });
+                            Navigator.pop(sheetContext);
+                          },
+                          child: const Text('Filter Pekerjaan'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: () => Navigator.pop(sheetContext),
+                          child: const Text('Batal'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildFilterDropdown<T>({
+    required BuildContext context,
+    required String hint,
+    required T? value,
+    required List<T> items,
+    required ValueChanged<T?> onChanged,
+    String Function(T)? itemLabelBuilder,
+  }) {
+    return DropdownButtonFormField<T>(
+      initialValue: value,
+      isExpanded: true,
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: Theme.of(context).cardColor,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      ),
+      hint: Text(hint, style: const TextStyle(fontSize: 13)),
+      items: items
+          .map((item) => DropdownMenuItem<T>(
+                value: item,
+                child: Text(
+                  itemLabelBuilder != null ? itemLabelBuilder(item) : item.toString(),
+                  style: const TextStyle(fontSize: 13),
+                ),
+              ))
+          .toList(),
+      onChanged: onChanged,
+    );
+  }
+
+  void _resetFilter() {
+    setState(() {
+      _selectedKategoriFilter = null;
+      _selectedStatusFilter = null;
+      _selectedBulanFilter = null;
+      _selectedTahunFilter = null;
+    });
   }
 
   @override
@@ -100,73 +299,69 @@ class DocumentListScreenState extends State<DocumentListScreen>
               ),
               const SizedBox(height: 16),
 
-              TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Cari nama klien / jenis dokumen...',
-                  prefixIcon: const Icon(Icons.search),
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-
               Row(
                 children: [
                   Expanded(
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _selectedKategoriFilter,
+                    child: TextField(
+                      controller: _searchController,
                       decoration: InputDecoration(
+                        hintText: 'Cari nama klien / jenis dokumen...',
+                        prefixIcon: const Icon(Icons.search),
                         filled: true,
                         fillColor: Theme.of(context).cardColor,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
                         ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
                       ),
-                      hint: const Text('Semua Kategori', style: TextStyle(fontSize: 13)),
-                      items: _kategoriList
-                          .map((k) => DropdownMenuItem<String>(value: k, child: Text(k, style: const TextStyle(fontSize: 13))))
-                          .toList(),
-                      onChanged: (value) => setState(() => _selectedKategoriFilter = value),
                     ),
                   ),
                   const SizedBox(width: 10),
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _selectedStatusFilter,
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Theme.of(context).cardColor,
-                        border: OutlineInputBorder(
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Material(
+                        color: Theme.of(context).cardColor,
+                        borderRadius: BorderRadius.circular(12),
+                        child: InkWell(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
+                          onTap: _openFilterSheet,
+                          child: Padding(
+                            padding: const EdgeInsets.all(14),
+                            child: Icon(
+                              Icons.filter_list,
+                              color: Theme.of(context).textTheme.bodyLarge?.color,
+                            ),
+                          ),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
                       ),
-                      hint: const Text('Semua Status', style: TextStyle(fontSize: 13)),
-                      items: _statusList
-                          .map((s) => DropdownMenuItem<String>(value: s, child: Text(s, style: const TextStyle(fontSize: 13))))
-                          .toList(),
-                      onChanged: (value) => setState(() => _selectedStatusFilter = value),
-                    ),
+                      if (_hasActiveFilter)
+                        Positioned(
+                          top: -2,
+                          right: -2,
+                          child: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Theme.of(context).scaffoldBackgroundColor,
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ],
               ),
 
-              if (_selectedKategoriFilter != null || _selectedStatusFilter != null)
+              if (_hasActiveFilter)
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: () => setState(() {
-                      _selectedKategoriFilter = null;
-                      _selectedStatusFilter = null;
-                    }),
+                    onPressed: _resetFilter,
                     child: const Text('Reset Filter', style: TextStyle(fontSize: 12)),
                   ),
                 ),
