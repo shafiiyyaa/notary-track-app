@@ -17,7 +17,6 @@ class AddDocPresenter {
     required String staffId,
     required String note,
     required double kesepakatanBiaya,
-    required String progressTerakhir,
     String? uangMukaTanggal,
     required double uangMukaJumlah,
     String? tambahanTanggal,
@@ -27,6 +26,15 @@ class AddDocPresenter {
     required String keteranganKeuangan,
     required List<Map<String, dynamic>> incomeDetails,
     required List<Map<String, dynamic>> expenses,
+    // --- Field baru ---
+    String? tanggalMasuk,
+    String? uraianSingkat,
+    String? nomorDokumen,
+    int? progressPercent,
+    String? dokumenDibutuhkan,
+    String? dokumenDiterima,
+    String? tanggalSelesai,
+    String? statusPembayaran,
   }) async {
     if (name.isEmpty || deadline.isEmpty) {
       _view.onSaveError("Nama Klien dan Deadline wajib diisi!");
@@ -54,7 +62,6 @@ class AddDocPresenter {
             'status': 'Belum Diproses',
             'staff_id': staffId,
             'kesepakatan_biaya': kesepakatanBiaya,
-            'progress_terakhir': progressTerakhir,
             'uang_muka_tanggal': uangMukaTanggal,
             'uang_muka_jumlah': uangMukaJumlah,
             'tambahan_tanggal': tambahanTanggal,
@@ -62,6 +69,15 @@ class AddDocPresenter {
             'kas_besar_tanggal': kasBesarTanggal,
             'kas_besar_jumlah': kasBesarJumlah,
             'keterangan_keuangan': keteranganKeuangan,
+            // --- Field baru ---
+            'tanggal_masuk': tanggalMasuk,
+            'uraian_singkat': uraianSingkat,
+            'nomor_dokumen': nomorDokumen,
+            'progress_percent': progressPercent ?? 0,
+            'dokumen_dibutuhkan': dokumenDibutuhkan,
+            'dokumen_diterima': dokumenDiterima,
+            'tanggal_selesai': tanggalSelesai,
+            'status_pembayaran': statusPembayaran,
           })
           .select('id')
           .single();

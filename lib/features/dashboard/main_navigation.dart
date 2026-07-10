@@ -3,6 +3,7 @@ import '../dashboard/view/dashboard_screen.dart';
 import '../document/document_list/view/document_list_screen.dart';
 import '../document/add_document/view/add_doc_screen.dart';
 import '../profile/view/profile_screen.dart';
+import '../pic/view/pic_screen.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -19,6 +20,7 @@ class _MainNavigationState extends State<MainNavigation> {
   late final List<Widget> _screens = [
     const HomeScreen(),
     DocumentListScreen(key: _documentListKey),
+    const PicScreen(),
     const ProfileScreen(),
   ];
 
@@ -55,7 +57,8 @@ class _MainNavigationState extends State<MainNavigation> {
               _buildNavItem(context, Icons.home, 'Home', 0),
               _buildNavItem(context, Icons.assignment, 'Pekerjaan', 1),
               const SizedBox(width: 40),
-              _buildNavItem(context, Icons.person, 'Akun', 2),
+              _buildNavItem(context, Icons.people_outline, 'PIC', 2),
+              _buildNavItem(context, Icons.person, 'Akun', 3),
             ],
           ),
         ),
@@ -70,8 +73,8 @@ class _MainNavigationState extends State<MainNavigation> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: isSelected ? Colors.white : Colors.white70, size: 26),
-          Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.white70, fontSize: 11)),
+          Icon(icon, color: isSelected ? Colors.white : Colors.white70, size: 24),
+          Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.white70, fontSize: 10)),
         ],
       ),
     );

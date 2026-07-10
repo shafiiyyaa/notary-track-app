@@ -22,7 +22,6 @@ class DocumentModel {
   final String notes;
 
   final double kesepakatanBiaya;
-  final String progressTerakhir;
 
   final String? uangMukaTanggal;
   final double uangMukaJumlah;
@@ -36,6 +35,16 @@ class DocumentModel {
 
   final List<IncomeDetailModel> incomeDetails;
   final List<ExpenseModel> expenses;
+
+  // --- Field baru ---
+  final String? tanggalMasuk;
+  final String uraianSingkat;
+  final String? nomorDokumen;
+  final int progressPercent;
+  final String dokumenDibutuhkan;
+  final String dokumenDiterima;
+  final String? tanggalSelesai;
+  final String statusPembayaran;
 
   DocumentModel({
     required this.id,
@@ -51,7 +60,6 @@ class DocumentModel {
     required this.status,
     required this.notes,
     this.kesepakatanBiaya = 0,
-    this.progressTerakhir = '',
     this.uangMukaTanggal,
     this.uangMukaJumlah = 0,
     this.tambahanTanggal,
@@ -61,6 +69,15 @@ class DocumentModel {
     this.keteranganKeuangan = '',
     this.incomeDetails = const [],
     this.expenses = const [],
+    // --- Field baru ---
+    this.tanggalMasuk,
+    this.uraianSingkat = '',
+    this.nomorDokumen,
+    this.progressPercent = 0,
+    this.dokumenDibutuhkan = '',
+    this.dokumenDiterima = '',
+    this.tanggalSelesai,
+    this.statusPembayaran = 'Belum Dibayar',
   });
 
   double get totalPemohon => uangMukaJumlah + tambahanJumlah;
@@ -92,7 +109,6 @@ class DocumentModel {
       status: map['status'] ?? 'Belum Diproses',
       notes: map['notes'] ?? '',
       kesepakatanBiaya: (map['kesepakatan_biaya'] as num?)?.toDouble() ?? 0,
-      progressTerakhir: map['progress_terakhir'] ?? '',
       uangMukaTanggal: map['uang_muka_tanggal']?.toString(),
       uangMukaJumlah: (map['uang_muka_jumlah'] as num?)?.toDouble() ?? 0,
       tambahanTanggal: map['tambahan_tanggal']?.toString(),
@@ -102,6 +118,15 @@ class DocumentModel {
       keteranganKeuangan: map['keterangan_keuangan'] ?? '',
       incomeDetails: incomeDetails,
       expenses: expenses,
+      // --- Field baru ---
+      tanggalMasuk: map['tanggal_masuk']?.toString(),
+      uraianSingkat: map['uraian_singkat'] ?? '',
+      nomorDokumen: map['nomor_dokumen']?.toString(),
+      progressPercent: (map['progress_percent'] as num?)?.toInt() ?? 0,
+      dokumenDibutuhkan: map['dokumen_dibutuhkan'] ?? '',
+      dokumenDiterima: map['dokumen_diterima'] ?? '',
+      tanggalSelesai: map['tanggal_selesai']?.toString(),
+      statusPembayaran: map['status_pembayaran'] ?? 'Belum Dibayar',
     );
   }
 }

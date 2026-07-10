@@ -23,11 +23,21 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   final _deadlineController = TextEditingController();
   final _noteController = TextEditingController();
   final _kesepakatanBiayaController = TextEditingController();
-  final _progressTerakhirController = TextEditingController();
 
   final _uangMukaJumlahController = TextEditingController();
   final _tambahanJumlahController = TextEditingController();
   final _kasBesarJumlahController = TextEditingController();
+
+  // --- Controller field baru ---
+  final _tanggalMasukController = TextEditingController();
+  final _uraianSingkatController = TextEditingController();
+  final _nomorDokumenController = TextEditingController();
+  final _progressPercentController = TextEditingController(text: '0');
+  final _dokumenDibutuhkanController = TextEditingController();
+  final _dokumenDiterimaController = TextEditingController();
+  final _tanggalSelesaiController = TextEditingController();
+  String _selectedStatusPembayaran = 'Belum Dibayar';
+  final List<String> _statusPembayaranList = ['Belum Dibayar', 'DP', 'Lunas'];
 
   String? _uangMukaTanggal;
   String? _tambahanTanggal;
@@ -115,10 +125,16 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
     _deadlineController.dispose();
     _noteController.dispose();
     _kesepakatanBiayaController.dispose();
-    _progressTerakhirController.dispose();
     _uangMukaJumlahController.dispose();
     _tambahanJumlahController.dispose();
     _kasBesarJumlahController.dispose();
+    _tanggalMasukController.dispose();
+    _uraianSingkatController.dispose();
+    _nomorDokumenController.dispose();
+    _progressPercentController.dispose();
+    _dokumenDibutuhkanController.dispose();
+    _dokumenDiterimaController.dispose();
+    _tanggalSelesaiController.dispose();
     super.dispose();
   }
 
@@ -138,7 +154,6 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
     _kesepakatanBiayaController.text = document.kesepakatanBiaya == 0
         ? ''
         : document.kesepakatanBiaya.toStringAsFixed(0);
-    _progressTerakhirController.text = document.progressTerakhir;
 
     _uangMukaTanggal = document.uangMukaTanggal;
     _uangMukaJumlahController.text =
@@ -165,6 +180,16 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
     _selectedStaffId = document.staffId;
     _selectedStatus = document.status;
     _financialLoaded = true;
+
+    // --- Field baru ---
+    _tanggalMasukController.text = document.tanggalMasuk ?? '';
+    _uraianSingkatController.text = document.uraianSingkat;
+    _nomorDokumenController.text = document.nomorDokumen ?? '';
+    _progressPercentController.text = document.progressPercent.toString();
+    _dokumenDibutuhkanController.text = document.dokumenDibutuhkan;
+    _dokumenDiterimaController.text = document.dokumenDiterima;
+    _tanggalSelesaiController.text = document.tanggalSelesai ?? '';
+    _selectedStatusPembayaran = document.statusPembayaran;
 
     setState(() {});
   }
@@ -230,6 +255,14 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                 ),
               ),
 
+              // --- BARU: Tanggal Masuk ---
+              _buildLabel(context, 'Tanggal Masuk'),
+              _buildDateTile(
+                context,
+                _tanggalMasukController.text.isEmpty ? null : _tanggalMasukController.text,
+                (v) => setState(() => _tanggalMasukController.text = v),
+              ),
+
               _buildLabel(context, 'Nomor Telepon'),
               TextField(
                 controller: _phoneController,
@@ -277,6 +310,29 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                 onChanged: (value) => setState(() => _selectedDocumentTypeId = value),
               ),
 
+              // --- BARU: Uraian Singkat & Nomor Dokumen ---
+              _buildLabel(context, 'Uraian Singkat'),
+              TextField(
+                controller: _uraianSingkatController,
+                maxLines: 2,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
+                  border: InputBorder.none,
+                  hintText: 'Uraian singkat pekerjaan',
+                ),
+              ),
+              _buildLabel(context, 'Nomor Akta/Dokumen'),
+              TextField(
+                controller: _nomorDokumenController,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
+                  border: InputBorder.none,
+                  hintText: 'Opsional',
+                ),
+              ),
+
               _buildLabel(context, "Staff Penanggung Jawab"),
               DropdownButtonFormField<String>(
                 initialValue: _selectedStaffId,
@@ -292,6 +348,20 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                         ))
                     .toList(),
                 onChanged: (value) => setState(() => _selectedStaffId = value),
+              ),
+
+              // --- BARU: Progress (%) ---
+              const SizedBox(height: 10),
+              _buildLabel(context, 'Progress (%)'),
+              TextField(
+                controller: _progressPercentController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
+                  border: InputBorder.none,
+                ),
               ),
 
               const SizedBox(height: 10),
@@ -327,6 +397,40 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                 onTap: () => _pickDate((v) => setState(() => _deadlineController.text = v)),
               ),
 
+              // --- BARU: Tanggal Selesai ---
+              _buildLabel(context, 'Tanggal Selesai (jika sudah selesai)'),
+              _buildDateTile(
+                context,
+                _tanggalSelesaiController.text.isEmpty ? null : _tanggalSelesaiController.text,
+                (v) => setState(() => _tanggalSelesaiController.text = v),
+              ),
+
+              const SizedBox(height: 24),
+              Divider(color: Theme.of(context).dividerColor),
+              const SizedBox(height: 12),
+
+              // --- BARU: Dokumen Dibutuhkan & Diterima ---
+              _buildLabel(context, 'Dokumen Dibutuhkan'),
+              TextField(
+                controller: _dokumenDibutuhkanController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
+                  border: InputBorder.none,
+                ),
+              ),
+              _buildLabel(context, 'Dokumen Diterima'),
+              TextField(
+                controller: _dokumenDiterimaController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
+                  border: InputBorder.none,
+                ),
+              ),
+
               const SizedBox(height: 24),
               Divider(color: Theme.of(context).dividerColor),
               const SizedBox(height: 12),
@@ -341,6 +445,22 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                   border: InputBorder.none,
                   hintText: 'Nominal kesepakatan awal dengan klien',
                 ),
+              ),
+
+              // --- BARU: Status Pembayaran ---
+              _buildLabel(context, 'Status Pembayaran'),
+              DropdownButtonFormField<String>(
+                initialValue: _selectedStatusPembayaran,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
+                  border: InputBorder.none,
+                ),
+                items: _statusPembayaranList
+                    .map((s) => DropdownMenuItem<String>(value: s, child: Text(s)))
+                    .toList(),
+                onChanged: (value) =>
+                    setState(() => _selectedStatusPembayaran = value ?? 'Belum Dibayar'),
               ),
 
               const SizedBox(height: 24),
@@ -412,7 +532,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                 DynamicListField(
                   title: 'Rincian Uang Masuk',
                   fields: [
-                    DynamicFieldConfig(key: 'label', label: 'Keterangan', type: DynamicFieldType.text),
+                    DynamicFieldConfig(key: 'label', label: 'Catatan/Kendala', type: DynamicFieldType.text),
                     DynamicFieldConfig(key: 'amount', label: 'Jumlah', type: DynamicFieldType.number),
                   ],
                   initialRows: _incomeDetailRows,
@@ -467,19 +587,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
               Divider(color: Theme.of(context).dividerColor),
               const SizedBox(height: 12),
 
-              _buildLabel(context, 'Progress Dokumen Terakhir'),
-              TextField(
-                controller: _progressTerakhirController,
-                maxLines: 2,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  border: InputBorder.none,
-                  hintText: 'Contoh: menunggu tanda tangan klien',
-                ),
-              ),
-
-              _buildLabel(context, 'Keterangan'),
+              _buildLabel(context, 'Catatan/Kendala'),
               TextField(
                 controller: _noteController,
                 maxLines: 3,
@@ -552,7 +660,6 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                             status: _selectedStatus!,
                             notes: _noteController.text,
                             kesepakatanBiaya: _parseAmount(_kesepakatanBiayaController.text),
-                            progressTerakhir: _progressTerakhirController.text,
                             uangMukaTanggal: _uangMukaTanggal,
                             uangMukaJumlah: _uangMukaJumlah,
                             tambahanTanggal: _tambahanTanggal,
@@ -562,6 +669,22 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                             keteranganKeuangan: _noteController.text,
                             incomeDetails: _incomeDetailRows,
                             expenses: _expenseRows,
+                            // --- Field baru ---
+                            tanggalMasuk: _tanggalMasukController.text.isEmpty
+                                ? null
+                                : _tanggalMasukController.text,
+                            uraianSingkat: _uraianSingkatController.text,
+                            nomorDokumen: _nomorDokumenController.text.isEmpty
+                                ? null
+                                : _nomorDokumenController.text,
+                            progressPercent:
+                                int.tryParse(_progressPercentController.text) ?? 0,
+                            dokumenDibutuhkan: _dokumenDibutuhkanController.text,
+                            dokumenDiterima: _dokumenDiterimaController.text,
+                            tanggalSelesai: _tanggalSelesaiController.text.isEmpty
+                                ? null
+                                : _tanggalSelesaiController.text,
+                            statusPembayaran: _selectedStatusPembayaran,
                           );
                         },
                   style: ElevatedButton.styleFrom(

@@ -131,9 +131,14 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                     children: [
                       _buildItem(context, "Kategori", doc.kategori.isEmpty ? '-' : doc.kategori),
                       _buildItem(context, "Nama Klien", doc.clientName),
+                      _buildItem(context, "Tanggal Masuk", doc.tanggalMasuk ?? '-'),
                       _buildItem(context, "Deadline", doc.deadline),
+                      _buildItem(context, "Tanggal Selesai", doc.tanggalSelesai ?? '-'),
                       _buildItem(context, "Status", doc.status),
                       _buildItem(context, "Staff", doc.staffName),
+                      _buildItem(context, "Uraian Singkat",
+                          doc.uraianSingkat.isEmpty ? '-' : doc.uraianSingkat),
+                      _buildItem(context, "Nomor Akta/Dokumen", doc.nomorDokumen ?? '-'),
                       _buildItem(
                         context,
                         "Kesepakatan Biaya",
@@ -141,7 +146,8 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                             ? '-'
                             : _rupiah.format(doc.kesepakatanBiaya),
                       ),
-                      _buildItem(context, "Catatan", _notes),
+                      _buildItem(context, "Status Pembayaran", doc.statusPembayaran),
+                      _buildItem(context, "Catatan/Kendala", _notes),
                     ],
                   ),
                 ),
@@ -159,34 +165,77 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
               const SizedBox(height: 15),
               _buildProgress(context, doc),
 
-              if (doc.progressTerakhir.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Progress (%)",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                      ),
+                    ),
+                    Text(
+                      "${doc.progressPercent}%",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 30),
+              Text(
+                "Kelengkapan Dokumen",
+                style: GoogleFonts.comfortaa(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).textTheme.titleLarge?.color,
+                ),
+              ),
+              const SizedBox(height: 15),
+              Card(
+                elevation: 2,
+                color: Theme.of(context).cardColor,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        "Progress Dokumen Terakhir",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).textTheme.bodyLarge?.color,
-                        ),
-                      ),
+                      Text("Dokumen Dibutuhkan",
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).textTheme.bodyLarge?.color)),
                       const SizedBox(height: 4),
                       Text(
-                        doc.progressTerakhir,
+                        doc.dokumenDibutuhkan.isEmpty ? '-' : doc.dokumenDibutuhkan,
+                        style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
+                      ),
+                      const SizedBox(height: 16),
+                      Text("Dokumen Diterima",
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).textTheme.bodyLarge?.color)),
+                      const SizedBox(height: 4),
+                      Text(
+                        doc.dokumenDiterima.isEmpty ? '-' : doc.dokumenDiterima,
                         style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
                       ),
                     ],
                   ),
                 ),
-              ],
+              ),
 
               const SizedBox(height: 30),
               Text(

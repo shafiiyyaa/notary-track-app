@@ -42,7 +42,14 @@ class _NotificationScreenState extends State<NotificationScreen>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const SizedBox(width: 40),
+                  SizedBox(
+                    width: 40,
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
                   Text(
                     'Notifikasi',
                     style: GoogleFonts.comfortaa(
