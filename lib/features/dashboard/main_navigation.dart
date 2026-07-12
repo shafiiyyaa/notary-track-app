@@ -17,12 +17,16 @@ class _MainNavigationState extends State<MainNavigation> {
   final GlobalKey<DocumentListScreenState> _documentListKey =
       GlobalKey<DocumentListScreenState>();
 
+  // Urutan WAJIB SAMA dengan urutan nav item di bawah:
+  // 0 = Home, 1 = PIC, 2 = Pekerjaan, 3 = Akun
   late final List<Widget> _screens = [
     const HomeScreen(),
-    DocumentListScreen(key: _documentListKey),
     const PicScreen(),
+    DocumentListScreen(key: _documentListKey),
     const ProfileScreen(),
   ];
+
+  bool get _isOnPekerjaanTab => _selectedIndex == 2;
 
   @override
   Widget build(BuildContext context) {
@@ -30,34 +34,35 @@ class _MainNavigationState extends State<MainNavigation> {
 
     return Scaffold(
       body: IndexedStack(index: _selectedIndex, children: _screens),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AddDocumentScreen()),
-          );
-          if (result == true) {
-            _documentListKey.currentState?.refreshDocuments();
-          }
-        },
-        backgroundColor: primaryColor,
-        shape: const CircleBorder(),
-        child: const Icon(Icons.add, size: 36, color: Colors.white),
-      ),
+      floatingActionButton: _isOnPekerjaanTab
+          ? FloatingActionButton(
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AddDocumentScreen()),
+                );
+                if (result == true) {
+                  _documentListKey.currentState?.refreshDocuments();
+                }
+              },
+              backgroundColor: primaryColor,
+              shape: const CircleBorder(),
+              child: const Icon(Icons.add, size: 36, color: Colors.white),
+            )
+          : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(),
+        shape: _isOnPekerjaanTab ? const CircularNotchedRectangle() : null,
         notchMargin: 8.0,
         color: primaryColor,
         child: SizedBox(
           height: 64,
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildNavItem(context, Icons.home, 'Home', 0),
-              _buildNavItem(context, Icons.assignment, 'Pekerjaan', 1),
-              const SizedBox(width: 40),
-              _buildNavItem(context, Icons.people_outline, 'PIC', 2),
+              _buildNavItem(context, Icons.people_outline, 'PIC', 1),
+              _buildNavItem(context, Icons.assignment, 'Pekerjaan', 2),
               _buildNavItem(context, Icons.person, 'Akun', 3),
             ],
           ),
@@ -74,6 +79,7 @@ class _MainNavigationState extends State<MainNavigation> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, color: isSelected ? Colors.white : Colors.white70, size: 24),
+          const SizedBox(height: 2),
           Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.white70, fontSize: 10)),
         ],
       ),

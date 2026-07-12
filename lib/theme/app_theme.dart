@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const Color primaryNavy = Color(0xFF1F3D2B); // emerald/army green
+  static const Color primaryNavy = Color(0xFF0A2A4B); // navy
   static const Color creamBackground = Color(0xFFF5F3E7);
 
   static ThemeData lightTheme = ThemeData(
@@ -77,7 +77,7 @@ class AppTheme {
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: primaryNavy,
       selectedItemColor: Colors.white,
-      unselectedItemColor: Color(0xFFB8C4B8),
+      unselectedItemColor: Color(0xFFB8C2CC),
       type: BottomNavigationBarType.fixed,
     ),
 

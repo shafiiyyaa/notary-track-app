@@ -16,11 +16,24 @@ class _PicScreenState extends State<PicScreen> implements PicViewContract {
   List<StaffModel> _staffList = [];
   bool _isLoading = false;
 
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+  String _filterMode = 'Semua'; // Semua / Ada Pekerjaan / Belum Ada Pekerjaan
+
   @override
   void initState() {
     super.initState();
     _presenter = PicPresenter(this);
     _presenter.fetchStaffList();
+    _searchController.addListener(() {
+      setState(() => _searchQuery = _searchController.text.toLowerCase());
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -44,6 +57,16 @@ class _PicScreenState extends State<PicScreen> implements PicViewContract {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.red));
   }
 
+  List<StaffModel> get _filteredList {
+    return _staffList.where((s) {
+      final matchSearch = _searchQuery.isEmpty || s.name.toLowerCase().contains(_searchQuery);
+      final matchFilter = _filterMode == 'Semua' ||
+          (_filterMode == 'Ada Pekerjaan' && s.jobCount > 0) ||
+          (_filterMode == 'Belum Ada Pekerjaan' && s.jobCount == 0);
+      return matchSearch && matchFilter;
+    }).toList();
+  }
+
   void _showFormDialog({StaffModel? existing}) {
     final controller = TextEditingController(text: existing?.name ?? '');
     final isEdit = existing != null;
@@ -62,10 +85,7 @@ class _PicScreenState extends State<PicScreen> implements PicViewContract {
             ),
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Batal'),
-            ),
+            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Batal')),
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext);
@@ -108,6 +128,8 @@ class _PicScreenState extends State<PicScreen> implements PicViewContract {
 
   @override
   Widget build(BuildContext context) {
+    final filtered = _filteredList;
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
@@ -132,21 +154,72 @@ class _PicScreenState extends State<PicScreen> implements PicViewContract {
                   color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
+
+              TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Cari nama PIC...',
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              DropdownButtonFormField<String>(
+                initialValue: _filterMode,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'Semua', child: Text('Semua PIC', style: TextStyle(fontSize: 13))),
+                  DropdownMenuItem(value: 'Ada Pekerjaan', child: Text('Ada Pekerjaan', style: TextStyle(fontSize: 13))),
+                  DropdownMenuItem(value: 'Belum Ada Pekerjaan', child: Text('Belum Ada Pekerjaan', style: TextStyle(fontSize: 13))),
+                ],
+                onChanged: (value) => setState(() => _filterMode = value ?? 'Semua'),
+              ),
+
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Menampilkan ${filtered.length} dari ${_staffList.length} PIC',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
               Expanded(
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator())
-                    : _staffList.isEmpty
+                    : filtered.isEmpty
                         ? Center(
                             child: Text(
-                              'Belum ada PIC. Tekan tombol + untuk menambah.',
+                              _staffList.isEmpty
+                                  ? 'Belum ada PIC. Tekan tombol + untuk menambah.'
+                                  : 'Tidak ada PIC yang cocok dengan pencarian',
+                              textAlign: TextAlign.center,
                               style: TextStyle(
                                   color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6)),
                             ),
                           )
                         : ListView.builder(
-                            itemCount: _staffList.length,
-                            itemBuilder: (context, index) => _buildStaffCard(context, _staffList[index]),
+                            itemCount: filtered.length,
+                            itemBuilder: (context, index) => _buildStaffCard(context, filtered[index]),
                           ),
               ),
             ],

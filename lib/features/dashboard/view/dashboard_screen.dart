@@ -42,7 +42,6 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
   Future<void> _handleRefresh() async {
     setState(() => _isRefreshing = true);
     _loadData();
-    // beri jeda kecil biar animasi ikon refresh kelihatan, bukan cuma kedip
     await Future.delayed(const Duration(milliseconds: 500));
     if (mounted) setState(() => _isRefreshing = false);
   }
@@ -74,27 +73,33 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
-        child: summary == null
-            ? const Center(child: CircularProgressIndicator())
-            : LayoutBuilder(
-                builder: (context, constraints) {
-                  final isWide = constraints.maxWidth > 800;
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildHeader(context),
-                        const SizedBox(height: 18),
-                        isWide
-                            ? _buildWideLayout(context, summary)
-                            : _buildNarrowLayout(context, summary),
-                        const SizedBox(height: 80),
-                      ],
+        child: Column(
+          children: [
+            // Header full-bleed, nempel ke tepi kiri-kanan
+            _buildHeader(context),
+            Expanded(
+              child: summary == null
+                  ? const Center(child: CircularProgressIndicator())
+                  : LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isWide = constraints.maxWidth > 800;
+                        return SingleChildScrollView(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              isWide
+                                  ? _buildWideLayout(context, summary)
+                                  : _buildNarrowLayout(context, summary),
+                              const SizedBox(height: 80),
+                            ],
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -103,21 +108,14 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
     final today = DateFormat('dd/MM/yyyy').format(DateTime.now());
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary,
-        borderRadius: BorderRadius.circular(14),
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      color: Theme.of(context).colorScheme.primary,
       child: Row(
         children: [
-          Container(
+          // Logo langsung nyatu ke background hijau, gaada lingkaran putih
+          SizedBox(
             width: 42,
             height: 42,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            padding: const EdgeInsets.all(6),
             child: Image.asset(
               "assets/images/logo notaris.png",
               fit: BoxFit.contain,
@@ -144,18 +142,32 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
               ],
             ),
           ),
-          IconButton(
-            onPressed: _isRefreshing ? null : _handleRefresh,
-            icon: _isRefreshing
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
+          // Tombol refresh: background putih, icon hijau
+          Container(
+            width: 34,
+            height: 34,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              onPressed: _isRefreshing ? null : _handleRefresh,
+              icon: _isRefreshing
+                  ? SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    )
+                  : Icon(
+                      Icons.refresh,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
-                  )
-                : const Icon(Icons.refresh, color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -178,30 +190,19 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
   }
 
   Widget _buildWideLayout(BuildContext context, DashboardSummary summary) {
-    return Row(
+    // Semua elemen disusun 1 kolom penuh lebar, stat card berjejer 1 baris
+    // (gaada yang turun ke bawah), lalu Statistik ditaruh di bawah
+    // Progress Keseluruhan.
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildStatGrid(context, summary, crossAxisCount: 3),
-              const SizedBox(height: 20),
-              _buildFinanceSection(context, summary),
-            ],
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildStatisticSection(context, summary),
-              const SizedBox(height: 20),
-              _buildPrioritySection(context),
-            ],
-          ),
-        ),
+        _buildStatGrid(context, summary, crossAxisCount: 6),
+        const SizedBox(height: 20),
+        _buildFinanceSection(context, summary),
+        const SizedBox(height: 20),
+        _buildStatisticSection(context, summary),
+        const SizedBox(height: 20),
+        _buildPrioritySection(context),
       ],
     );
   }
@@ -217,7 +218,7 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
       crossAxisCount: crossAxisCount,
       crossAxisSpacing: 8,
       mainAxisSpacing: 8,
-      childAspectRatio: 2.6,
+      childAspectRatio: crossAxisCount > 3 ? 3.2 : 3.2,
       children: [
         _statCard(
           context,
@@ -506,27 +507,32 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).textTheme.bodyMedium?.color,
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).textTheme.bodyMedium?.color,
+                  ),
                 ),
-              ),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           Icon(icon, size: 14, color: accent),
         ],
@@ -732,8 +738,9 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
                       showTitles: true,
                       getTitlesWidget: (value, meta) {
                         final index = value.toInt();
-                        if (index < 0 || index >= entries.length)
+                        if (index < 0 || index >= entries.length) {
                           return const SizedBox();
+                        }
                         return Padding(
                           padding: const EdgeInsets.only(top: 5),
                           child: Text(
