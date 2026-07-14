@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../model/staff_model.dart';
 import '../../client/model/client_model.dart';
 import '../presenter/pic_presenter.dart';
-import '../presenter/client_presenter.dart';
+import '../../client/presenter/client_presenter.dart';
 import 'pic_view.dart';
 import '../../client/view/client_view.dart';
 
@@ -26,8 +26,13 @@ class _PicScreenState extends State<PicScreen>
 
   final _searchController = TextEditingController();
   String _searchQuery = '';
+
   // Semua / PIC / Klien
   String _filterMode = 'Semua';
+
+  final List<String> _filterModeList = ['Semua', 'PIC', 'Klien'];
+
+  bool get _hasActiveFilter => _filterMode != 'Semua';
 
   @override
   void initState() {
@@ -67,21 +72,25 @@ class _PicScreenState extends State<PicScreen>
   @override
   void onActionSuccess(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   void onError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.red));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
   }
 
   // ================= Filtering =================
   List<StaffModel> get _filteredStaff {
     if (_filterMode == 'Klien') return [];
     return _staffList.where((s) {
-      return _searchQuery.isEmpty || s.name.toLowerCase().contains(_searchQuery);
+      return _searchQuery.isEmpty ||
+          s.name.toLowerCase().contains(_searchQuery);
     }).toList();
   }
 
@@ -92,6 +101,148 @@ class _PicScreenState extends State<PicScreen>
           c.name.toLowerCase().contains(_searchQuery) ||
           c.username.toLowerCase().contains(_searchQuery);
     }).toList();
+  }
+
+  int get _totalCount => _staffList.length + _clientList.length;
+  int get _filteredCount => _filteredStaff.length + _filteredClients.length;
+
+  // ================= Filter Bottom Sheet =================
+  Future<void> _openFilterSheet() async {
+    // Nilai sementara di dalam sheet, baru di-commit ke state utama kalau user tekan "Filter".
+    String tempFilterMode = _filterMode;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Tampilkan daftar PIC dan klien sesuai dengan kebutuhan anda.',
+                    style: GoogleFonts.comfortaa(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).textTheme.titleLarge?.color,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  _buildFilterDropdown(
+                    context: context,
+                    hint: 'Tampilkan Semua',
+                    value: tempFilterMode,
+                    items: _filterModeList,
+                    itemLabelBuilder: (mode) {
+                      switch (mode) {
+                        case 'PIC':
+                          return 'Hanya PIC';
+                        case 'Klien':
+                          return 'Hanya Klien';
+                        default:
+                          return 'Tampilkan Semua';
+                      }
+                    },
+                    onChanged: (value) =>
+                        setSheetState(() => tempFilterMode = value ?? 'Semua'),
+                  ),
+                  const SizedBox(height: 24),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _filterMode = tempFilterMode;
+                            });
+                            Navigator.pop(sheetContext);
+                          },
+                          child: const Text('Filter'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: () => Navigator.pop(sheetContext),
+                          child: const Text('Batal'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildFilterDropdown({
+    required BuildContext context,
+    required String hint,
+    required String value,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+    String Function(String)? itemLabelBuilder,
+  }) {
+    return DropdownButtonFormField<String>(
+      initialValue: value,
+      isExpanded: true,
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: Theme.of(context).cardColor,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      ),
+      hint: Text(hint, style: const TextStyle(fontSize: 13)),
+      items: items
+          .map((item) => DropdownMenuItem<String>(
+                value: item,
+                child: Text(
+                  itemLabelBuilder != null ? itemLabelBuilder(item) : item,
+                  style: const TextStyle(fontSize: 13),
+                ),
+              ))
+          .toList(),
+      onChanged: onChanged,
+    );
+  }
+
+  void _resetFilter() {
+    setState(() => _filterMode = 'Semua');
   }
 
   // ================= Dialog: PIC =================
@@ -113,7 +264,10 @@ class _PicScreenState extends State<PicScreen>
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Batal')),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Batal'),
+            ),
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext);
@@ -137,9 +291,14 @@ class _PicScreenState extends State<PicScreen>
       builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Hapus PIC?'),
-          content: Text('PIC "${staff.name}" akan dihapus. Tindakan ini tidak bisa dibatalkan.'),
+          content: Text(
+            'PIC "${staff.name}" akan dihapus. Tindakan ini tidak bisa dibatalkan.',
+          ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Batal')),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Batal'),
+            ),
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext);
@@ -196,7 +355,10 @@ class _PicScreenState extends State<PicScreen>
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Batal')),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Batal'),
+            ),
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext);
@@ -220,9 +382,14 @@ class _PicScreenState extends State<PicScreen>
       builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Hapus Klien?'),
-          content: Text('Klien "${client.name}" akan dihapus. Tindakan ini tidak bisa dibatalkan.'),
+          content: Text(
+            'Klien "${client.name}" akan dihapus. Tindakan ini tidak bisa dibatalkan.',
+          ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Batal')),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Batal'),
+            ),
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext);
@@ -295,43 +462,92 @@ class _PicScreenState extends State<PicScreen>
                 'Kelola daftar PIC dan akun klien yang terdaftar.',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                  color: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.color?.withOpacity(0.6),
                 ),
               ),
               const SizedBox(height: 16),
 
-              TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Cari nama PIC atau klien...',
-                  prefixIcon: const Icon(Icons.search),
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: 'Cari nama PIC atau klien...',
+                        prefixIcon: const Icon(Icons.search),
+                        filled: true,
+                        fillColor: Theme.of(context).cardColor,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              DropdownButtonFormField<String>(
-                initialValue: _filterMode,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
+                  const SizedBox(width: 10),
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Material(
+                        color: Theme.of(context).cardColor,
+                        borderRadius: BorderRadius.circular(12),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: _openFilterSheet,
+                          child: Padding(
+                            padding: const EdgeInsets.all(14),
+                            child: Icon(
+                              Icons.filter_list,
+                              color: Theme.of(context).textTheme.bodyLarge?.color,
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (_hasActiveFilter)
+                        Positioned(
+                          top: -2,
+                          right: -2,
+                          child: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Theme.of(context).scaffoldBackgroundColor,
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'Semua', child: Text('Tampilkan Semua', style: TextStyle(fontSize: 13))),
-                  DropdownMenuItem(value: 'PIC', child: Text('Hanya PIC', style: TextStyle(fontSize: 13))),
-                  DropdownMenuItem(value: 'Klien', child: Text('Hanya Klien', style: TextStyle(fontSize: 13))),
                 ],
-                onChanged: (value) => setState(() => _filterMode = value ?? 'Semua'),
+              ),
+
+              if (_hasActiveFilter)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: _resetFilter,
+                    child: const Text('Reset Filter', style: TextStyle(fontSize: 12)),
+                  ),
+                ),
+
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Menampilkan $_filteredCount dari $_totalCount data',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                  ),
+                ),
               ),
               const SizedBox(height: 12),
 
@@ -344,22 +560,33 @@ class _PicScreenState extends State<PicScreen>
                             _sectionHeader(context, 'PIC (${staff.length})'),
                             const SizedBox(height: 8),
                             if (staff.isEmpty)
-                              _emptyText(context, _staffList.isEmpty
-                                  ? 'Belum ada PIC.'
-                                  : 'Tidak ada PIC yang cocok.')
+                              _emptyText(
+                                context,
+                                _staffList.isEmpty
+                                    ? 'Belum ada PIC.'
+                                    : 'Tidak ada PIC yang cocok.',
+                              )
                             else
                               ...staff.map((s) => _buildStaffCard(context, s)),
                             const SizedBox(height: 20),
                           ],
                           if (_filterMode != 'PIC') ...[
-                            _sectionHeader(context, 'Klien (${clients.length})'),
+                            _sectionHeader(
+                              context,
+                              'Klien (${clients.length})',
+                            ),
                             const SizedBox(height: 8),
                             if (clients.isEmpty)
-                              _emptyText(context, _clientList.isEmpty
-                                  ? 'Belum ada klien.'
-                                  : 'Tidak ada klien yang cocok.')
+                              _emptyText(
+                                context,
+                                _clientList.isEmpty
+                                    ? 'Belum ada klien.'
+                                    : 'Tidak ada klien yang cocok.',
+                              )
                             else
-                              ...clients.map((c) => _buildClientCard(context, c)),
+                              ...clients.map(
+                                (c) => _buildClientCard(context, c),
+                              ),
                           ],
                         ],
                       ),
@@ -394,7 +621,9 @@ class _PicScreenState extends State<PicScreen>
         text,
         style: TextStyle(
           fontSize: 12,
-          color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+          color: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.color?.withOpacity(0.6),
         ),
       ),
     );
@@ -402,7 +631,13 @@ class _PicScreenState extends State<PicScreen>
 
   Widget _buildStaffCard(BuildContext context, StaffModel staff) {
     final initials = staff.name.isNotEmpty
-        ? staff.name.trim().split(' ').map((w) => w.isNotEmpty ? w[0] : '').take(2).join().toUpperCase()
+        ? staff.name
+              .trim()
+              .split(' ')
+              .map((w) => w.isNotEmpty ? w[0] : '')
+              .take(2)
+              .join()
+              .toUpperCase()
         : '?';
 
     return Container(
@@ -416,10 +651,15 @@ class _PicScreenState extends State<PicScreen>
         children: [
           CircleAvatar(
             radius: 22,
-            backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+            backgroundColor: Theme.of(
+              context,
+            ).colorScheme.primary.withOpacity(0.15),
             child: Text(
               initials,
-              style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
           ),
           const SizedBox(width: 14),
@@ -427,22 +667,34 @@ class _PicScreenState extends State<PicScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(staff.name,
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                        color: Theme.of(context).textTheme.bodyLarge?.color)),
+                Text(
+                  staff.name,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text('${staff.jobCount} pekerjaan',
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6))),
+                Text(
+                  '${staff.jobCount} pekerjaan',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                  ),
+                ),
               ],
             ),
           ),
           IconButton(
             onPressed: () => _showPicFormDialog(existing: staff),
-            icon: Icon(Icons.edit_outlined, size: 20, color: Theme.of(context).colorScheme.primary),
+            icon: Icon(
+              Icons.edit_outlined,
+              size: 20,
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
           IconButton(
             onPressed: () => _confirmDeletePic(staff),
@@ -455,7 +707,13 @@ class _PicScreenState extends State<PicScreen>
 
   Widget _buildClientCard(BuildContext context, ClientModel client) {
     final initials = client.name.isNotEmpty
-        ? client.name.trim().split(' ').map((w) => w.isNotEmpty ? w[0] : '').take(2).join().toUpperCase()
+        ? client.name
+              .trim()
+              .split(' ')
+              .map((w) => w.isNotEmpty ? w[0] : '')
+              .take(2)
+              .join()
+              .toUpperCase()
         : '?';
 
     return Container(
@@ -472,7 +730,10 @@ class _PicScreenState extends State<PicScreen>
             backgroundColor: Colors.blueGrey.withOpacity(0.15),
             child: Text(
               initials,
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.blueGrey,
+              ),
             ),
           ),
           const SizedBox(width: 14),
@@ -480,16 +741,24 @@ class _PicScreenState extends State<PicScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(client.name,
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                        color: Theme.of(context).textTheme.bodyLarge?.color)),
+                Text(
+                  client.name,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text('@${client.username} • ${client.jobCount} pekerjaan',
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6))),
+                Text(
+                  '@${client.username} • ${client.jobCount} pekerjaan',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                  ),
+                ),
               ],
             ),
           ),
