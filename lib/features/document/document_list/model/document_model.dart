@@ -4,7 +4,8 @@ import 'expense_model.dart';
 class DocumentModel {
   final String id;
 
-  final String clientName;
+  final String clientId;
+  final String clientName; // diambil dari join clients(name), read-only
   final String phone;
 
   final int documentTypeId;
@@ -36,7 +37,6 @@ class DocumentModel {
   final List<IncomeDetailModel> incomeDetails;
   final List<ExpenseModel> expenses;
 
-  // --- Field baru ---
   final String? tanggalMasuk;
   final String uraianSingkat;
   final String? nomorDokumen;
@@ -48,7 +48,8 @@ class DocumentModel {
 
   DocumentModel({
     required this.id,
-    required this.clientName,
+    required this.clientId,
+    this.clientName = '',
     required this.phone,
     required this.documentTypeId,
     required this.docType,
@@ -69,7 +70,6 @@ class DocumentModel {
     this.keteranganKeuangan = '',
     this.incomeDetails = const [],
     this.expenses = const [],
-    // --- Field baru ---
     this.tanggalMasuk,
     this.uraianSingkat = '',
     this.nomorDokumen,
@@ -97,7 +97,8 @@ class DocumentModel {
   }) {
     return DocumentModel(
       id: map['id'].toString(),
-      clientName: map['client_name'] ?? '',
+      clientId: map['client_id']?.toString() ?? '',
+      clientName: map['clients']?['name'] ?? '',
       phone: map['phone'] ?? '',
       documentTypeId: map['document_type_id'],
       docType: map['document_types']?['name'] ?? '',
@@ -118,7 +119,6 @@ class DocumentModel {
       keteranganKeuangan: map['keterangan_keuangan'] ?? '',
       incomeDetails: incomeDetails,
       expenses: expenses,
-      // --- Field baru ---
       tanggalMasuk: map['tanggal_masuk']?.toString(),
       uraianSingkat: map['uraian_singkat'] ?? '',
       nomorDokumen: map['nomor_dokumen']?.toString(),

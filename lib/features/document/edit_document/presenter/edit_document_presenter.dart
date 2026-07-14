@@ -21,7 +21,8 @@ class EditDocPresenter {
           .select('''
             *,
             document_types(name),
-            staff(name)
+            staff(name),
+            clients(name)
           ''')
           .eq('id', documentId)
           .single();
@@ -61,7 +62,7 @@ class EditDocPresenter {
 
   Future<void> updateDocument({
     required String id,
-    required String clientName,
+    required String clientId,
     required String phone,
     required int documentTypeId,
     required String kategori,
@@ -79,7 +80,6 @@ class EditDocPresenter {
     required String keteranganKeuangan,
     required List<Map<String, dynamic>> incomeDetails,
     required List<Map<String, dynamic>> expenses,
-    // --- Field baru ---
     String? tanggalMasuk,
     String? uraianSingkat,
     String? nomorDokumen,
@@ -93,7 +93,7 @@ class EditDocPresenter {
 
     try {
       await _supabase.from('documents').update({
-        'client_name': clientName,
+        'client_id': clientId,
         'phone': phone,
         'document_type_id': documentTypeId,
         'kategori': kategori,
@@ -109,7 +109,6 @@ class EditDocPresenter {
         'kas_besar_tanggal': kasBesarTanggal,
         'kas_besar_jumlah': kasBesarJumlah,
         'keterangan_keuangan': keteranganKeuangan,
-        // --- Field baru ---
         'tanggal_masuk': tanggalMasuk,
         'uraian_singkat': uraianSingkat,
         'nomor_dokumen': nomorDokumen,
@@ -120,7 +119,6 @@ class EditDocPresenter {
         'status_pembayaran': statusPembayaran,
       }).eq('id', id);
 
-      // Hapus semua rincian & pengeluaran lama, ganti dengan yang baru dari form
       await _supabase.from('document_income_details').delete().eq('document_id', id);
       await _supabase.from('document_expenses').delete().eq('document_id', id);
 
@@ -178,6 +176,17 @@ class EditDocPresenter {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       debugPrint('ERROR STAFF LIST: $e');
+      return [];
+    }
+  }
+
+  // --- BARU: buat isi dropdown pilih klien ---
+  Future<List<Map<String, dynamic>>> getClients() async {
+    try {
+      final response = await _supabase.from('clients').select('id, name').order('name');
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      debugPrint('ERROR CLIENT LIST: $e');
       return [];
     }
   }

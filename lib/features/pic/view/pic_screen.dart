@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../model/staff_model.dart';
+import '../../client/model/client_model.dart';
 import '../presenter/pic_presenter.dart';
+import '../presenter/client_presenter.dart';
 import 'pic_view.dart';
+import '../../client/view/client_view.dart';
 
 class PicScreen extends StatefulWidget {
   const PicScreen({super.key});
@@ -11,20 +14,28 @@ class PicScreen extends StatefulWidget {
   State<PicScreen> createState() => _PicScreenState();
 }
 
-class _PicScreenState extends State<PicScreen> implements PicViewContract {
-  late PicPresenter _presenter;
+class _PicScreenState extends State<PicScreen>
+    implements PicViewContract, ClientViewContract {
+  late PicPresenter _picPresenter;
+  late ClientPresenter _clientPresenter;
+
   List<StaffModel> _staffList = [];
-  bool _isLoading = false;
+  List<ClientModel> _clientList = [];
+  bool _isLoadingStaff = false;
+  bool _isLoadingClient = false;
 
   final _searchController = TextEditingController();
   String _searchQuery = '';
-  String _filterMode = 'Semua'; // Semua / Ada Pekerjaan / Belum Ada Pekerjaan
+  // Semua / PIC / Klien
+  String _filterMode = 'Semua';
 
   @override
   void initState() {
     super.initState();
-    _presenter = PicPresenter(this);
-    _presenter.fetchStaffList();
+    _picPresenter = PicPresenter(this);
+    _clientPresenter = ClientPresenter(this);
+    _picPresenter.fetchStaffList();
+    _clientPresenter.fetchClients();
     _searchController.addListener(() {
       setState(() => _searchQuery = _searchController.text.toLowerCase());
     });
@@ -36,15 +47,23 @@ class _PicScreenState extends State<PicScreen> implements PicViewContract {
     super.dispose();
   }
 
+  // ================= PicViewContract =================
   @override
-  void showLoading() => setState(() => _isLoading = true);
+  void showLoading() => setState(() => _isLoadingStaff = true);
 
   @override
-  void hideLoading() => setState(() => _isLoading = false);
+  void hideLoading() => setState(() => _isLoadingStaff = false);
 
   @override
-  void onStaffLoaded(List<StaffModel> staffList) => setState(() => _staffList = staffList);
+  void onStaffLoaded(List<StaffModel> staffList) =>
+      setState(() => _staffList = staffList);
 
+  // ================= ClientViewContract (nama method beda biar gak bentrok) =================
+  @override
+  void onClientsLoaded(List<ClientModel> clientList) =>
+      setState(() => _clientList = clientList);
+
+  // Dipakai bareng oleh PIC & Client presenter (nama method sama persis di kedua contract)
   @override
   void onActionSuccess(String message) {
     if (!mounted) return;
@@ -54,20 +73,29 @@ class _PicScreenState extends State<PicScreen> implements PicViewContract {
   @override
   void onError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.red));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.red));
   }
 
-  List<StaffModel> get _filteredList {
+  // ================= Filtering =================
+  List<StaffModel> get _filteredStaff {
+    if (_filterMode == 'Klien') return [];
     return _staffList.where((s) {
-      final matchSearch = _searchQuery.isEmpty || s.name.toLowerCase().contains(_searchQuery);
-      final matchFilter = _filterMode == 'Semua' ||
-          (_filterMode == 'Ada Pekerjaan' && s.jobCount > 0) ||
-          (_filterMode == 'Belum Ada Pekerjaan' && s.jobCount == 0);
-      return matchSearch && matchFilter;
+      return _searchQuery.isEmpty || s.name.toLowerCase().contains(_searchQuery);
     }).toList();
   }
 
-  void _showFormDialog({StaffModel? existing}) {
+  List<ClientModel> get _filteredClients {
+    if (_filterMode == 'PIC') return [];
+    return _clientList.where((c) {
+      return _searchQuery.isEmpty ||
+          c.name.toLowerCase().contains(_searchQuery) ||
+          c.username.toLowerCase().contains(_searchQuery);
+    }).toList();
+  }
+
+  // ================= Dialog: PIC =================
+  void _showPicFormDialog({StaffModel? existing}) {
     final controller = TextEditingController(text: existing?.name ?? '');
     final isEdit = existing != null;
 
@@ -90,9 +118,9 @@ class _PicScreenState extends State<PicScreen> implements PicViewContract {
               onPressed: () {
                 Navigator.pop(dialogContext);
                 if (isEdit) {
-                  _presenter.updateStaff(existing.id, controller.text);
+                  _picPresenter.updateStaff(existing.id, controller.text);
                 } else {
-                  _presenter.addStaff(controller.text);
+                  _picPresenter.addStaff(controller.text);
                 }
               },
               child: const Text('Simpan'),
@@ -103,7 +131,7 @@ class _PicScreenState extends State<PicScreen> implements PicViewContract {
     );
   }
 
-  void _confirmDelete(StaffModel staff) {
+  void _confirmDeletePic(StaffModel staff) {
     showDialog(
       context: context,
       builder: (dialogContext) {
@@ -115,7 +143,7 @@ class _PicScreenState extends State<PicScreen> implements PicViewContract {
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext);
-                _presenter.deleteStaff(staff.id);
+                _picPresenter.deleteStaff(staff.id);
               },
               style: TextButton.styleFrom(foregroundColor: Colors.red),
               child: const Text('Hapus'),
@@ -126,9 +154,125 @@ class _PicScreenState extends State<PicScreen> implements PicViewContract {
     );
   }
 
+  // ================= Dialog: Klien =================
+  void _showClientFormDialog() {
+    final nameController = TextEditingController();
+    final usernameController = TextEditingController();
+    final passwordController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Tambah Klien'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  labelText: 'Nama Klien',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: usernameController,
+                decoration: const InputDecoration(
+                  labelText: 'Username',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Password (min. 6 karakter)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Batal')),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                _clientPresenter.createClient(
+                  name: nameController.text,
+                  username: usernameController.text,
+                  password: passwordController.text,
+                );
+              },
+              child: const Text('Simpan'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _confirmDeleteClient(ClientModel client) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Hapus Klien?'),
+          content: Text('Klien "${client.name}" akan dihapus. Tindakan ini tidak bisa dibatalkan.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Batal')),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                _clientPresenter.deleteClient(client.id);
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Hapus'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showAddMenu() {
+    showModalBottomSheet(
+      context: context,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.badge_outlined),
+                title: const Text('Tambah PIC'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _showPicFormDialog();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.person_add_alt_outlined),
+                title: const Text('Tambah Klien'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _showClientFormDialog();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final filtered = _filteredList;
+    final staff = _filteredStaff;
+    final clients = _filteredClients;
+    final isLoading = _isLoadingStaff || _isLoadingClient;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -139,7 +283,7 @@ class _PicScreenState extends State<PicScreen> implements PicViewContract {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Kelola Daftar PIC',
+                'PIC & Klien',
                 style: GoogleFonts.comfortaa(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -148,7 +292,7 @@ class _PicScreenState extends State<PicScreen> implements PicViewContract {
               ),
               const SizedBox(height: 6),
               Text(
-                'Tambah, ubah nama, atau hapus PIC. Mengubah nama otomatis memperbarui seluruh dokumen yang memakainya.',
+                'Kelola daftar PIC dan akun klien yang terdaftar.',
                 style: TextStyle(
                   fontSize: 12,
                   color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
@@ -159,7 +303,7 @@ class _PicScreenState extends State<PicScreen> implements PicViewContract {
               TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Cari nama PIC...',
+                  hintText: 'Cari nama PIC atau klien...',
                   prefixIcon: const Icon(Icons.search),
                   filled: true,
                   fillColor: Theme.of(context).cardColor,
@@ -183,53 +327,75 @@ class _PicScreenState extends State<PicScreen> implements PicViewContract {
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12),
                 ),
                 items: const [
-                  DropdownMenuItem(value: 'Semua', child: Text('Semua PIC', style: TextStyle(fontSize: 13))),
-                  DropdownMenuItem(value: 'Ada Pekerjaan', child: Text('Ada Pekerjaan', style: TextStyle(fontSize: 13))),
-                  DropdownMenuItem(value: 'Belum Ada Pekerjaan', child: Text('Belum Ada Pekerjaan', style: TextStyle(fontSize: 13))),
+                  DropdownMenuItem(value: 'Semua', child: Text('Tampilkan Semua', style: TextStyle(fontSize: 13))),
+                  DropdownMenuItem(value: 'PIC', child: Text('Hanya PIC', style: TextStyle(fontSize: 13))),
+                  DropdownMenuItem(value: 'Klien', child: Text('Hanya Klien', style: TextStyle(fontSize: 13))),
                 ],
                 onChanged: (value) => setState(() => _filterMode = value ?? 'Semua'),
-              ),
-
-              const SizedBox(height: 8),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Menampilkan ${filtered.length} dari ${_staffList.length} PIC',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
-                  ),
-                ),
               ),
               const SizedBox(height: 12),
 
               Expanded(
-                child: _isLoading
+                child: isLoading
                     ? const Center(child: CircularProgressIndicator())
-                    : filtered.isEmpty
-                        ? Center(
-                            child: Text(
-                              _staffList.isEmpty
-                                  ? 'Belum ada PIC. Tekan tombol + untuk menambah.'
-                                  : 'Tidak ada PIC yang cocok dengan pencarian',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                  color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6)),
-                            ),
-                          )
-                        : ListView.builder(
-                            itemCount: filtered.length,
-                            itemBuilder: (context, index) => _buildStaffCard(context, filtered[index]),
-                          ),
+                    : ListView(
+                        children: [
+                          if (_filterMode != 'Klien') ...[
+                            _sectionHeader(context, 'PIC (${staff.length})'),
+                            const SizedBox(height: 8),
+                            if (staff.isEmpty)
+                              _emptyText(context, _staffList.isEmpty
+                                  ? 'Belum ada PIC.'
+                                  : 'Tidak ada PIC yang cocok.')
+                            else
+                              ...staff.map((s) => _buildStaffCard(context, s)),
+                            const SizedBox(height: 20),
+                          ],
+                          if (_filterMode != 'PIC') ...[
+                            _sectionHeader(context, 'Klien (${clients.length})'),
+                            const SizedBox(height: 8),
+                            if (clients.isEmpty)
+                              _emptyText(context, _clientList.isEmpty
+                                  ? 'Belum ada klien.'
+                                  : 'Tidak ada klien yang cocok.')
+                            else
+                              ...clients.map((c) => _buildClientCard(context, c)),
+                          ],
+                        ],
+                      ),
               ),
             ],
           ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showFormDialog(),
+        onPressed: _showAddMenu,
         backgroundColor: Theme.of(context).colorScheme.primary,
         child: const Icon(Icons.add, color: Colors.white),
+      ),
+    );
+  }
+
+  Widget _sectionHeader(BuildContext context, String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: Theme.of(context).textTheme.titleLarge?.color,
+      ),
+    );
+  }
+
+  Widget _emptyText(BuildContext context, String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 12,
+          color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+        ),
       ),
     );
   }
@@ -275,11 +441,60 @@ class _PicScreenState extends State<PicScreen> implements PicViewContract {
             ),
           ),
           IconButton(
-            onPressed: () => _showFormDialog(existing: staff),
+            onPressed: () => _showPicFormDialog(existing: staff),
             icon: Icon(Icons.edit_outlined, size: 20, color: Theme.of(context).colorScheme.primary),
           ),
           IconButton(
-            onPressed: () => _confirmDelete(staff),
+            onPressed: () => _confirmDeletePic(staff),
+            icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildClientCard(BuildContext context, ClientModel client) {
+    final initials = client.name.isNotEmpty
+        ? client.name.trim().split(' ').map((w) => w.isNotEmpty ? w[0] : '').take(2).join().toUpperCase()
+        : '?';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 22,
+            backgroundColor: Colors.blueGrey.withOpacity(0.15),
+            child: Text(
+              initials,
+              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(client.name,
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: Theme.of(context).textTheme.bodyLarge?.color)),
+                const SizedBox(height: 2),
+                Text('@${client.username} • ${client.jobCount} pekerjaan',
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6))),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: () => _confirmDeleteClient(client),
             icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
           ),
         ],

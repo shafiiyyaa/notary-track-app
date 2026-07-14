@@ -9,7 +9,7 @@ class AddDocPresenter {
   AddDocPresenter(this._view);
 
   Future<void> saveDocument({
-    required String name,
+    required String clientId,
     required String phone,
     required int documentTypeId,
     required String kategori,
@@ -26,7 +26,6 @@ class AddDocPresenter {
     required String keteranganKeuangan,
     required List<Map<String, dynamic>> incomeDetails,
     required List<Map<String, dynamic>> expenses,
-    // --- Field baru ---
     String? tanggalMasuk,
     String? uraianSingkat,
     String? nomorDokumen,
@@ -36,8 +35,8 @@ class AddDocPresenter {
     String? tanggalSelesai,
     String? statusPembayaran,
   }) async {
-    if (name.isEmpty || deadline.isEmpty) {
-      _view.onSaveError("Nama Klien dan Deadline wajib diisi!");
+    if (clientId.isEmpty || deadline.isEmpty) {
+      _view.onSaveError("Klien dan Deadline wajib diisi!");
       return;
     }
 
@@ -53,7 +52,7 @@ class AddDocPresenter {
       final inserted = await _supabase
           .from('documents')
           .insert({
-            'client_name': name,
+            'client_id': clientId,
             'phone': phone,
             'document_type_id': documentTypeId,
             'kategori': kategori,
@@ -69,7 +68,6 @@ class AddDocPresenter {
             'kas_besar_tanggal': kasBesarTanggal,
             'kas_besar_jumlah': kasBesarJumlah,
             'keterangan_keuangan': keteranganKeuangan,
-            // --- Field baru ---
             'tanggal_masuk': tanggalMasuk,
             'uraian_singkat': uraianSingkat,
             'nomor_dokumen': nomorDokumen,
@@ -136,6 +134,17 @@ class AddDocPresenter {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       debugPrint('ERROR STAFF LIST: $e');
+      return [];
+    }
+  }
+
+  // --- BARU: buat isi dropdown pilih klien ---
+  Future<List<Map<String, dynamic>>> getClients() async {
+    try {
+      final response = await _supabase.from('clients').select('id, name').order('name');
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      debugPrint('ERROR CLIENT LIST: $e');
       return [];
     }
   }

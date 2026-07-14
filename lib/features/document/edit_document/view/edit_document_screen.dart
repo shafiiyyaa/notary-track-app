@@ -18,7 +18,6 @@ class EditDocumentScreen extends StatefulWidget {
 
 class _EditDocumentScreenState extends State<EditDocumentScreen>
     implements EditDocumentViewContract {
-  final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _deadlineController = TextEditingController();
   final _noteController = TextEditingController();
@@ -28,7 +27,6 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   final _tambahanJumlahController = TextEditingController();
   final _kasBesarJumlahController = TextEditingController();
 
-  // --- Controller field baru ---
   final _tanggalMasukController = TextEditingController();
   final _uraianSingkatController = TextEditingController();
   final _nomorDokumenController = TextEditingController();
@@ -57,12 +55,21 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   List<Map<String, dynamic>> _staffs = [];
   String? _selectedStaffId;
   String? _selectedStatus;
+
+  List<Map<String, dynamic>> _clientList = [];
+  String? _selectedClientId;
+
   late EditDocPresenter _presenter;
   final _rupiah = NumberFormat.currency(
     locale: 'id_ID',
     symbol: 'Rp ',
     decimalDigits: 0,
   );
+
+  // --- Wizard state ---
+  final _pageController = PageController();
+  int _currentStep = 0;
+  final List<String> _stepTitles = ['Identitas Klien', 'Dokumen', 'Keuangan'];
 
   @override
   void initState() {
@@ -72,12 +79,13 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
 
     _loadDocumentTypes();
     _loadStaffs();
+    _loadClientList();
 
     _presenter.fetchDocument(widget.document.id);
 
     final doc = widget.document;
 
-    _nameController.text = doc.clientName;
+    _selectedClientId = doc.clientId.isEmpty ? null : doc.clientId;
     _phoneController.text = doc.phone;
     _deadlineController.text = doc.deadline;
     _noteController.text = doc.notes;
@@ -102,6 +110,14 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
     });
   }
 
+  Future<void> _loadClientList() async {
+    final data = await _presenter.getClients();
+    if (!mounted) return;
+    setState(() {
+      _clientList = data;
+    });
+  }
+
   double _parseAmount(String text) =>
       double.tryParse(text.replaceAll('.', '').replaceAll(',', '.')) ?? 0;
 
@@ -120,7 +136,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _pageController.dispose();
     _phoneController.dispose();
     _deadlineController.dispose();
     _noteController.dispose();
@@ -146,7 +162,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
 
   @override
   void onDocumentLoaded(DocumentModel document) {
-    _nameController.text = document.clientName;
+    _selectedClientId = document.clientId.isEmpty ? null : document.clientId;
     _phoneController.text = document.phone;
     _deadlineController.text = document.deadline;
     _noteController.text = document.notes;
@@ -181,7 +197,6 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
     _selectedStatus = document.status;
     _financialLoaded = true;
 
-    // --- Field baru ---
     _tanggalMasukController.text = document.tanggalMasuk ?? '';
     _uraianSingkatController.text = document.uraianSingkat;
     _nomorDokumenController.text = document.nomorDokumen ?? '';
@@ -217,491 +232,691 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
     }
   }
 
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  // --- Validasi per step ---
+  bool _validateStep(int step) {
+    if (step == 0) {
+      if (_selectedClientId == null) {
+        _showSnack('Pilih klien dulu');
+        return false;
+      }
+      return true;
+    }
+    if (step == 1) {
+      if (_selectedDocumentTypeId == null) {
+        _showSnack('Pilih jenis dokumen dulu');
+        return false;
+      }
+      if (_selectedKategori == null) {
+        _showSnack('Pilih kategori dulu');
+        return false;
+      }
+      if (_selectedStaffId == null) {
+        _showSnack('Pilih staff penanggung jawab dulu');
+        return false;
+      }
+      if (_selectedStatus == null) {
+        _showSnack('Pilih status dulu');
+        return false;
+      }
+      if (_deadlineController.text.isEmpty) {
+        _showSnack('Pilih deadline dulu');
+        return false;
+      }
+      return true;
+    }
+    return true;
+  }
+
+  void _nextStep() {
+    if (!_validateStep(_currentStep)) return;
+    if (_currentStep < _stepTitles.length - 1) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  void _prevStep() {
+    if (_currentStep > 0) {
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    } else {
+      Navigator.pop(context);
+    }
+  }
+
+  void _submit() {
+    if (!_validateStep(0) || !_validateStep(1)) return;
+
+    _presenter.updateDocument(
+      id: widget.document.id,
+      clientId: _selectedClientId!,
+      phone: _phoneController.text,
+      documentTypeId: _selectedDocumentTypeId!,
+      kategori: _selectedKategori!,
+      staffId: _selectedStaffId!,
+      deadline: _deadlineController.text,
+      status: _selectedStatus!,
+      notes: _noteController.text,
+      kesepakatanBiaya: _parseAmount(_kesepakatanBiayaController.text),
+      uangMukaTanggal: _uangMukaTanggal,
+      uangMukaJumlah: _uangMukaJumlah,
+      tambahanTanggal: _tambahanTanggal,
+      tambahanJumlah: _tambahanJumlah,
+      kasBesarTanggal: _kasBesarTanggal,
+      kasBesarJumlah: _kasBesarJumlah,
+      keteranganKeuangan: _noteController.text,
+      incomeDetails: _incomeDetailRows,
+      expenses: _expenseRows,
+      tanggalMasuk:
+          _tanggalMasukController.text.isEmpty ? null : _tanggalMasukController.text,
+      uraianSingkat: _uraianSingkatController.text,
+      nomorDokumen:
+          _nomorDokumenController.text.isEmpty ? null : _nomorDokumenController.text,
+      progressPercent: int.tryParse(_progressPercentController.text) ?? 0,
+      dokumenDibutuhkan: _dokumenDibutuhkanController.text,
+      dokumenDiterima: _dokumenDiterimaController.text,
+      tanggalSelesai: _tanggalSelesaiController.text.isEmpty
+          ? null
+          : _tanggalSelesaiController.text,
+      statusPembayaran: _selectedStatusPembayaran,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+              child: Row(
                 children: [
                   IconButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: _isLoading ? null : _prevStep,
                     icon: const Icon(Icons.arrow_back),
                   ),
                   Text(
                     "Edit Dokumen",
                     style: GoogleFonts.comfortaa(
-                      fontSize: 24,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).textTheme.titleLarge?.color,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
-
-              _buildLabel(context, 'Nama Klien'),
-              TextField(
-                controller: _nameController,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  border: InputBorder.none,
-                ),
-              ),
-
-              // --- BARU: Tanggal Masuk ---
-              _buildLabel(context, 'Tanggal Masuk'),
-              _buildDateTile(
-                context,
-                _tanggalMasukController.text.isEmpty ? null : _tanggalMasukController.text,
-                (v) => setState(() => _tanggalMasukController.text = v),
-              ),
-
-              _buildLabel(context, 'Nomor Telepon'),
-              TextField(
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(15),
-                ],
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  border: InputBorder.none,
-                ),
-              ),
-
-              _buildLabel(context, 'Kategori'),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedKategori,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  border: InputBorder.none,
-                ),
-                hint: const Text('Pilih kategori'),
-                items: _kategoriList
-                    .map((k) => DropdownMenuItem<String>(value: k, child: Text(k)))
-                    .toList(),
-                onChanged: (value) => setState(() => _selectedKategori = value),
-              ),
-
-              _buildLabel(context, 'Jenis Dokumen'),
-              DropdownButtonFormField<int>(
-                initialValue: _selectedDocumentTypeId,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  border: InputBorder.none,
-                ),
-                items: _documentTypes
-                    .map((doc) => DropdownMenuItem<int>(
-                          value: doc['id'],
-                          child: Text(doc['name']),
-                        ))
-                    .toList(),
-                onChanged: (value) => setState(() => _selectedDocumentTypeId = value),
-              ),
-
-              // --- BARU: Uraian Singkat & Nomor Dokumen ---
-              _buildLabel(context, 'Uraian Singkat'),
-              TextField(
-                controller: _uraianSingkatController,
-                maxLines: 2,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  border: InputBorder.none,
-                  hintText: 'Uraian singkat pekerjaan',
-                ),
-              ),
-              _buildLabel(context, 'Nomor Akta/Dokumen'),
-              TextField(
-                controller: _nomorDokumenController,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  border: InputBorder.none,
-                  hintText: 'Opsional',
-                ),
-              ),
-
-              _buildLabel(context, "Staff Penanggung Jawab"),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedStaffId,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  border: InputBorder.none,
-                ),
-                items: _staffs
-                    .map((staff) => DropdownMenuItem<String>(
-                          value: staff['id'],
-                          child: Text(staff['name']),
-                        ))
-                    .toList(),
-                onChanged: (value) => setState(() => _selectedStaffId = value),
-              ),
-
-              // --- BARU: Progress (%) ---
-              const SizedBox(height: 10),
-              _buildLabel(context, 'Progress (%)'),
-              TextField(
-                controller: _progressPercentController,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  border: InputBorder.none,
-                ),
-              ),
-
-              const SizedBox(height: 10),
-              _buildLabel(context, "Status"),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedStatus,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  border: InputBorder.none,
-                ),
-                items: const [
-                  DropdownMenuItem(value: "Belum Diproses", child: Text("Belum Diproses")),
-                  DropdownMenuItem(value: "Diproses", child: Text("Diproses")),
-                  DropdownMenuItem(value: "Tertunda", child: Text("Tertunda")),
-                  DropdownMenuItem(value: "Batal", child: Text("Batal")),
-                  DropdownMenuItem(value: "Selesai", child: Text("Selesai")),
-                ],
-                onChanged: (value) => setState(() => _selectedStatus = value),
-              ),
-
-              const SizedBox(height: 10),
-              _buildLabel(context, 'Deadline'),
-              TextField(
-                controller: _deadlineController,
-                readOnly: true,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  border: InputBorder.none,
-                  suffixIcon: const Icon(Icons.calendar_today),
-                ),
-                onTap: () => _pickDate((v) => setState(() => _deadlineController.text = v)),
-              ),
-
-              // --- BARU: Tanggal Selesai ---
-              _buildLabel(context, 'Tanggal Selesai (jika sudah selesai)'),
-              _buildDateTile(
-                context,
-                _tanggalSelesaiController.text.isEmpty ? null : _tanggalSelesaiController.text,
-                (v) => setState(() => _tanggalSelesaiController.text = v),
-              ),
-
-              const SizedBox(height: 24),
-              Divider(color: Theme.of(context).dividerColor),
-              const SizedBox(height: 12),
-
-              // --- BARU: Dokumen Dibutuhkan & Diterima ---
-              _buildLabel(context, 'Dokumen Dibutuhkan'),
-              TextField(
-                controller: _dokumenDibutuhkanController,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  border: InputBorder.none,
-                ),
-              ),
-              _buildLabel(context, 'Dokumen Diterima'),
-              TextField(
-                controller: _dokumenDiterimaController,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  border: InputBorder.none,
-                ),
-              ),
-
-              const SizedBox(height: 24),
-              Divider(color: Theme.of(context).dividerColor),
-              const SizedBox(height: 12),
-
-              _buildLabel(context, 'Kesepakatan Biaya'),
-              TextField(
-                controller: _kesepakatanBiayaController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  border: InputBorder.none,
-                  hintText: 'Nominal kesepakatan awal dengan klien',
-                ),
-              ),
-
-              // --- BARU: Status Pembayaran ---
-              _buildLabel(context, 'Status Pembayaran'),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedStatusPembayaran,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  border: InputBorder.none,
-                ),
-                items: _statusPembayaranList
-                    .map((s) => DropdownMenuItem<String>(value: s, child: Text(s)))
-                    .toList(),
-                onChanged: (value) =>
-                    setState(() => _selectedStatusPembayaran = value ?? 'Belum Dibayar'),
-              ),
-
-              const SizedBox(height: 24),
-              Divider(color: Theme.of(context).dividerColor),
-              const SizedBox(height: 12),
-
-              Text(
-                "Uang Masuk dari Pemohon",
-                style: GoogleFonts.comfortaa(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).textTheme.titleLarge?.color,
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              _buildLabel(context, 'Uang Muka - Tanggal'),
-              _buildDateTile(context, _uangMukaTanggal, (v) => setState(() => _uangMukaTanggal = v)),
-              _buildLabel(context, 'Uang Muka - Jumlah'),
-              TextField(
-                controller: _uangMukaJumlahController,
-                keyboardType: TextInputType.number,
-                onChanged: (_) => setState(() {}),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  border: InputBorder.none,
-                ),
-              ),
-
-              _buildLabel(context, 'Tambahan - Tanggal'),
-              _buildDateTile(context, _tambahanTanggal, (v) => setState(() => _tambahanTanggal = v)),
-              _buildLabel(context, 'Tambahan - Jumlah'),
-              TextField(
-                controller: _tambahanJumlahController,
-                keyboardType: TextInputType.number,
-                onChanged: (_) => setState(() {}),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  border: InputBorder.none,
-                ),
-              ),
-
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Total Uang Masuk Pemohon',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).textTheme.bodyLarge?.color)),
-                    Text(_rupiah.format(_totalPemohon),
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary)),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-              if (_financialLoaded)
-                DynamicListField(
-                  title: 'Rincian Uang Masuk',
-                  fields: [
-                    DynamicFieldConfig(key: 'label', label: 'Catatan/Kendala', type: DynamicFieldType.text),
-                    DynamicFieldConfig(key: 'amount', label: 'Jumlah', type: DynamicFieldType.number),
-                  ],
-                  initialRows: _incomeDetailRows,
-                  onChanged: (rows) => _incomeDetailRows = rows,
-                ),
-
-              const SizedBox(height: 24),
-              Divider(color: Theme.of(context).dividerColor),
-              const SizedBox(height: 12),
-
-              Text(
-                "Uang Masuk dari Kas Besar",
-                style: GoogleFonts.comfortaa(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).textTheme.titleLarge?.color,
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              _buildLabel(context, 'Tanggal'),
-              _buildDateTile(context, _kasBesarTanggal, (v) => setState(() => _kasBesarTanggal = v)),
-              _buildLabel(context, 'Jumlah'),
-              TextField(
-                controller: _kasBesarJumlahController,
-                keyboardType: TextInputType.number,
-                onChanged: (_) => setState(() {}),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  border: InputBorder.none,
-                ),
-              ),
-
-              const SizedBox(height: 24),
-              Divider(color: Theme.of(context).dividerColor),
-              const SizedBox(height: 12),
-
-              if (_financialLoaded)
-                DynamicListField(
-                  title: 'Pengeluaran',
-                  fields: [
-                    DynamicFieldConfig(key: 'proses', label: 'Proses', type: DynamicFieldType.text),
-                    DynamicFieldConfig(key: 'tanggal', label: 'Tanggal', type: DynamicFieldType.date),
-                    DynamicFieldConfig(key: 'amount', label: 'Jumlah', type: DynamicFieldType.number),
-                  ],
-                  initialRows: _expenseRows,
-                  onChanged: (rows) => setState(() => _expenseRows = rows),
-                ),
-
-              const SizedBox(height: 24),
-              Divider(color: Theme.of(context).dividerColor),
-              const SizedBox(height: 12),
-
-              _buildLabel(context, 'Catatan/Kendala'),
-              TextField(
-                controller: _noteController,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  border: InputBorder.none,
-                ),
-              ),
-
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    _summaryRow(context, 'Total Masuk Pemohon', _totalPemohon),
-                    _summaryRow(context, 'Total Masuk Kas Besar', _kasBesarJumlah),
-                    _summaryRow(context, 'Total Pengeluaran', _totalPengeluaran),
-                    const Divider(),
-                    _summaryRow(context, 'Sisa Kas', _sisaKas, isBold: true),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _isLoading
-                      ? null
-                      : () {
-                          if (_selectedDocumentTypeId == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Pilih jenis dokumen dulu')),
-                            );
-                            return;
-                          }
-                          if (_selectedKategori == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Pilih kategori dulu')),
-                            );
-                            return;
-                          }
-                          if (_selectedStaffId == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Pilih staff penanggung jawab dulu')),
-                            );
-                            return;
-                          }
-                          if (_selectedStatus == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Pilih status dulu')),
-                            );
-                            return;
-                          }
-
-                          _presenter.updateDocument(
-                            id: widget.document.id,
-                            clientName: _nameController.text,
-                            phone: _phoneController.text,
-                            documentTypeId: _selectedDocumentTypeId!,
-                            kategori: _selectedKategori!,
-                            staffId: _selectedStaffId!,
-                            deadline: _deadlineController.text,
-                            status: _selectedStatus!,
-                            notes: _noteController.text,
-                            kesepakatanBiaya: _parseAmount(_kesepakatanBiayaController.text),
-                            uangMukaTanggal: _uangMukaTanggal,
-                            uangMukaJumlah: _uangMukaJumlah,
-                            tambahanTanggal: _tambahanTanggal,
-                            tambahanJumlah: _tambahanJumlah,
-                            kasBesarTanggal: _kasBesarTanggal,
-                            kasBesarJumlah: _kasBesarJumlah,
-                            keteranganKeuangan: _noteController.text,
-                            incomeDetails: _incomeDetailRows,
-                            expenses: _expenseRows,
-                            // --- Field baru ---
-                            tanggalMasuk: _tanggalMasukController.text.isEmpty
-                                ? null
-                                : _tanggalMasukController.text,
-                            uraianSingkat: _uraianSingkatController.text,
-                            nomorDokumen: _nomorDokumenController.text.isEmpty
-                                ? null
-                                : _nomorDokumenController.text,
-                            progressPercent:
-                                int.tryParse(_progressPercentController.text) ?? 0,
-                            dokumenDibutuhkan: _dokumenDibutuhkanController.text,
-                            dokumenDiterima: _dokumenDiterimaController.text,
-                            tanggalSelesai: _tanggalSelesaiController.text.isEmpty
-                                ? null
-                                : _tanggalSelesaiController.text,
-                            statusPembayaran: _selectedStatusPembayaran,
-                          );
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 4),
+              child: _buildStepIndicator(),
+            ),
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(),
+                onPageChanged: (i) => setState(() => _currentStep = i),
+                children: [
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                    child: _buildStepIdentitas(),
                   ),
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text("Update Dokumen", style: TextStyle(color: Colors.white)),
-                ),
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                    child: _buildStepDokumen(),
+                  ),
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                    child: _buildStepKeuangan(),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            _buildBottomBar(),
+          ],
         ),
       ),
     );
   }
 
+  // ================= STEP INDICATOR =================
+  Widget _buildStepIndicator() {
+    final primary = Theme.of(context).colorScheme.primary;
+    final inactiveColor = Theme.of(context).dividerColor;
+
+    return Row(
+      children: List.generate(_stepTitles.length * 2 - 1, (i) {
+        if (i.isEven) {
+          final stepIndex = i ~/ 2;
+          final isActive = stepIndex <= _currentStep;
+          final isDone = stepIndex < _currentStep;
+          return Column(
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isActive ? primary : Theme.of(context).cardColor,
+                  border: Border.all(
+                    color: isActive ? primary : inactiveColor,
+                    width: 2,
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: isDone
+                    ? const Icon(Icons.check, size: 18, color: Colors.white)
+                    : Text(
+                        '${stepIndex + 1}',
+                        style: TextStyle(
+                          color: isActive
+                              ? Colors.white
+                              : Theme.of(context).textTheme.bodyMedium?.color,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+              ),
+              const SizedBox(height: 6),
+              SizedBox(
+                width: 84,
+                child: Text(
+                  _stepTitles[stepIndex],
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight:
+                        stepIndex == _currentStep ? FontWeight.bold : FontWeight.normal,
+                    color: isActive
+                        ? primary
+                        : Theme.of(context).textTheme.bodySmall?.color,
+                  ),
+                ),
+              ),
+            ],
+          );
+        } else {
+          final lineStepIndex = i ~/ 2;
+          final isActive = lineStepIndex < _currentStep;
+          return Expanded(
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 20),
+              height: 2,
+              color: isActive ? primary : inactiveColor,
+            ),
+          );
+        }
+      }),
+    );
+  }
+
+  // ================= BOTTOM NAV =================
+  Widget _buildBottomBar() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          if (_currentStep > 0)
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _isLoading ? null : _prevStep,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  side: BorderSide(color: Theme.of(context).colorScheme.primary),
+                ),
+                child: Text(
+                  'Kembali',
+                  style: TextStyle(color: Theme.of(context).colorScheme.primary),
+                ),
+              ),
+            ),
+          if (_currentStep > 0) const SizedBox(width: 12),
+          Expanded(
+            child: ElevatedButton(
+              onPressed: _isLoading
+                  ? null
+                  : (_currentStep < _stepTitles.length - 1 ? _nextStep : _submit),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Text(
+                      _currentStep < _stepTitles.length - 1
+                          ? 'Lanjut'
+                          : 'Update Dokumen',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ================= STEP 1: IDENTITAS KLIEN =================
+  Widget _buildStepIdentitas() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel(context, 'Klien'),
+        DropdownButtonFormField<String>(
+          initialValue: _selectedClientId,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Theme.of(context).cardColor,
+            border: InputBorder.none,
+          ),
+          hint: const Text('Pilih klien'),
+          items: _clientList
+              .map(
+                (c) => DropdownMenuItem<String>(
+                  value: c['id'].toString(),
+                  child: Text(c['name'] ?? ''),
+                ),
+              )
+              .toList(),
+          onChanged: (value) => setState(() => _selectedClientId = value),
+        ),
+
+        _buildLabel(context, 'Tanggal Masuk'),
+        _buildDateTile(
+          context,
+          _tanggalMasukController.text.isEmpty ? null : _tanggalMasukController.text,
+          (v) => setState(() => _tanggalMasukController.text = v),
+        ),
+
+        _buildLabel(context, 'Nomor Telepon'),
+        TextField(
+          controller: _phoneController,
+          keyboardType: TextInputType.phone,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(15),
+          ],
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Theme.of(context).cardColor,
+            border: InputBorder.none,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ================= STEP 2: DOKUMEN =================
+  Widget _buildStepDokumen() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel(context, 'Kategori'),
+        DropdownButtonFormField<String>(
+          initialValue: _selectedKategori,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Theme.of(context).cardColor,
+            border: InputBorder.none,
+          ),
+          hint: const Text('Pilih kategori'),
+          items: _kategoriList
+              .map((k) => DropdownMenuItem<String>(value: k, child: Text(k)))
+              .toList(),
+          onChanged: (value) => setState(() => _selectedKategori = value),
+        ),
+
+        _buildLabel(context, 'Jenis Dokumen'),
+        DropdownButtonFormField<int>(
+          initialValue: _selectedDocumentTypeId,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Theme.of(context).cardColor,
+            border: InputBorder.none,
+          ),
+          items: _documentTypes
+              .map((doc) => DropdownMenuItem<int>(
+                    value: doc['id'],
+                    child: Text(doc['name']),
+                  ))
+              .toList(),
+          onChanged: (value) => setState(() => _selectedDocumentTypeId = value),
+        ),
+
+        _buildLabel(context, 'Uraian Singkat'),
+        TextField(
+          controller: _uraianSingkatController,
+          maxLines: 2,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Theme.of(context).cardColor,
+            border: InputBorder.none,
+            hintText: 'Uraian singkat pekerjaan',
+          ),
+        ),
+        _buildLabel(context, 'Nomor Akta/Dokumen'),
+        TextField(
+          controller: _nomorDokumenController,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Theme.of(context).cardColor,
+            border: InputBorder.none,
+            hintText: 'Opsional',
+          ),
+        ),
+
+        _buildLabel(context, "Staff Penanggung Jawab"),
+        DropdownButtonFormField<String>(
+          initialValue: _selectedStaffId,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Theme.of(context).cardColor,
+            border: InputBorder.none,
+          ),
+          items: _staffs
+              .map((staff) => DropdownMenuItem<String>(
+                    value: staff['id'],
+                    child: Text(staff['name']),
+                  ))
+              .toList(),
+          onChanged: (value) => setState(() => _selectedStaffId = value),
+        ),
+
+        const SizedBox(height: 10),
+        _buildLabel(context, 'Progress (%)'),
+        TextField(
+          controller: _progressPercentController,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Theme.of(context).cardColor,
+            border: InputBorder.none,
+          ),
+        ),
+
+        const SizedBox(height: 10),
+        _buildLabel(context, "Status"),
+        DropdownButtonFormField<String>(
+          initialValue: _selectedStatus,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Theme.of(context).cardColor,
+            border: InputBorder.none,
+          ),
+          items: const [
+            DropdownMenuItem(value: "Belum Diproses", child: Text("Belum Diproses")),
+            DropdownMenuItem(value: "Diproses", child: Text("Diproses")),
+            DropdownMenuItem(value: "Tertunda", child: Text("Tertunda")),
+            DropdownMenuItem(value: "Batal", child: Text("Batal")),
+            DropdownMenuItem(value: "Selesai", child: Text("Selesai")),
+          ],
+          onChanged: (value) => setState(() => _selectedStatus = value),
+        ),
+
+        const SizedBox(height: 10),
+        _buildLabel(context, 'Deadline'),
+        TextField(
+          controller: _deadlineController,
+          readOnly: true,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Theme.of(context).cardColor,
+            border: InputBorder.none,
+            suffixIcon: const Icon(Icons.calendar_today),
+          ),
+          onTap: () => _pickDate((v) => setState(() => _deadlineController.text = v)),
+        ),
+
+        _buildLabel(context, 'Tanggal Selesai (jika sudah selesai)'),
+        _buildDateTile(
+          context,
+          _tanggalSelesaiController.text.isEmpty ? null : _tanggalSelesaiController.text,
+          (v) => setState(() => _tanggalSelesaiController.text = v),
+        ),
+
+        const SizedBox(height: 16),
+        Divider(color: Theme.of(context).dividerColor),
+        const SizedBox(height: 8),
+
+        _buildLabel(context, 'Dokumen Dibutuhkan'),
+        TextField(
+          controller: _dokumenDibutuhkanController,
+          maxLines: 3,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Theme.of(context).cardColor,
+            border: InputBorder.none,
+          ),
+        ),
+        _buildLabel(context, 'Dokumen Diterima'),
+        TextField(
+          controller: _dokumenDiterimaController,
+          maxLines: 3,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Theme.of(context).cardColor,
+            border: InputBorder.none,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ================= STEP 3: KEUANGAN =================
+  Widget _buildStepKeuangan() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel(context, 'Kesepakatan Biaya'),
+        TextField(
+          controller: _kesepakatanBiayaController,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Theme.of(context).cardColor,
+            border: InputBorder.none,
+            hintText: 'Nominal kesepakatan awal dengan klien',
+          ),
+        ),
+
+        _buildLabel(context, 'Status Pembayaran'),
+        DropdownButtonFormField<String>(
+          initialValue: _selectedStatusPembayaran,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Theme.of(context).cardColor,
+            border: InputBorder.none,
+          ),
+          items: _statusPembayaranList
+              .map((s) => DropdownMenuItem<String>(value: s, child: Text(s)))
+              .toList(),
+          onChanged: (value) =>
+              setState(() => _selectedStatusPembayaran = value ?? 'Belum Dibayar'),
+        ),
+
+        const SizedBox(height: 20),
+        Divider(color: Theme.of(context).dividerColor),
+        const SizedBox(height: 12),
+
+        Text(
+          "Uang Masuk dari Pemohon",
+          style: GoogleFonts.comfortaa(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).textTheme.titleLarge?.color,
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        _buildLabel(context, 'Uang Muka - Tanggal'),
+        _buildDateTile(context, _uangMukaTanggal, (v) => setState(() => _uangMukaTanggal = v)),
+        _buildLabel(context, 'Uang Muka - Jumlah'),
+        TextField(
+          controller: _uangMukaJumlahController,
+          keyboardType: TextInputType.number,
+          onChanged: (_) => setState(() {}),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Theme.of(context).cardColor,
+            border: InputBorder.none,
+          ),
+        ),
+
+        _buildLabel(context, 'Tambahan - Tanggal'),
+        _buildDateTile(context, _tambahanTanggal, (v) => setState(() => _tambahanTanggal = v)),
+        _buildLabel(context, 'Tambahan - Jumlah'),
+        TextField(
+          controller: _tambahanJumlahController,
+          keyboardType: TextInputType.number,
+          onChanged: (_) => setState(() {}),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Theme.of(context).cardColor,
+            border: InputBorder.none,
+          ),
+        ),
+
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Total Uang Masuk Pemohon',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).textTheme.bodyLarge?.color)),
+              Text(_rupiah.format(_totalPemohon),
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary)),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 20),
+        if (_financialLoaded)
+          DynamicListField(
+            title: 'Rincian Uang Masuk',
+            fields: [
+              DynamicFieldConfig(key: 'label', label: 'Catatan/Kendala', type: DynamicFieldType.text),
+              DynamicFieldConfig(key: 'amount', label: 'Jumlah', type: DynamicFieldType.number),
+            ],
+            initialRows: _incomeDetailRows,
+            onChanged: (rows) => _incomeDetailRows = rows,
+          ),
+
+        const SizedBox(height: 24),
+        Divider(color: Theme.of(context).dividerColor),
+        const SizedBox(height: 12),
+
+        Text(
+          "Uang Masuk dari Kas Besar",
+          style: GoogleFonts.comfortaa(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).textTheme.titleLarge?.color,
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        _buildLabel(context, 'Tanggal'),
+        _buildDateTile(context, _kasBesarTanggal, (v) => setState(() => _kasBesarTanggal = v)),
+        _buildLabel(context, 'Jumlah'),
+        TextField(
+          controller: _kasBesarJumlahController,
+          keyboardType: TextInputType.number,
+          onChanged: (_) => setState(() {}),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Theme.of(context).cardColor,
+            border: InputBorder.none,
+          ),
+        ),
+
+        const SizedBox(height: 24),
+        Divider(color: Theme.of(context).dividerColor),
+        const SizedBox(height: 12),
+
+        if (_financialLoaded)
+          DynamicListField(
+            title: 'Pengeluaran',
+            fields: [
+              DynamicFieldConfig(key: 'proses', label: 'Proses', type: DynamicFieldType.text),
+              DynamicFieldConfig(key: 'tanggal', label: 'Tanggal', type: DynamicFieldType.date),
+              DynamicFieldConfig(key: 'amount', label: 'Jumlah', type: DynamicFieldType.number),
+            ],
+            initialRows: _expenseRows,
+            onChanged: (rows) => setState(() => _expenseRows = rows),
+          ),
+
+        const SizedBox(height: 24),
+        Divider(color: Theme.of(context).dividerColor),
+        const SizedBox(height: 12),
+
+        _buildLabel(context, 'Catatan/Kendala'),
+        TextField(
+          controller: _noteController,
+          maxLines: 3,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Theme.of(context).cardColor,
+            border: InputBorder.none,
+          ),
+        ),
+
+        const SizedBox(height: 20),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              _summaryRow(context, 'Total Masuk Pemohon', _totalPemohon),
+              _summaryRow(context, 'Total Masuk Kas Besar', _kasBesarJumlah),
+              _summaryRow(context, 'Total Pengeluaran', _totalPengeluaran),
+              const Divider(),
+              _summaryRow(context, 'Sisa Kas', _sisaKas, isBold: true),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ================= HELPERS =================
   Widget _buildDateTile(BuildContext context, String? value, void Function(String) onPicked) {
     return InkWell(
       onTap: () => _pickDate((v) => onPicked(v)),
