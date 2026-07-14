@@ -10,7 +10,17 @@ import 'edit_document_view.dart';
 class EditDocumentScreen extends StatefulWidget {
   final DocumentModel document;
 
-  const EditDocumentScreen({super.key, required this.document});
+  /// Step awal saat halaman ini dibuka.
+  /// 0 = Identitas Klien, 1 = Dokumen, 2 = Keuangan.
+  /// Dipakai supaya tombol edit per-section (Data Dokumen / Rincian Keuangan)
+  /// di halaman Detail bisa langsung lompat ke step yang relevan.
+  final int initialStep;
+
+  const EditDocumentScreen({
+    super.key,
+    required this.document,
+    this.initialStep = 0,
+  });
 
   @override
   State<EditDocumentScreen> createState() => _EditDocumentScreenState();
@@ -30,10 +40,8 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   final _tanggalMasukController = TextEditingController();
   final _uraianSingkatController = TextEditingController();
   final _nomorDokumenController = TextEditingController();
-  final _progressPercentController = TextEditingController(text: '0');
   final _dokumenDibutuhkanController = TextEditingController();
   final _dokumenDiterimaController = TextEditingController();
-  final _tanggalSelesaiController = TextEditingController();
   String _selectedStatusPembayaran = 'Belum Dibayar';
   final List<String> _statusPembayaranList = ['Belum Dibayar', 'DP', 'Lunas'];
 
@@ -67,13 +75,16 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   );
 
   // --- Wizard state ---
-  final _pageController = PageController();
-  int _currentStep = 0;
+  late final PageController _pageController;
+  late int _currentStep;
   final List<String> _stepTitles = ['Identitas Klien', 'Dokumen', 'Keuangan'];
 
   @override
   void initState() {
     super.initState();
+
+    _currentStep = widget.initialStep;
+    _pageController = PageController(initialPage: widget.initialStep);
 
     _presenter = EditDocPresenter(this);
 
@@ -147,10 +158,8 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
     _tanggalMasukController.dispose();
     _uraianSingkatController.dispose();
     _nomorDokumenController.dispose();
-    _progressPercentController.dispose();
     _dokumenDibutuhkanController.dispose();
     _dokumenDiterimaController.dispose();
-    _tanggalSelesaiController.dispose();
     super.dispose();
   }
 
@@ -200,10 +209,8 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
     _tanggalMasukController.text = document.tanggalMasuk ?? '';
     _uraianSingkatController.text = document.uraianSingkat;
     _nomorDokumenController.text = document.nomorDokumen ?? '';
-    _progressPercentController.text = document.progressPercent.toString();
     _dokumenDibutuhkanController.text = document.dokumenDibutuhkan;
     _dokumenDiterimaController.text = document.dokumenDiterima;
-    _tanggalSelesaiController.text = document.tanggalSelesai ?? '';
     _selectedStatusPembayaran = document.statusPembayaran;
 
     setState(() {});
@@ -320,12 +327,13 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
       uraianSingkat: _uraianSingkatController.text,
       nomorDokumen:
           _nomorDokumenController.text.isEmpty ? null : _nomorDokumenController.text,
-      progressPercent: int.tryParse(_progressPercentController.text) ?? 0,
+      // Progress% tidak lagi diisi manual — nilai lama dipertahankan.
+      // Persentase keseluruhan dihitung otomatis di dashboard berdasarkan status semua dokumen.
+      progressPercent: widget.document.progressPercent,
       dokumenDibutuhkan: _dokumenDibutuhkanController.text,
       dokumenDiterima: _dokumenDiterimaController.text,
-      tanggalSelesai: _tanggalSelesaiController.text.isEmpty
-          ? null
-          : _tanggalSelesaiController.text,
+      // Tanggal Selesai dihapus dari form — nilai lama dipertahankan apa adanya.
+      tanggalSelesai: widget.document.tanggalSelesai,
       statusPembayaran: _selectedStatusPembayaran,
     );
   }
@@ -648,19 +656,6 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         ),
 
         const SizedBox(height: 10),
-        _buildLabel(context, 'Progress (%)'),
-        TextField(
-          controller: _progressPercentController,
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Theme.of(context).cardColor,
-            border: InputBorder.none,
-          ),
-        ),
-
-        const SizedBox(height: 10),
         _buildLabel(context, "Status"),
         DropdownButtonFormField<String>(
           initialValue: _selectedStatus,
@@ -691,13 +686,6 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
             suffixIcon: const Icon(Icons.calendar_today),
           ),
           onTap: () => _pickDate((v) => setState(() => _deadlineController.text = v)),
-        ),
-
-        _buildLabel(context, 'Tanggal Selesai (jika sudah selesai)'),
-        _buildDateTile(
-          context,
-          _tanggalSelesaiController.text.isEmpty ? null : _tanggalSelesaiController.text,
-          (v) => setState(() => _tanggalSelesaiController.text = v),
         ),
 
         const SizedBox(height: 16),

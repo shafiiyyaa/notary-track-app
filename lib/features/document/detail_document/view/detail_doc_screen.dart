@@ -77,6 +77,18 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
     );
   }
 
+  /// Navigasi ke halaman Edit Dokumen, langsung ke step tertentu.
+  /// step 0 = Identitas Klien, 1 = Dokumen, 2 = Keuangan.
+  Future<void> _goToEdit(DocumentModel doc, {int step = 0}) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditDocumentScreen(document: doc, initialStep: step),
+      ),
+    );
+    _presenter.fetchDocumentDetail(widget.documentId);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading || _document == null) {
@@ -109,17 +121,45 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
+              // ===== STATUS PROGRES DOKUMEN =====
+              // Catatan: persentase keseluruhan TIDAK dihitung/ditampilkan di sini lagi.
+              // Persentase itu adalah angka gabungan semua dokumen dan tempatnya di Dashboard,
+              // dihitung dari bobot status tiap dokumen (Selesai=100%, Diproses=50%, Belum=0%),
+              // lalu dirata-rata. Di halaman ini cukup ditampilkan status dokumen ini saja.
               Text(
-                doc.docType,
+                "Progress Dokumen",
                 style: GoogleFonts.comfortaa(
-                  fontSize: 24,
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: Theme.of(context).textTheme.titleLarge?.color,
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 15),
+              _buildProgress(context, doc),
+              const SizedBox(height: 30),
+              // ===== END STATUS PROGRES DOKUMEN =====
+
+              // ===== DATA KLIEN =====
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Data Klien",
+                    style: GoogleFonts.comfortaa(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).textTheme.titleLarge?.color,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => _goToEdit(doc, step: 0),
+                    icon: Icon(Icons.edit, color: Theme.of(context).colorScheme.primary),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
 
               Card(
                 elevation: 2,
@@ -129,8 +169,9 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
-                      _buildItem(context, "Kategori", doc.kategori.isEmpty ? '-' : doc.kategori),
                       _buildItem(context, "Nama Klien", doc.clientName),
+                      _buildItem(context, "Jenis Dokumen", doc.docType),
+                      _buildItem(context, "Kategori", doc.kategori.isEmpty ? '-' : doc.kategori),
                       _buildItem(context, "Tanggal Masuk", doc.tanggalMasuk ?? '-'),
                       _buildItem(context, "Deadline", doc.deadline),
                       _buildItem(context, "Tanggal Selesai", doc.tanggalSelesai ?? '-'),
@@ -152,58 +193,27 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                   ),
                 ),
               ),
+              // ===== END DATA KLIEN =====
 
               const SizedBox(height: 30),
-              Text(
-                "Progress Dokumen",
-                style: GoogleFonts.comfortaa(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).textTheme.titleLarge?.color,
-                ),
-              ),
-              const SizedBox(height: 15),
-              _buildProgress(context, doc),
-
-              const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      "Progress (%)",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).textTheme.bodyLarge?.color,
-                      ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Data Dokumen",
+                    style: GoogleFonts.comfortaa(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).textTheme.titleLarge?.color,
                     ),
-                    Text(
-                      "${doc.progressPercent}%",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                  IconButton(
+                    onPressed: () => _goToEdit(doc, step: 1),
+                    icon: Icon(Icons.edit, color: Theme.of(context).colorScheme.primary),
+                  ),
+                ],
               ),
-
-              const SizedBox(height: 30),
-              Text(
-                "Kelengkapan Dokumen",
-                style: GoogleFonts.comfortaa(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).textTheme.titleLarge?.color,
-                ),
-              ),
-              const SizedBox(height: 15),
+              const SizedBox(height: 8),
               Card(
                 elevation: 2,
                 color: Theme.of(context).cardColor,
@@ -238,15 +248,24 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
               ),
 
               const SizedBox(height: 30),
-              Text(
-                "Rincian Keuangan",
-                style: GoogleFonts.comfortaa(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).textTheme.titleLarge?.color,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Rincian Keuangan",
+                    style: GoogleFonts.comfortaa(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).textTheme.titleLarge?.color,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => _goToEdit(doc, step: 2),
+                    icon: Icon(Icons.edit, color: Theme.of(context).colorScheme.primary),
+                  ),
+                ],
               ),
-              const SizedBox(height: 15),
+              const SizedBox(height: 8),
 
               Card(
                 elevation: 2,
@@ -317,28 +336,6 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
               SizedBox(
                 width: double.infinity,
                 height: 52,
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.edit, color: Colors.white),
-                  label: const Text("Edit Dokumen",
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  onPressed: () async {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => EditDocumentScreen(document: doc)),
-                    );
-                    _presenter.fetchDocumentDetail(widget.documentId);
-                  },
-                ),
-              ),
-
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
                 child: OutlinedButton.icon(
                   icon: const Icon(Icons.delete_outline, color: Colors.red),
                   label: const Text("Hapus Dokumen",
@@ -401,7 +398,11 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
     );
   }
 
+  // ================= STATUS PROGRES (bukan persentase, hanya penanda tahap) =================
   Widget _buildProgress(BuildContext context, DocumentModel doc) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final inactiveColor = Theme.of(context).dividerColor;
+
     int step = 0;
     if (doc.status == "Diproses") step = 1;
     if (doc.status == "Selesai") step = 2;
@@ -409,27 +410,60 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        _circle(context, "Belum", step >= 0),
+        _circle(context, "Belum", step >= 0, primary, inactiveColor),
         Expanded(
-            child: Divider(thickness: 2, color: step >= 1 ? Colors.green : Theme.of(context).dividerColor)),
-        _circle(context, "Proses", step >= 1),
+          child: Divider(
+            thickness: 2,
+            color: step >= 1 ? primary : inactiveColor,
+          ),
+        ),
+        _circle(context, "Proses", step >= 1, primary, inactiveColor),
         Expanded(
-            child: Divider(thickness: 2, color: step >= 2 ? Colors.green : Theme.of(context).dividerColor)),
-        _circle(context, "Selesai", step >= 2),
+          child: Divider(
+            thickness: 2,
+            color: step >= 2 ? primary : inactiveColor,
+          ),
+        ),
+        _circle(context, "Selesai", step >= 2, primary, inactiveColor),
       ],
     );
   }
 
-  Widget _circle(BuildContext context, String title, bool active) {
+  Widget _circle(
+    BuildContext context,
+    String title,
+    bool active,
+    Color primary,
+    Color inactiveColor,
+  ) {
     return Column(
       children: [
-        CircleAvatar(
-          radius: 18,
-          backgroundColor: active ? Colors.green : Colors.grey.shade400,
-          child: const Icon(Icons.check, color: Colors.white),
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: active ? primary : Theme.of(context).cardColor,
+            border: Border.all(
+              color: active ? primary : inactiveColor,
+              width: 2,
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Icon(
+            Icons.check,
+            size: 18,
+            color: active ? Colors.white : inactiveColor,
+          ),
         ),
         const SizedBox(height: 5),
-        Text(title, style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
+        Text(
+          title,
+          style: TextStyle(
+            color: active ? primary : Theme.of(context).textTheme.bodySmall?.color,
+            fontWeight: active ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
       ],
     );
   }
