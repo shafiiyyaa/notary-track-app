@@ -62,7 +62,11 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   bool _isLoading = false;
   List<Map<String, dynamic>> _staffs = [];
   String? _selectedStaffId;
+
+  // --- Status sekarang dihitung otomatis, ini cuma dipakai buat inisialisasi toggle override ---
   String? _selectedStatus;
+  bool _manualOverride = false;
+  String? _overrideStatus;
 
   List<Map<String, dynamic>> _clientList = [];
   String? _selectedClientId;
@@ -101,6 +105,10 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
     _deadlineController.text = doc.deadline;
     _noteController.text = doc.notes;
     _selectedStatus = doc.status;
+    if (doc.status == 'Tertunda' || doc.status == 'Batal') {
+      _manualOverride = true;
+      _overrideStatus = doc.status;
+    }
   }
 
   Future<void> _loadDocumentTypes() async {
@@ -144,6 +152,34 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
       );
 
   double get _sisaKas => _totalPemohon + _kasBesarJumlah - _totalPengeluaran;
+
+  // ================= STATUS OTOMATIS =================
+  bool get _hasDocumentData =>
+      _parseAmount(_kesepakatanBiayaController.text) > 0 ||
+      _uraianSingkatController.text.trim().isNotEmpty ||
+      _dokumenDibutuhkanController.text.trim().isNotEmpty ||
+      _dokumenDiterimaController.text.trim().isNotEmpty;
+
+  bool get _hasFinanceData =>
+      _uangMukaJumlah > 0 ||
+      _tambahanJumlah > 0 ||
+      _kasBesarJumlah > 0 ||
+      _incomeDetailRows.any((r) => ((r['amount'] as num?) ?? 0) > 0) ||
+      _expenseRows.any((r) => ((r['amount'] as num?) ?? 0) > 0);
+
+  bool get _isLunas {
+    final kesepakatan = _parseAmount(_kesepakatanBiayaController.text);
+    return kesepakatan > 0 && _totalPemohon >= kesepakatan;
+  }
+
+  String get _autoStatus {
+    if (!_hasDocumentData && !_hasFinanceData) return 'Belum Diproses';
+    if (_hasDocumentData && _isLunas) return 'Selesai';
+    return 'Diproses';
+  }
+
+  String get _finalStatus =>
+      _manualOverride && _overrideStatus != null ? _overrideStatus! : _autoStatus;
 
   @override
   void dispose() {
@@ -204,6 +240,10 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
     _selectedKategori = document.kategori.isNotEmpty ? document.kategori : null;
     _selectedStaffId = document.staffId;
     _selectedStatus = document.status;
+    if (document.status == 'Tertunda' || document.status == 'Batal') {
+      _manualOverride = true;
+      _overrideStatus = document.status;
+    }
     _financialLoaded = true;
 
     _tanggalMasukController.text = document.tanggalMasuk ?? '';
@@ -265,8 +305,8 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         _showSnack('Pilih staff penanggung jawab dulu');
         return false;
       }
-      if (_selectedStatus == null) {
-        _showSnack('Pilih status dulu');
+      if (_manualOverride && _overrideStatus == null) {
+        _showSnack('Pilih status Tertunda/Batal, atau matikan toggle manual');
         return false;
       }
       if (_deadlineController.text.isEmpty) {
@@ -310,7 +350,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
       kategori: _selectedKategori!,
       staffId: _selectedStaffId!,
       deadline: _deadlineController.text,
-      status: _selectedStatus!,
+      status: _finalStatus,
       notes: _noteController.text,
       kesepakatanBiaya: _parseAmount(_kesepakatanBiayaController.text),
       uangMukaTanggal: _uangMukaTanggal,
@@ -328,7 +368,6 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
       nomorDokumen:
           _nomorDokumenController.text.isEmpty ? null : _nomorDokumenController.text,
       // Progress% tidak lagi diisi manual — nilai lama dipertahankan.
-      // Persentase keseluruhan dihitung otomatis di dashboard berdasarkan status semua dokumen.
       progressPercent: widget.document.progressPercent,
       dokumenDibutuhkan: _dokumenDibutuhkanController.text,
       dokumenDiterima: _dokumenDiterimaController.text,
@@ -620,6 +659,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         TextField(
           controller: _uraianSingkatController,
           maxLines: 2,
+          onChanged: (_) => setState(() {}),
           decoration: InputDecoration(
             filled: true,
             fillColor: Theme.of(context).cardColor,
@@ -655,24 +695,72 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           onChanged: (value) => setState(() => _selectedStaffId = value),
         ),
 
+        // --- DIUBAH: Status jadi otomatis + toggle override ---
         const SizedBox(height: 10),
         _buildLabel(context, "Status"),
-        DropdownButtonFormField<String>(
-          initialValue: _selectedStatus,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Theme.of(context).cardColor,
-            border: InputBorder.none,
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(8),
           ),
-          items: const [
-            DropdownMenuItem(value: "Belum Diproses", child: Text("Belum Diproses")),
-            DropdownMenuItem(value: "Diproses", child: Text("Diproses")),
-            DropdownMenuItem(value: "Tertunda", child: Text("Tertunda")),
-            DropdownMenuItem(value: "Batal", child: Text("Batal")),
-            DropdownMenuItem(value: "Selesai", child: Text("Selesai")),
-          ],
-          onChanged: (value) => setState(() => _selectedStatus = value),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Status otomatis: $_autoStatus',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              Icon(Icons.auto_awesome, size: 16, color: Theme.of(context).colorScheme.primary),
+            ],
+          ),
         ),
+        const SizedBox(height: 4),
+        Text(
+          'Status dihitung otomatis berdasarkan data dokumen & keuangan yang sudah diisi.',
+          style: TextStyle(
+            fontSize: 11,
+            color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Checkbox(
+              value: _manualOverride,
+              onChanged: (value) => setState(() {
+                _manualOverride = value ?? false;
+                if (!_manualOverride) _overrideStatus = null;
+              }),
+              activeColor: Theme.of(context).colorScheme.primary,
+            ),
+            Expanded(
+              child: Text(
+                'Tandai manual sebagai Tertunda / Batal',
+                style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodyLarge?.color),
+              ),
+            ),
+          ],
+        ),
+        if (_manualOverride)
+          DropdownButtonFormField<String>(
+            initialValue: _overrideStatus,
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Theme.of(context).cardColor,
+              border: InputBorder.none,
+            ),
+            hint: const Text('Pilih status'),
+            items: const [
+              DropdownMenuItem(value: "Tertunda", child: Text("Tertunda")),
+              DropdownMenuItem(value: "Batal", child: Text("Batal")),
+            ],
+            onChanged: (value) => setState(() => _overrideStatus = value),
+          ),
 
         const SizedBox(height: 10),
         _buildLabel(context, 'Deadline'),
@@ -696,6 +784,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         TextField(
           controller: _dokumenDibutuhkanController,
           maxLines: 3,
+          onChanged: (_) => setState(() {}),
           decoration: InputDecoration(
             filled: true,
             fillColor: Theme.of(context).cardColor,
@@ -706,6 +795,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         TextField(
           controller: _dokumenDiterimaController,
           maxLines: 3,
+          onChanged: (_) => setState(() {}),
           decoration: InputDecoration(
             filled: true,
             fillColor: Theme.of(context).cardColor,
@@ -725,6 +815,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         TextField(
           controller: _kesepakatanBiayaController,
           keyboardType: TextInputType.number,
+          onChanged: (_) => setState(() {}),
           decoration: InputDecoration(
             filled: true,
             fillColor: Theme.of(context).cardColor,
@@ -821,7 +912,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
               DynamicFieldConfig(key: 'amount', label: 'Jumlah', type: DynamicFieldType.number),
             ],
             initialRows: _incomeDetailRows,
-            onChanged: (rows) => _incomeDetailRows = rows,
+            onChanged: (rows) => setState(() => _incomeDetailRows = rows),
           ),
 
         const SizedBox(height: 24),

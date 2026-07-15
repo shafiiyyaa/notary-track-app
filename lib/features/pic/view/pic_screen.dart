@@ -22,7 +22,7 @@ class _PicScreenState extends State<PicScreen>
   List<StaffModel> _staffList = [];
   List<ClientModel> _clientList = [];
   bool _isLoadingStaff = false;
-  bool _isLoadingClient = false;
+  final bool _isLoadingClient = false;
 
   final _searchController = TextEditingController();
   String _searchQuery = '';
