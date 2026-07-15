@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:notarytrackapp/features/onboarding/view/splash_screen.dart';
-import 'package:notarytrackapp/services/notification_service.dart';
+import 'package:notarytrackapp/features/notification/services/notification_service.dart';
 
 import 'theme/app_theme.dart';
 
@@ -15,8 +15,7 @@ void main() async {
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ3bWl4c2R5cW1ya2RieGFsenlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzODYyMzIsImV4cCI6MjA5NTk2MjIzMn0.ZVm6ZEDlN2tooY1x2NGhZGnA3_uqGVwcu7arcz0Fm0Y',
   );
 
-  // Inisialisasi Notification
-  await NotificationService.init();
+  await NotificationService().init(); 
 
   runApp(const NotaryTrackApp());
 }
