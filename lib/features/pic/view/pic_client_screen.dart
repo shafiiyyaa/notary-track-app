@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../model/staff_model.dart';
-import '../../client/model/client_model.dart';
-import '../presenter/pic_presenter.dart';
-import '../../client/presenter/client_presenter.dart';
-import 'pic_view.dart';
-import '../../client/view/client_view.dart';
+import '../model/pic_client_model.dart';
+import '../presenter/pic_client_presenter.dart';
+import 'pic_client_view.dart';
 
 class PicScreen extends StatefulWidget {
   const PicScreen({super.key});
@@ -14,15 +11,12 @@ class PicScreen extends StatefulWidget {
   State<PicScreen> createState() => _PicScreenState();
 }
 
-class _PicScreenState extends State<PicScreen>
-    implements PicViewContract, ClientViewContract {
-  late PicPresenter _picPresenter;
-  late ClientPresenter _clientPresenter;
+class _PicScreenState extends State<PicScreen> implements PicClientViewContract {
+  late PicClientPresenter _presenter;
 
   List<StaffModel> _staffList = [];
   List<ClientModel> _clientList = [];
-  bool _isLoadingStaff = false;
-  final bool _isLoadingClient = false;
+  bool _isLoading = false;
 
   final _searchController = TextEditingController();
   String _searchQuery = '';
@@ -37,10 +31,9 @@ class _PicScreenState extends State<PicScreen>
   @override
   void initState() {
     super.initState();
-    _picPresenter = PicPresenter(this);
-    _clientPresenter = ClientPresenter(this);
-    _picPresenter.fetchStaffList();
-    _clientPresenter.fetchClients();
+    _presenter = PicClientPresenter(this);
+    _presenter.fetchStaffList();
+    _presenter.fetchClients();
     _searchController.addListener(() {
       setState(() => _searchQuery = _searchController.text.toLowerCase());
     });
@@ -52,23 +45,21 @@ class _PicScreenState extends State<PicScreen>
     super.dispose();
   }
 
-  // ================= PicViewContract =================
+  // ================= PicClientViewContract =================
   @override
-  void showLoading() => setState(() => _isLoadingStaff = true);
+  void showLoading() => setState(() => _isLoading = true);
 
   @override
-  void hideLoading() => setState(() => _isLoadingStaff = false);
+  void hideLoading() => setState(() => _isLoading = false);
 
   @override
   void onStaffLoaded(List<StaffModel> staffList) =>
       setState(() => _staffList = staffList);
 
-  // ================= ClientViewContract (nama method beda biar gak bentrok) =================
   @override
   void onClientsLoaded(List<ClientModel> clientList) =>
       setState(() => _clientList = clientList);
 
-  // Dipakai bareng oleh PIC & Client presenter (nama method sama persis di kedua contract)
   @override
   void onActionSuccess(String message) {
     if (!mounted) return;
@@ -97,6 +88,7 @@ class _PicScreenState extends State<PicScreen>
   List<ClientModel> get _filteredClients {
     if (_filterMode == 'PIC') return [];
     return _clientList.where((c) {
+      // Pencarian berdasarkan nama dan username
       return _searchQuery.isEmpty ||
           c.name.toLowerCase().contains(_searchQuery) ||
           c.username.toLowerCase().contains(_searchQuery);
@@ -108,7 +100,6 @@ class _PicScreenState extends State<PicScreen>
 
   // ================= Filter Bottom Sheet =================
   Future<void> _openFilterSheet() async {
-    // Nilai sementara di dalam sheet, baru di-commit ke state utama kalau user tekan "Filter".
     String tempFilterMode = _filterMode;
 
     await showModalBottomSheet<void>(
@@ -141,7 +132,6 @@ class _PicScreenState extends State<PicScreen>
                     ),
                   ),
                   const SizedBox(height: 20),
-
                   _buildFilterDropdown(
                     context: context,
                     hint: 'Tampilkan Semua',
@@ -161,7 +151,6 @@ class _PicScreenState extends State<PicScreen>
                         setSheetState(() => tempFilterMode = value ?? 'Semua'),
                   ),
                   const SizedBox(height: 24),
-
                   Row(
                     children: [
                       Expanded(
@@ -272,9 +261,9 @@ class _PicScreenState extends State<PicScreen>
               onPressed: () {
                 Navigator.pop(dialogContext);
                 if (isEdit) {
-                  _picPresenter.updateStaff(existing.id, controller.text);
+                  _presenter.updateStaff(existing.id, controller.text);
                 } else {
-                  _picPresenter.addStaff(controller.text);
+                  _presenter.addStaff(controller.text);
                 }
               },
               child: const Text('Simpan'),
@@ -302,7 +291,7 @@ class _PicScreenState extends State<PicScreen>
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext);
-                _picPresenter.deleteStaff(staff.id);
+                _presenter.deleteStaff(staff.id);
               },
               style: TextButton.styleFrom(foregroundColor: Colors.red),
               child: const Text('Hapus'),
@@ -362,7 +351,7 @@ class _PicScreenState extends State<PicScreen>
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext);
-                _clientPresenter.createClient(
+                _presenter.createClient(
                   name: nameController.text,
                   username: usernameController.text,
                   password: passwordController.text,
@@ -393,7 +382,7 @@ class _PicScreenState extends State<PicScreen>
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext);
-                _clientPresenter.deleteClient(client.id);
+                _presenter.deleteClient(client.id);
               },
               style: TextButton.styleFrom(foregroundColor: Colors.red),
               child: const Text('Hapus'),
@@ -439,7 +428,6 @@ class _PicScreenState extends State<PicScreen>
   Widget build(BuildContext context) {
     final staff = _filteredStaff;
     final clients = _filteredClients;
-    final isLoading = _isLoadingStaff || _isLoadingClient;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -468,7 +456,6 @@ class _PicScreenState extends State<PicScreen>
                 ),
               ),
               const SizedBox(height: 16),
-
               Row(
                 children: [
                   Expanded(
@@ -526,7 +513,6 @@ class _PicScreenState extends State<PicScreen>
                   ),
                 ],
               ),
-
               if (_hasActiveFilter)
                 Align(
                   alignment: Alignment.centerRight,
@@ -535,7 +521,6 @@ class _PicScreenState extends State<PicScreen>
                     child: const Text('Reset Filter', style: TextStyle(fontSize: 12)),
                   ),
                 ),
-
               const SizedBox(height: 8),
               Align(
                 alignment: Alignment.centerLeft,
@@ -550,9 +535,8 @@ class _PicScreenState extends State<PicScreen>
                 ),
               ),
               const SizedBox(height: 12),
-
               Expanded(
-                child: isLoading
+                child: _isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : ListView(
                         children: [
@@ -632,12 +616,12 @@ class _PicScreenState extends State<PicScreen>
   Widget _buildStaffCard(BuildContext context, StaffModel staff) {
     final initials = staff.name.isNotEmpty
         ? staff.name
-              .trim()
-              .split(' ')
-              .map((w) => w.isNotEmpty ? w[0] : '')
-              .take(2)
-              .join()
-              .toUpperCase()
+            .trim()
+            .split(' ')
+            .map((w) => w.isNotEmpty ? w[0] : '')
+            .take(2)
+            .join()
+            .toUpperCase()
         : '?';
 
     return Container(
@@ -708,12 +692,12 @@ class _PicScreenState extends State<PicScreen>
   Widget _buildClientCard(BuildContext context, ClientModel client) {
     final initials = client.name.isNotEmpty
         ? client.name
-              .trim()
-              .split(' ')
-              .map((w) => w.isNotEmpty ? w[0] : '')
-              .take(2)
-              .join()
-              .toUpperCase()
+            .trim()
+            .split(' ')
+            .map((w) => w.isNotEmpty ? w[0] : '')
+            .take(2)
+            .join()
+            .toUpperCase()
         : '?';
 
     return Container(

@@ -3,7 +3,7 @@ import '../dashboard/view/dashboard_screen.dart';
 import '../document/document_list/view/document_list_screen.dart';
 import '../document/add_document/view/add_doc_screen.dart';
 import '../profile/view/profile_screen.dart';
-import '../pic/view/pic_screen.dart';
+import '../pic/view/pic_client_screen.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -39,7 +39,9 @@ class _MainNavigationState extends State<MainNavigation> {
               onPressed: () async {
                 final result = await Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const AddDocumentScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => const AddDocumentScreen(),
+                  ),
                 );
                 if (result == true) {
                   _documentListKey.currentState?.refreshDocuments();
@@ -71,16 +73,31 @@ class _MainNavigationState extends State<MainNavigation> {
     );
   }
 
-  Widget _buildNavItem(BuildContext context, IconData icon, String label, int index) {
+  Widget _buildNavItem(
+    BuildContext context,
+    IconData icon,
+    String label,
+    int index,
+  ) {
     final isSelected = _selectedIndex == index;
     return GestureDetector(
       onTap: () => setState(() => _selectedIndex = index),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: isSelected ? Colors.white : Colors.white70, size: 24),
+          Icon(
+            icon,
+            color: isSelected ? Colors.white : Colors.white70,
+            size: 24,
+          ),
           const SizedBox(height: 2),
-          Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.white70, fontSize: 10)),
+          Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.white70,
+              fontSize: 10,
+            ),
+          ),
         ],
       ),
     );
