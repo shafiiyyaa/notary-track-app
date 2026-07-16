@@ -50,7 +50,9 @@ class ClientPresenter {
     required String username,
     required String password,
   }) async {
-    if (name.trim().isEmpty || username.trim().isEmpty || password.trim().isEmpty) {
+    if (name.trim().isEmpty ||
+        username.trim().isEmpty ||
+        password.trim().isEmpty) {
       _view.onError('Nama, username, dan password wajib diisi');
       return;
     }
@@ -72,19 +74,31 @@ class ClientPresenter {
 
       _view.hideLoading();
 
-      if (response.status != 200) {
-        final data = response.data;
-        final errMsg = (data is Map && data['error'] != null)
-            ? data['error'].toString()
-            : 'Gagal membuat akun klien';
-        _view.onError(errMsg);
+      final data = response.data;
+      if (data is Map && data['error'] != null) {
+        _view.onError(data['error'].toString());
         return;
       }
 
       _view.onActionSuccess('Klien berhasil ditambahkan');
       fetchClients();
+    } on FunctionException catch (e) {
+      debugPrint('FUNCTION EXCEPTION FULL: ${e.details}');
+      _view.hideLoading();
+
+      String pesan = 'Gagal membuat akun klien (status ${e.status})';
+      final details = e.details;
+      if (details is Map && details['error'] != null) {
+        final errVal = details['error'];
+        if (errVal is String && errVal.isNotEmpty) {
+          pesan = errVal;
+        } else if (errVal is Map && errVal.isNotEmpty) {
+          pesan = errVal.toString();
+        }
+      }
+      _view.onError(pesan);
     } catch (e) {
-      debugPrint('ERROR CREATE CLIENT: $e');
+      debugPrint('ERROR CREATE CLIENT (unexpected): $e');
       _view.hideLoading();
       _view.onError('Gagal membuat akun klien: ${e.toString()}');
     }
@@ -100,7 +114,9 @@ class ClientPresenter {
     } catch (e) {
       debugPrint('ERROR DELETE CLIENT: $e');
       _view.hideLoading();
-      final msg = e.toString().contains('foreign key') || e.toString().contains('violates')
+      final msg =
+          e.toString().contains('foreign key') ||
+              e.toString().contains('violates')
           ? 'Klien ini masih dipakai di salah satu dokumen, tidak bisa dihapus.'
           : 'Gagal menghapus klien: ${e.toString()}';
       _view.onError(msg);
