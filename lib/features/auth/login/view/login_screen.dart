@@ -97,59 +97,64 @@ class _LoginScreenState extends State<LoginScreen>
               ),
               const SizedBox(height: 30),
 
-              // --- TOGGLE SWITCH ROLE (STAFF / KLIEN) ---
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: Theme.of(context).dividerColor),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => setState(() => _selectedRole = 'Staff'),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(
-                            color: _selectedRole == 'Staff' ? Theme.of(context).colorScheme.primary : Colors.transparent,
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          child: Center(
-                            child: Text(
-                              'Staff',
-                              style: TextStyle(
-                                color: _selectedRole == 'Staff' ? Colors.white : Colors.grey,
-                                fontWeight: FontWeight.bold,
+              // --- TOGGLE SWITCH ROLE (STAFF / KLIEN) DIKECILKAN ---
+              Center(
+                child: Container(
+                  width: 220, // Lebar diatur lebih kecil agar tidak memenuhi layar
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(color: Theme.of(context).dividerColor),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _selectedRole = 'Staff'),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 10), // Padding diperkecil
+                            decoration: BoxDecoration(
+                              color: _selectedRole == 'Staff' ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            child: Center(
+                              child: Text(
+                                'Staff',
+                                style: TextStyle(
+                                  color: _selectedRole == 'Staff' ? Colors.white : Colors.grey,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13, // Teks diperkecil
+                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => setState(() => _selectedRole = 'Klien'),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(
-                            color: _selectedRole == 'Klien' ? Theme.of(context).colorScheme.primary : Colors.transparent,
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          child: Center(
-                            child: Text(
-                              'Klien',
-                              style: TextStyle(
-                                color: _selectedRole == 'Klien' ? Colors.white : Colors.grey,
-                                fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _selectedRole = 'Klien'),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 10), // Padding diperkecil
+                            decoration: BoxDecoration(
+                              color: _selectedRole == 'Klien' ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            child: Center(
+                              child: Text(
+                                'Klien',
+                                style: TextStyle(
+                                  color: _selectedRole == 'Klien' ? Colors.white : Colors.grey,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13, // Teks diperkecil
+                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 30),

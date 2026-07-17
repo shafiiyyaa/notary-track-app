@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../model/profile_model.dart';
 import '../presenter/profile.presenter.dart';
@@ -129,8 +130,16 @@ class _ProfileScreenState extends State<ProfileScreen>
                         Icons.logout,
                         "Keluar",
                         () async {
+                          // 1. Hapus sesi role di SharedPreferences
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.clear(); 
+                          
+                          // 2. Hapus sesi Supabase Auth
                           await Supabase.instance.client.auth.signOut();
+                          
                           if (!mounted) return;
+                          
+                          // 3. Arahkan ke Login dan hapus semua riwayat halaman
                           Navigator.pushAndRemoveUntil(
                             context,
                             MaterialPageRoute(builder: (_) => const LoginScreen()),

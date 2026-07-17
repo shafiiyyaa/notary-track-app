@@ -42,8 +42,6 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   final _nomorDokumenController = TextEditingController();
   final _dokumenDibutuhkanController = TextEditingController();
   final _dokumenDiterimaController = TextEditingController();
-  String _selectedStatusPembayaran = 'Belum Dibayar';
-  final List<String> _statusPembayaranList = ['Belum Dibayar', 'DP', 'Lunas'];
 
   String? _uangMukaTanggal;
   String? _tambahanTanggal;
@@ -175,10 +173,23 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
     return kesepakatan > 0 && _totalPemohon >= kesepakatan;
   }
 
+  // Hitung Status Dokumen (Belum Diproses, Diproses, Selesai)
   String get _autoStatus {
     if (!_hasDocumentData && !_hasFinanceData) return 'Belum Diproses';
     if (_hasDocumentData && _isLunas) return 'Selesai';
     return 'Diproses';
+  }
+
+  // Hitung Status Pembayaran (Belum Dibayar, DP, Lunas)
+  String get _autoStatusPembayaran {
+    final kesepakatan = _parseAmount(_kesepakatanBiayaController.text);
+    if (kesepakatan == 0 || _totalPemohon == 0) {
+      return 'Belum Dibayar';
+    } else if (_totalPemohon >= kesepakatan) {
+      return 'Lunas';
+    } else {
+      return 'DP';
+    }
   }
 
   String get _finalStatus => _manualOverride && _overrideStatus != null
@@ -259,7 +270,6 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
     _nomorDokumenController.text = document.nomorDokumen ?? '';
     _dokumenDibutuhkanController.text = document.dokumenDibutuhkan;
     _dokumenDiterimaController.text = document.dokumenDiterima;
-    _selectedStatusPembayaran = document.statusPembayaran;
 
     setState(() {});
   }
@@ -383,7 +393,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           : _nomorDokumenController.text,
       dokumenDibutuhkan: _dokumenDibutuhkanController.text,
       dokumenDiterima: _dokumenDiterimaController.text,
-      statusPembayaran: _selectedStatusPembayaran,
+      statusPembayaran: _autoStatusPembayaran, // Mengirim hasil otomatis
     );
   }
 
@@ -718,7 +728,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           onChanged: (value) => setState(() => _selectedStaffId = value),
         ),
 
-        // --- DIUBAH: Status jadi otomatis + toggle override ---
+        // --- Status jadi otomatis + toggle override ---
         const SizedBox(height: 10),
         _buildLabel(context, "Status"),
         Container(
@@ -751,9 +761,11 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           'Status dihitung otomatis berdasarkan data dokumen & keuangan yang sudah diisi.',
           style: TextStyle(
             fontSize: 11,
-            color: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+            color: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.color
+                ?.withValues(alpha: 0.6),
           ),
         ),
         const SizedBox(height: 12),
@@ -857,21 +869,46 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           ),
         ),
 
+        // --- STATUS PEMBAYARAN OTOMATIS ---
         _buildLabel(context, 'Status Pembayaran'),
-        DropdownButtonFormField<String>(
-          initialValue: _selectedStatusPembayaran,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Theme.of(context).cardColor,
-            border: InputBorder.none,
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(8),
           ),
-          items: _statusPembayaranList
-              .map((s) => DropdownMenuItem<String>(value: s, child: Text(s)))
-              .toList(),
-          onChanged: (value) => setState(
-            () => _selectedStatusPembayaran = value ?? 'Belum Dibayar',
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Status otomatis: $_autoStatusPembayaran',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              Icon(
+                Icons.monetization_on_outlined,
+                size: 16,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ],
           ),
         ),
+        const SizedBox(height: 4),
+        Text(
+          'Status pembayaran dihitung otomatis berdasarkan total uang masuk pemohon vs kesepakatan biaya.',
+          style: TextStyle(
+            fontSize: 11,
+            color: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.color
+                ?.withValues(alpha: 0.6),
+          ),
+        ),
+        const SizedBox(height: 12),
 
         const SizedBox(height: 20),
         Divider(color: Theme.of(context).dividerColor),

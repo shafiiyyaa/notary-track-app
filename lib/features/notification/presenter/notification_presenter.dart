@@ -14,9 +14,10 @@ class NotificationPresenter {
       List<NotificationModel> list = [];
 
       // 1. AMBIL DATA DEADLINE DARI TABEL DOCUMENTS (Otomatis)
+      // Tambahkan kolom 'status' di select
       final docResponse = await _supabase
           .from('documents')
-          .select('id, deadline, clients(name), document_types(name)')
+          .select('id, deadline, status, clients(name), document_types(name)')
           .order('deadline', ascending: true);
 
       for (final item in docResponse) {
@@ -24,8 +25,15 @@ class NotificationPresenter {
         final remainingDays = deadline.difference(DateTime.now()).inDays;
 
         final docId = item['id'] as int;
+        final status = item['status'] ?? 'Belum Diproses';
         final clientName = item['clients']?['name'] ?? '';
         final documentType = item['document_types']?['name'] ?? '';
+
+        // Jika dokumen sudah Selesai atau Batal, hapus alarm notif di HP dan SKIP (jangan dimasukkan ke list)
+        if (status == 'Selesai' || status == 'Batal') {
+          await NotificationService().cancelForDocument(docId);
+          continue; // Loncati kode di bawahnya, jangan masukin ke list
+        }
 
         // Jadwalkan notif HP H-7, H-3, H-1, H-0
         await NotificationService().scheduleForDocument(
