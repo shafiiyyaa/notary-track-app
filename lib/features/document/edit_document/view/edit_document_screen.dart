@@ -57,14 +57,18 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   int? _selectedDocumentTypeId;
 
   String? _selectedKategori;
-  final List<String> _kategoriList = ['Notaris', 'PPAT', 'Waarmerking', 'Legalisasi'];
+  final List<String> _kategoriList = [
+    'Notaris',
+    'PPAT',
+    'Waarmerking',
+    'Legalisasi',
+  ];
 
   bool _isLoading = false;
   List<Map<String, dynamic>> _staffs = [];
   String? _selectedStaffId;
 
   // --- Status dihitung otomatis, ini cuma dipakai buat inisialisasi toggle override ---
-  String? _selectedStatus;
   bool _manualOverride = false;
   String? _overrideStatus;
 
@@ -104,7 +108,6 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
     _phoneController.text = doc.phone;
     _deadlineController.text = doc.deadline;
     _noteController.text = doc.notes;
-    _selectedStatus = doc.status;
     if (doc.status == 'Tertunda' || doc.status == 'Batal') {
       _manualOverride = true;
       _overrideStatus = doc.status;
@@ -178,8 +181,9 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
     return 'Diproses';
   }
 
-  String get _finalStatus =>
-      _manualOverride && _overrideStatus != null ? _overrideStatus! : _autoStatus;
+  String get _finalStatus => _manualOverride && _overrideStatus != null
+      ? _overrideStatus!
+      : _autoStatus;
 
   @override
   void dispose() {
@@ -217,29 +221,33 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         : document.kesepakatanBiaya.toStringAsFixed(0);
 
     _uangMukaTanggal = document.uangMukaTanggal;
-    _uangMukaJumlahController.text =
-        document.uangMukaJumlah == 0 ? '' : document.uangMukaJumlah.toStringAsFixed(0);
+    _uangMukaJumlahController.text = document.uangMukaJumlah == 0
+        ? ''
+        : document.uangMukaJumlah.toStringAsFixed(0);
 
     _tambahanTanggal = document.tambahanTanggal;
-    _tambahanJumlahController.text =
-        document.tambahanJumlah == 0 ? '' : document.tambahanJumlah.toStringAsFixed(0);
+    _tambahanJumlahController.text = document.tambahanJumlah == 0
+        ? ''
+        : document.tambahanJumlah.toStringAsFixed(0);
 
     _kasBesarTanggal = document.kasBesarTanggal;
-    _kasBesarJumlahController.text =
-        document.kasBesarJumlah == 0 ? '' : document.kasBesarJumlah.toStringAsFixed(0);
+    _kasBesarJumlahController.text = document.kasBesarJumlah == 0
+        ? ''
+        : document.kasBesarJumlah.toStringAsFixed(0);
 
     _incomeDetailRows = document.incomeDetails
         .map((e) => {'label': e.label, 'amount': e.amount})
         .toList();
 
     _expenseRows = document.expenses
-        .map((e) => {'proses': e.proses, 'tanggal': e.tanggal, 'amount': e.amount})
+        .map(
+          (e) => {'proses': e.proses, 'tanggal': e.tanggal, 'amount': e.amount},
+        )
         .toList();
 
     _selectedDocumentTypeId = document.documentTypeId;
     _selectedKategori = document.kategori.isNotEmpty ? document.kategori : null;
     _selectedStaffId = document.staffId;
-    _selectedStatus = document.status;
     if (document.status == 'Tertunda' || document.status == 'Batal') {
       _manualOverride = true;
       _overrideStatus = document.status;
@@ -262,7 +270,9 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   @override
   void onError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _pickDate(void Function(String) onPicked) async {
@@ -280,7 +290,9 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   }
 
   void _showSnack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   // --- Validasi per step ---
@@ -362,11 +374,13 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
       keteranganKeuangan: _noteController.text,
       incomeDetails: _incomeDetailRows,
       expenses: _expenseRows,
-      tanggalMasuk:
-          _tanggalMasukController.text.isEmpty ? null : _tanggalMasukController.text,
+      tanggalMasuk: _tanggalMasukController.text.isEmpty
+          ? null
+          : _tanggalMasukController.text,
       uraianSingkat: _uraianSingkatController.text,
-      nomorDokumen:
-          _nomorDokumenController.text.isEmpty ? null : _nomorDokumenController.text,
+      nomorDokumen: _nomorDokumenController.text.isEmpty
+          ? null
+          : _nomorDokumenController.text,
       dokumenDibutuhkan: _dokumenDibutuhkanController.text,
       dokumenDiterima: _dokumenDiterimaController.text,
       statusPembayaran: _selectedStatusPembayaran,
@@ -477,8 +491,9 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 11,
-                    fontWeight:
-                        stepIndex == _currentStep ? FontWeight.bold : FontWeight.normal,
+                    fontWeight: stepIndex == _currentStep
+                        ? FontWeight.bold
+                        : FontWeight.normal,
                     color: isActive
                         ? primary
                         : Theme.of(context).textTheme.bodySmall?.color,
@@ -510,7 +525,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         color: Theme.of(context).scaffoldBackgroundColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),
@@ -524,11 +539,15 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                 onPressed: _isLoading ? null : _prevStep,
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  side: BorderSide(color: Theme.of(context).colorScheme.primary),
+                  side: BorderSide(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 ),
                 child: Text(
                   'Kembali',
-                  style: TextStyle(color: Theme.of(context).colorScheme.primary),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 ),
               ),
             ),
@@ -537,7 +556,9 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
             child: ElevatedButton(
               onPressed: _isLoading
                   ? null
-                  : (_currentStep < _stepTitles.length - 1 ? _nextStep : _submit),
+                  : (_currentStep < _stepTitles.length - 1
+                        ? _nextStep
+                        : _submit),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -592,7 +613,9 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         _buildLabel(context, 'Tanggal Masuk'),
         _buildDateTile(
           context,
-          _tanggalMasukController.text.isEmpty ? null : _tanggalMasukController.text,
+          _tanggalMasukController.text.isEmpty
+              ? null
+              : _tanggalMasukController.text,
           (v) => setState(() => _tanggalMasukController.text = v),
         ),
 
@@ -643,10 +666,12 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
             border: InputBorder.none,
           ),
           items: _documentTypes
-              .map((doc) => DropdownMenuItem<int>(
-                    value: doc['id'],
-                    child: Text(doc['name']),
-                  ))
+              .map(
+                (doc) => DropdownMenuItem<int>(
+                  value: doc['id'],
+                  child: Text(doc['name']),
+                ),
+              )
               .toList(),
           onChanged: (value) => setState(() => _selectedDocumentTypeId = value),
         ),
@@ -683,10 +708,12 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
             border: InputBorder.none,
           ),
           items: _staffs
-              .map((staff) => DropdownMenuItem<String>(
-                    value: staff['id'],
-                    child: Text(staff['name']),
-                  ))
+              .map(
+                (staff) => DropdownMenuItem<String>(
+                  value: staff['id'],
+                  child: Text(staff['name']),
+                ),
+              )
               .toList(),
           onChanged: (value) => setState(() => _selectedStaffId = value),
         ),
@@ -711,7 +738,11 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                   color: Theme.of(context).colorScheme.primary,
                 ),
               ),
-              Icon(Icons.auto_awesome, size: 16, color: Theme.of(context).colorScheme.primary),
+              Icon(
+                Icons.auto_awesome,
+                size: 16,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ],
           ),
         ),
@@ -720,7 +751,9 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           'Status dihitung otomatis berdasarkan data dokumen & keuangan yang sudah diisi.',
           style: TextStyle(
             fontSize: 11,
-            color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+            color: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
           ),
         ),
         const SizedBox(height: 12),
@@ -737,7 +770,10 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
             Expanded(
               child: Text(
                 'Tandai manual sebagai Tertunda / Batal',
-                style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodyLarge?.color),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                ),
               ),
             ),
           ],
@@ -769,7 +805,8 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
             border: InputBorder.none,
             suffixIcon: const Icon(Icons.calendar_today),
           ),
-          onTap: () => _pickDate((v) => setState(() => _deadlineController.text = v)),
+          onTap: () =>
+              _pickDate((v) => setState(() => _deadlineController.text = v)),
         ),
 
         const SizedBox(height: 16),
@@ -831,8 +868,9 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           items: _statusPembayaranList
               .map((s) => DropdownMenuItem<String>(value: s, child: Text(s)))
               .toList(),
-          onChanged: (value) =>
-              setState(() => _selectedStatusPembayaran = value ?? 'Belum Dibayar'),
+          onChanged: (value) => setState(
+            () => _selectedStatusPembayaran = value ?? 'Belum Dibayar',
+          ),
         ),
 
         const SizedBox(height: 20),
@@ -850,7 +888,11 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         const SizedBox(height: 12),
 
         _buildLabel(context, 'Uang Muka - Tanggal'),
-        _buildDateTile(context, _uangMukaTanggal, (v) => setState(() => _uangMukaTanggal = v)),
+        _buildDateTile(
+          context,
+          _uangMukaTanggal,
+          (v) => setState(() => _uangMukaTanggal = v),
+        ),
         _buildLabel(context, 'Uang Muka - Jumlah'),
         TextField(
           controller: _uangMukaJumlahController,
@@ -864,7 +906,11 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         ),
 
         _buildLabel(context, 'Tambahan - Tanggal'),
-        _buildDateTile(context, _tambahanTanggal, (v) => setState(() => _tambahanTanggal = v)),
+        _buildDateTile(
+          context,
+          _tambahanTanggal,
+          (v) => setState(() => _tambahanTanggal = v),
+        ),
         _buildLabel(context, 'Tambahan - Jumlah'),
         TextField(
           controller: _tambahanJumlahController,
@@ -887,14 +933,20 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Total Uang Masuk Pemohon',
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).textTheme.bodyLarge?.color)),
-              Text(_rupiah.format(_totalPemohon),
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary)),
+              Text(
+                'Total Uang Masuk Pemohon',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                ),
+              ),
+              Text(
+                _rupiah.format(_totalPemohon),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
             ],
           ),
         ),
@@ -904,8 +956,16 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           DynamicListField(
             title: 'Rincian Uang Masuk',
             fields: [
-              DynamicFieldConfig(key: 'label', label: 'Catatan/Kendala', type: DynamicFieldType.text),
-              DynamicFieldConfig(key: 'amount', label: 'Jumlah', type: DynamicFieldType.number),
+              DynamicFieldConfig(
+                key: 'label',
+                label: 'Catatan/Kendala',
+                type: DynamicFieldType.text,
+              ),
+              DynamicFieldConfig(
+                key: 'amount',
+                label: 'Jumlah',
+                type: DynamicFieldType.number,
+              ),
             ],
             initialRows: _incomeDetailRows,
             onChanged: (rows) => setState(() => _incomeDetailRows = rows),
@@ -926,7 +986,11 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         const SizedBox(height: 12),
 
         _buildLabel(context, 'Tanggal'),
-        _buildDateTile(context, _kasBesarTanggal, (v) => setState(() => _kasBesarTanggal = v)),
+        _buildDateTile(
+          context,
+          _kasBesarTanggal,
+          (v) => setState(() => _kasBesarTanggal = v),
+        ),
         _buildLabel(context, 'Jumlah'),
         TextField(
           controller: _kasBesarJumlahController,
@@ -947,9 +1011,21 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           DynamicListField(
             title: 'Pengeluaran',
             fields: [
-              DynamicFieldConfig(key: 'proses', label: 'Proses', type: DynamicFieldType.text),
-              DynamicFieldConfig(key: 'tanggal', label: 'Tanggal', type: DynamicFieldType.date),
-              DynamicFieldConfig(key: 'amount', label: 'Jumlah', type: DynamicFieldType.number),
+              DynamicFieldConfig(
+                key: 'proses',
+                label: 'Proses',
+                type: DynamicFieldType.text,
+              ),
+              DynamicFieldConfig(
+                key: 'tanggal',
+                label: 'Tanggal',
+                type: DynamicFieldType.date,
+              ),
+              DynamicFieldConfig(
+                key: 'amount',
+                label: 'Jumlah',
+                type: DynamicFieldType.number,
+              ),
             ],
             initialRows: _expenseRows,
             onChanged: (rows) => setState(() => _expenseRows = rows),
@@ -992,7 +1068,11 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   }
 
   // ================= HELPERS =================
-  Widget _buildDateTile(BuildContext context, String? value, void Function(String) onPicked) {
+  Widget _buildDateTile(
+    BuildContext context,
+    String? value,
+    void Function(String) onPicked,
+  ) {
     return InkWell(
       onTap: () => _pickDate((v) => onPicked(v)),
       child: Container(
@@ -1006,8 +1086,12 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(value ?? 'Pilih tanggal',
-                style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
+            Text(
+              value ?? 'Pilih tanggal',
+              style: TextStyle(
+                color: Theme.of(context).textTheme.bodyLarge?.color,
+              ),
+            ),
             const Icon(Icons.calendar_today, size: 18),
           ],
         ),
@@ -1015,22 +1099,33 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
     );
   }
 
-  Widget _summaryRow(BuildContext context, String label, double value, {bool isBold = false}) {
+  Widget _summaryRow(
+    BuildContext context,
+    String label,
+    double value, {
+    bool isBold = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: TextStyle(
-                  fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-                  color: Theme.of(context).textTheme.bodyLarge?.color)),
-          Text(_rupiah.format(value),
-              style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: isBold
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).textTheme.bodyLarge?.color)),
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+              color: Theme.of(context).textTheme.bodyLarge?.color,
+            ),
+          ),
+          Text(
+            _rupiah.format(value),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isBold
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).textTheme.bodyLarge?.color,
+            ),
+          ),
         ],
       ),
     );
@@ -1041,7 +1136,10 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Text(
         text,
-        style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color),
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).textTheme.bodyLarge?.color,
+        ),
       ),
     );
   }

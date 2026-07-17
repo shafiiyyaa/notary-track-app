@@ -11,29 +11,23 @@ class NotificationPresenter {
 
   Future<void> loadNotifications() async {
     try {
-      final response = await _supabase
-          .from('documents')
-          .select('''
-            id,
-            client_name,
-            deadline,
-            document_types(name)
-          ''')
-          .order('deadline', ascending: true);
-
       List<NotificationModel> list = [];
 
-      for (final item in response) {
+      // 1. AMBIL DATA DEADLINE DARI TABEL DOCUMENTS (Otomatis)
+      final docResponse = await _supabase
+          .from('documents')
+          .select('id, deadline, clients(name), document_types(name)')
+          .order('deadline', ascending: true);
+
+      for (final item in docResponse) {
         final deadline = DateTime.parse(item['deadline']);
         final remainingDays = deadline.difference(DateTime.now()).inDays;
 
         final docId = item['id'] as int;
-        final clientName = item['client_name'] ?? '';
+        final clientName = item['clients']?['name'] ?? '';
         final documentType = item['document_types']?['name'] ?? '';
 
-        // Jadwalkan push notification HP (H-7, H-3, H-1, H-0)
-        // aman dipanggil berkali-kali, notif lama otomatis ketimpa
-        // karena id-nya sama (docId + milestone)
+        // Jadwalkan notif HP H-7, H-3, H-1, H-0
         await NotificationService().scheduleForDocument(
           docId: docId,
           clientName: clientName,
@@ -41,25 +35,49 @@ class NotificationPresenter {
           deadline: deadline,
         );
 
-        // tampilkan hanya deadline 7 hari ke depan di list dalam app
+        // Tampilkan di list jika masih dalam 7 hari ke depan
         if (remainingDays >= 0 && remainingDays <= 7) {
-          list.add(
-            NotificationModel(
-              id: docId,
-              clientName: clientName,
-              documentType: documentType,
-              deadline: deadline,
-              remainingDays: remainingDays,
-            ),
-          );
+          list.add(NotificationModel(
+            id: docId,
+            title: "Deadline $documentType",
+            clientName: clientName,
+            scheduledDate: deadline,
+            remainingDays: remainingDays,
+            isManual: false,
+          ));
         }
       }
 
-      list.sort((a, b) => a.remainingDays.compareTo(b.remainingDays));
+      // 2. AMBIL DATA JANJI TEMU MANUAL DARI TABEL NOTIFICATIONS
+      final manualResponse = await _supabase
+          .from('notifications')
+          .select('id, title, message, scheduled_at, clients(name)')
+          .gte('scheduled_at', DateTime.now().toIso8601String()) // Hanya yang belum lewat
+          .order('scheduled_at', ascending: true);
+
+      for (final item in manualResponse) {
+        final schedDate = DateTime.parse(item['scheduled_at']).toLocal();
+        final remainingDays = schedDate.difference(DateTime.now()).inDays;
+        
+        // Kalau kurang dari 7 hari lagi, masukin ke list
+        if (remainingDays >= 0 && remainingDays <= 7) {
+          list.add(NotificationModel(
+            id: item['id'] as int,
+            title: item['title'] ?? 'Pengingat',
+            clientName: item['clients']?['name'] ?? '',
+            scheduledDate: schedDate,
+            remainingDays: remainingDays,
+            isManual: true,
+          ));
+        }
+      }
+
+      // 3. URUTKAN BERDASARKAN WAKTU TERDEKAT
+      list.sort((a, b) => a.scheduledDate.compareTo(b.scheduledDate));
 
       _view.displayNotifications(list);
     } catch (e) {
-      print(e);
+      print("ERROR LOAD NOTIF: $e");
     }
   }
 }
