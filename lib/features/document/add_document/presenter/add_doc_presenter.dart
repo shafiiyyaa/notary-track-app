@@ -29,10 +29,8 @@ class AddDocPresenter {
     String? tanggalMasuk,
     String? uraianSingkat,
     String? nomorDokumen,
-    int? progressPercent,
     String? dokumenDibutuhkan,
     String? dokumenDiterima,
-    String? tanggalSelesai,
     String? statusPembayaran,
   }) async {
     if (clientId.isEmpty || deadline.isEmpty) {
@@ -71,10 +69,8 @@ class AddDocPresenter {
             'tanggal_masuk': tanggalMasuk,
             'uraian_singkat': uraianSingkat,
             'nomor_dokumen': nomorDokumen,
-            'progress_percent': progressPercent ?? 0,
             'dokumen_dibutuhkan': dokumenDibutuhkan,
             'dokumen_diterima': dokumenDiterima,
-            'tanggal_selesai': tanggalSelesai,
             'status_pembayaran': statusPembayaran,
           })
           .select('id')
@@ -138,7 +134,6 @@ class AddDocPresenter {
     }
   }
 
-  // --- BARU: buat isi dropdown pilih klien ---
   Future<List<Map<String, dynamic>>> getClients() async {
     try {
       final response = await _supabase.from('clients').select('id, name').order('name');

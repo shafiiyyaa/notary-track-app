@@ -8,27 +8,25 @@ class DocListPresenter {
 
   DocListPresenter(this._view);
 
-Future<void> fetchAllDocuments() async {
-  _view.showLoading();
+  Future<void> fetchAllDocuments() async {
+    _view.showLoading();
 
-  try {
-    final data = await _supabase
-        .from('documents')
-        .select();
+    try {
+      // UBAH BAGIAN INI: Tambahkan join tabel clients, document_types, dan staff
+      final data = await _supabase
+          .from('documents')
+          .select('*, clients(name), document_types(name), staff(name)');
 
-    print("===== DOCUMENT LIST =====");
-    print(data);
+      final docs = (data as List)
+          .map((e) => DocumentModel.fromMap(e))
+          .toList();
 
-    final docs = (data as List)
-        .map((e) => DocumentModel.fromMap(e))
-        .toList();
-
-    _view.hideLoading();
-    _view.onDocumentsLoaded(docs);
-  } catch (e) {
-    print(e);
-    _view.hideLoading();
-    _view.onDocumentsError(e.toString());
+      _view.hideLoading();
+      _view.onDocumentsLoaded(docs);
+    } catch (e) {
+      print("ERROR FETCH DOCS: $e");
+      _view.hideLoading();
+      _view.onDocumentsError(e.toString());
+    }
   }
-}
 }

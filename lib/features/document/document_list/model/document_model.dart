@@ -40,10 +40,9 @@ class DocumentModel {
   final String? tanggalMasuk;
   final String uraianSingkat;
   final String? nomorDokumen;
-  final int progressPercent;
+  // Field progressPercent dan tanggalSelesai dihapus sesuai request
   final String dokumenDibutuhkan;
   final String dokumenDiterima;
-  final String? tanggalSelesai;
   final String statusPembayaran;
 
   DocumentModel({
@@ -73,10 +72,8 @@ class DocumentModel {
     this.tanggalMasuk,
     this.uraianSingkat = '',
     this.nomorDokumen,
-    this.progressPercent = 0,
     this.dokumenDibutuhkan = '',
     this.dokumenDiterima = '',
-    this.tanggalSelesai,
     this.statusPembayaran = 'Belum Dibayar',
   });
 
@@ -98,13 +95,18 @@ class DocumentModel {
     return DocumentModel(
       id: map['id'].toString(),
       clientId: map['client_id']?.toString() ?? '',
-      clientName: map['clients']?['name'] ?? '',
+      // Mengambil name dari objek clients hasil join Supabase
+      clientName: map['clients'] != null ? (map['clients']['name'] ?? '') : '',
       phone: map['phone'] ?? '',
-      documentTypeId: map['document_type_id'],
-      docType: map['document_types']?['name'] ?? '',
+      documentTypeId: map['document_type_id'] is int 
+          ? map['document_type_id'] 
+          : int.tryParse(map['document_type_id']?.toString() ?? '0') ?? 0,
+      // Mengambil name dari objek document_types hasil join Supabase
+      docType: map['document_types'] != null ? (map['document_types']['name'] ?? '') : '',
       kategori: map['kategori'] ?? '',
-      staffId: map['staff_id'] ?? '',
-      staffName: map['staff']?['name'] ?? '-',
+      staffId: map['staff_id']?.toString() ?? '',
+      // Mengambil name dari objek staff hasil join Supabase
+      staffName: map['staff'] != null ? (map['staff']['name'] ?? '-') : '-',
       dateIn: map['created_at']?.toString().substring(0, 10) ?? '',
       deadline: map['deadline'] ?? '',
       status: map['status'] ?? 'Belum Diproses',
@@ -122,10 +124,8 @@ class DocumentModel {
       tanggalMasuk: map['tanggal_masuk']?.toString(),
       uraianSingkat: map['uraian_singkat'] ?? '',
       nomorDokumen: map['nomor_dokumen']?.toString(),
-      progressPercent: (map['progress_percent'] as num?)?.toInt() ?? 0,
       dokumenDibutuhkan: map['dokumen_dibutuhkan'] ?? '',
       dokumenDiterima: map['dokumen_diterima'] ?? '',
-      tanggalSelesai: map['tanggal_selesai']?.toString(),
       statusPembayaran: map['status_pembayaran'] ?? 'Belum Dibayar',
     );
   }

@@ -63,7 +63,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   List<Map<String, dynamic>> _staffs = [];
   String? _selectedStaffId;
 
-  // --- Status sekarang dihitung otomatis, ini cuma dipakai buat inisialisasi toggle override ---
+  // --- Status dihitung otomatis, ini cuma dipakai buat inisialisasi toggle override ---
   String? _selectedStatus;
   bool _manualOverride = false;
   String? _overrideStatus;
@@ -367,12 +367,8 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
       uraianSingkat: _uraianSingkatController.text,
       nomorDokumen:
           _nomorDokumenController.text.isEmpty ? null : _nomorDokumenController.text,
-      // Progress% tidak lagi diisi manual — nilai lama dipertahankan.
-      progressPercent: widget.document.progressPercent,
       dokumenDibutuhkan: _dokumenDibutuhkanController.text,
       dokumenDiterima: _dokumenDiterimaController.text,
-      // Tanggal Selesai dihapus dari form — nilai lama dipertahankan apa adanya.
-      tanggalSelesai: widget.document.tanggalSelesai,
       statusPembayaran: _selectedStatusPembayaran,
     );
   }

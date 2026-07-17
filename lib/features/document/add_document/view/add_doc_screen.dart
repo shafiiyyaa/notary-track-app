@@ -27,10 +27,9 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
   final _tanggalMasukController = TextEditingController();
   final _uraianSingkatController = TextEditingController();
   final _nomorDokumenController = TextEditingController();
-  final _progressPercentController = TextEditingController(text: '0');
   final _dokumenDibutuhkanController = TextEditingController();
   final _dokumenDiterimaController = TextEditingController();
-  final _tanggalSelesaiController = TextEditingController();
+  
   String _selectedStatusPembayaran = 'Belum Dibayar';
   final List<String> _statusPembayaranList = ['Belum Dibayar', 'DP', 'Lunas'];
 
@@ -139,10 +138,8 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
     _tanggalMasukController.dispose();
     _uraianSingkatController.dispose();
     _nomorDokumenController.dispose();
-    _progressPercentController.dispose();
     _dokumenDibutuhkanController.dispose();
     _dokumenDiterimaController.dispose();
-    _tanggalSelesaiController.dispose();
     super.dispose();
   }
 
@@ -259,12 +256,8 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
       uraianSingkat: _uraianSingkatController.text,
       nomorDokumen:
           _nomorDokumenController.text.isEmpty ? null : _nomorDokumenController.text,
-      progressPercent: int.tryParse(_progressPercentController.text) ?? 0,
       dokumenDibutuhkan: _dokumenDibutuhkanController.text,
       dokumenDiterima: _dokumenDiterimaController.text,
-      tanggalSelesai: _tanggalSelesaiController.text.isEmpty
-          ? null
-          : _tanggalSelesaiController.text,
       statusPembayaran: _selectedStatusPembayaran,
     );
   }
@@ -593,19 +586,6 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
         ),
 
         const SizedBox(height: 10),
-        _buildLabel(context, 'Progress (%)'),
-        TextField(
-          controller: _progressPercentController,
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Theme.of(context).cardColor,
-            border: InputBorder.none,
-          ),
-        ),
-
-        const SizedBox(height: 10),
         _buildLabel(context, 'Deadline'),
         TextField(
           controller: _deadlineController,
@@ -618,15 +598,6 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
           ),
           onTap: () =>
               _pickDate((v) => setState(() => _deadlineController.text = v)),
-        ),
-
-        _buildLabel(context, 'Tanggal Selesai (jika sudah selesai)'),
-        _buildDateTile(
-          context,
-          _tanggalSelesaiController.text.isEmpty
-              ? null
-              : _tanggalSelesaiController.text,
-          (v) => setState(() => _tanggalSelesaiController.text = v),
         ),
 
         const SizedBox(height: 16),

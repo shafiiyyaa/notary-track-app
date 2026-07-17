@@ -1,8 +1,3 @@
-// lib/features/pic/model/pic_client_model.dart
-//
-// Gabungan model untuk PIC (staff) dan Klien.
-// Sesuaikan nama kolom di fromMap kalau struktur tabel Supabase kamu beda.
-
 class StaffModel {
   final String id;
   final String name;

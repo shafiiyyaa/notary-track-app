@@ -174,7 +174,6 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                       _buildItem(context, "Kategori", doc.kategori.isEmpty ? '-' : doc.kategori),
                       _buildItem(context, "Tanggal Masuk", doc.tanggalMasuk ?? '-'),
                       _buildItem(context, "Deadline", doc.deadline),
-                      _buildItem(context, "Tanggal Selesai", doc.tanggalSelesai ?? '-'),
                       _buildItem(context, "Status", doc.status),
                       _buildItem(context, "Staff", doc.staffName),
                       _buildItem(context, "Uraian Singkat",
