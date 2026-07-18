@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../model/notification_model.dart';
 import '../view/notification_view.dart';
@@ -14,7 +15,6 @@ class NotificationPresenter {
       List<NotificationModel> list = [];
 
       // 1. AMBIL DATA DEADLINE DARI TABEL DOCUMENTS (Otomatis)
-      // Tambahkan kolom 'status' di select
       final docResponse = await _supabase
           .from('documents')
           .select('id, deadline, status, clients(name), document_types(name)')
@@ -29,13 +29,11 @@ class NotificationPresenter {
         final clientName = item['clients']?['name'] ?? '';
         final documentType = item['document_types']?['name'] ?? '';
 
-        // Jika dokumen sudah Selesai atau Batal, hapus alarm notif di HP dan SKIP (jangan dimasukkan ke list)
         if (status == 'Selesai' || status == 'Batal') {
           await NotificationService().cancelForDocument(docId);
-          continue; // Loncati kode di bawahnya, jangan masukin ke list
+          continue; 
         }
 
-        // Jadwalkan notif HP H-7, H-3, H-1, H-0
         await NotificationService().scheduleForDocument(
           docId: docId,
           clientName: clientName,
@@ -43,7 +41,6 @@ class NotificationPresenter {
           deadline: deadline,
         );
 
-        // Tampilkan di list jika masih dalam 7 hari ke depan
         if (remainingDays >= 0 && remainingDays <= 7) {
           list.add(NotificationModel(
             id: docId,
@@ -60,15 +57,26 @@ class NotificationPresenter {
       final manualResponse = await _supabase
           .from('notifications')
           .select('id, title, message, scheduled_at, clients(name)')
-          .gte('scheduled_at', DateTime.now().toIso8601String()) // Hanya yang belum lewat
+          .gte('scheduled_at', DateTime.now().toIso8601String()) 
           .order('scheduled_at', ascending: true);
 
       for (final item in manualResponse) {
-        final schedDate = DateTime.parse(item['scheduled_at']).toLocal();
+        final schedDate = DateTime.parse(item['scheduled_at']);
         final remainingDays = schedDate.difference(DateTime.now()).inDays;
         
-        // Kalau kurang dari 7 hari lagi, masukin ke list
         if (remainingDays >= 0 && remainingDays <= 7) {
+          if (schedDate.isAfter(DateTime.now())) {
+            final notifIdInDb = item['id'] as int;
+            int baseId = notifIdInDb % 100000;
+            
+            await NotificationService().scheduleAppointmentReminders(
+              baseId: baseId,
+              clientName: item['clients']?['name'] ?? '',
+              message: item['message'] ?? '',
+              appointmentTime: schedDate,
+            );
+          }
+
           list.add(NotificationModel(
             id: item['id'] as int,
             title: item['title'] ?? 'Pengingat',
@@ -80,12 +88,11 @@ class NotificationPresenter {
         }
       }
 
-      // 3. URUTKAN BERDASARKAN WAKTU TERDEKAT
       list.sort((a, b) => a.scheduledDate.compareTo(b.scheduledDate));
 
       _view.displayNotifications(list);
     } catch (e) {
-      print("ERROR LOAD NOTIF: $e");
+      debugPrint("ERROR LOAD NOTIF: $e");
     }
   }
 }

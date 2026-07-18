@@ -1,6 +1,4 @@
-// LOKASI FILE: lib/services/notification_service.dart
-// (buat folder "services" kalau belum ada)
-
+import 'dart:typed_data';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tzdata;
@@ -16,7 +14,6 @@ class NotificationService {
 
   bool _initialized = false;
 
-  /// Panggil sekali di main.dart sebelum runApp()
   Future<void> init() async {
     if (_initialized) return;
 
@@ -35,13 +32,7 @@ class NotificationService {
       iOS: iosSettings,
     );
 
-    await _plugin.initialize(
-      settings,
-      onDidReceiveNotificationResponse: (response) {
-        // Tap notifikasi ditangani di sini kalau nanti mau
-        // navigasi ke halaman tertentu. payload: response.payload
-      },
-    );
+    await _plugin.initialize(settings);
 
     final android = _plugin.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
@@ -51,31 +42,33 @@ class NotificationService {
     _initialized = true;
   }
 
-  /// Jadwalkan satu notifikasi pada tanggal tertentu.
-  /// id harus unik per (dokumen, jenis-h-berapa).
   Future<void> scheduleDeadlineNotification({
     required int id,
     required String title,
     required String body,
     required DateTime scheduledDate,
   }) async {
-    // skip kalau waktunya udah lewat, biar gak error
     if (scheduledDate.isBefore(DateTime.now())) return;
+
+    final vibrationPattern = Int64List.fromList([0, 1000, 500, 1000, 500, 1000, 500, 1000]);
 
     await _plugin.zonedSchedule(
       id,
       title,
       body,
       tz.TZDateTime.from(scheduledDate, tz.local),
-      const NotificationDetails(
+      NotificationDetails(
         android: AndroidNotificationDetails(
           'deadline_channel',
           'Deadline Dokumen',
           channelDescription: 'Notifikasi deadline dokumen yang mendekat',
           importance: Importance.max,
           priority: Priority.high,
+          fullScreenIntent: true,
+          enableVibration: true,
+          vibrationPattern: vibrationPattern,
         ),
-        iOS: DarwinNotificationDetails(
+        iOS: const DarwinNotificationDetails(
           presentAlert: true,
           presentBadge: true,
           presentSound: true,
@@ -87,8 +80,47 @@ class NotificationService {
     );
   }
 
-  /// Jadwalkan set lengkap H-7, H-3, H-1, H-0 untuk satu dokumen.
-  /// Panggil ini tiap kali data dokumen dimuat / dibuat / diedit.
+  // ================= JADWALKAN PENGINGAT JANJI TEMU =================
+  Future<void> scheduleAppointmentReminders({
+    required int baseId,
+    required String clientName,
+    required String message,
+    required DateTime appointmentTime,
+  }) async {
+    final jamMenit = "${appointmentTime.hour.toString().padLeft(2,'0')}:${appointmentTime.minute.toString().padLeft(2,'0')}";
+    
+    final h1 = DateTime(appointmentTime.year, appointmentTime.month, appointmentTime.day - 1, 12, 0);
+    if (h1.isAfter(DateTime.now())) {
+      await scheduleDeadlineNotification(
+        id: baseId + 1,
+        title: 'Pengingat Janji Temu Besok',
+        body: 'Besok jam $jamMenit bersama $clientName. $message',
+        scheduledDate: h1,
+      );
+    }
+
+    final h12 = appointmentTime.subtract(const Duration(hours: 12));
+    if (h12.isAfter(DateTime.now())) {
+      await scheduleDeadlineNotification(
+        id: baseId + 2,
+        title: 'Pengingat Janji Temu (12 Jam Lagi)',
+        body: '12 jam lagi jam $jamMenit bersama $clientName. $message',
+        scheduledDate: h12,
+      );
+    }
+
+    final h10m = appointmentTime.subtract(const Duration(minutes: 10));
+    if (h10m.isAfter(DateTime.now())) {
+      await scheduleDeadlineNotification(
+        id: baseId + 3,
+        title: 'Janji Temu Segera Dimulai!',
+        body: '10 menit lagi jam $jamMenit bersama $clientName. $message',
+        scheduledDate: h10m,
+      );
+    }
+  }
+
+  // ================= JADWALKAN DEADLINE DOKUMEN (H-7, H-3, H-1, H-0) =================
   Future<void> scheduleForDocument({
     required int docId,
     required String clientName,
@@ -102,7 +134,7 @@ class NotificationService {
         deadline.year,
         deadline.month,
         deadline.day - h,
-        9, // jam 9 pagi, ganti kalau mau jam lain
+        9, 
         0,
       );
 
@@ -122,12 +154,16 @@ class NotificationService {
     }
   }
 
-  /// Batalkan semua notifikasi terjadwal untuk satu dokumen
-  /// (panggil kalau dokumen dihapus / deadline berubah, biar gak dobel)
   Future<void> cancelForDocument(int docId) async {
     for (final h in [7, 3, 1, 0]) {
       await _plugin.cancel(_makeId(docId, h));
     }
+  }
+
+  Future<void> cancelAppointmentReminders(int baseId) async {
+    await _plugin.cancel(baseId + 1);
+    await _plugin.cancel(baseId + 2);
+    await _plugin.cancel(baseId + 3);
   }
 
   int _makeId(int docId, int h) => ('$docId-$h').hashCode & 0x7fffffff;

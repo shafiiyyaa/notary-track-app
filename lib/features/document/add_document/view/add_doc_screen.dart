@@ -6,6 +6,7 @@ import 'package:notarytrackapp/shared/widgets/dynamic_list_field.dart';
 import '../presenter/add_doc_presenter.dart';
 import 'add_doc_view.dart';
 
+// ================= CLASS FORMAT RUPIAH =================
 class CurrencyInputFormatter extends TextInputFormatter {
   final NumberFormat _formatter = NumberFormat.decimalPattern('id_ID');
 
@@ -90,7 +91,6 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
     decimalDigits: 0,
   );
 
-  // --- Wizard state ---
   final _pageController = PageController();
   int _currentStep = 0;
   final List<String> _stepTitles = ['Identitas Klien', 'Dokumen', 'Keuangan'];
@@ -609,6 +609,7 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
         TextField(
           controller: _uraianSingkatController,
           maxLines: 2,
+          onChanged: (_) => setState(() {}),
           decoration: InputDecoration(
             filled: true,
             fillColor: Theme.of(context).cardColor,
@@ -649,6 +650,46 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
           onChanged: (value) => setState(() => _selectedStaffId = value),
         ),
         const SizedBox(height: 10),
+
+        // ===== UI STATUS OTOMATIS DITAMBAHKAN KEMBALI =====
+        _buildLabel(context, "Status"),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Status otomatis: $_autoStatus',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              Icon(
+                Icons.auto_awesome,
+                size: 16,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Status dihitung otomatis berdasarkan data dokumen & keuangan yang sudah diisi.',
+          style: TextStyle(
+            fontSize: 11,
+            color: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+          ),
+        ),
+        const SizedBox(height: 10),
+
         _buildLabel(context, 'Deadline'),
         TextField(
           controller: _deadlineController,
