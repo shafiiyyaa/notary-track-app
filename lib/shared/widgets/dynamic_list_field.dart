@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 enum DynamicFieldType { text, number, date }
@@ -14,6 +15,35 @@ class DynamicFieldConfig {
     required this.type,
   });
 }
+
+// ================= CLASS FORMAT RUPIAH =================
+class CurrencyInputFormatter extends TextInputFormatter {
+  final NumberFormat _formatter = NumberFormat.decimalPattern('id_ID');
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.isEmpty) return newValue;
+    String rawText = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
+    rawText = rawText.replaceAll(RegExp(r'^0+'), '');
+    if (rawText.isEmpty) {
+      return TextEditingValue(
+        text: '0',
+        selection: TextSelection.collapsed(offset: 1),
+      );
+    }
+    final int? value = int.tryParse(rawText);
+    if (value == null) return oldValue;
+    String newText = _formatter.format(value);
+    return TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newText.length),
+    );
+  }
+}
+// =======================================================
 
 class DynamicListField extends StatefulWidget {
   final String title;
@@ -41,11 +71,14 @@ class _DynamicListFieldState extends State<DynamicListField> {
     symbol: 'Rp ',
     decimalDigits: 0,
   );
+  final NumberFormat _numberFormat = NumberFormat.decimalPattern('id_ID');
 
   @override
   void initState() {
     super.initState();
-    _rows = widget.initialRows.map((r) => Map<String, dynamic>.from(r)).toList();
+    _rows = widget.initialRows
+        .map((r) => Map<String, dynamic>.from(r))
+        .toList();
     if (_rows.isEmpty) _rows.add(_emptyRow());
     _rebuildControllers();
   }
@@ -70,9 +103,16 @@ class _DynamicListFieldState extends State<DynamicListField> {
       for (final f in widget.fields) {
         if (f.type != DynamicFieldType.date) {
           final value = _rows[i][f.key];
-          final text = f.type == DynamicFieldType.number
-              ? ((value == 0 || value == 0.0) ? '' : value.toString())
-              : (value?.toString() ?? '');
+          String text = '';
+          if (f.type == DynamicFieldType.number) {
+            if (value is num && value != 0) {
+              text = _numberFormat.format(value);
+            } else if (value is String && value.isNotEmpty) {
+              text = value; // Sudah dalam bentuk string format
+            }
+          } else {
+            text = value?.toString() ?? '';
+          }
           map[f.key] = TextEditingController(text: text);
         }
       }
@@ -104,7 +144,14 @@ class _DynamicListFieldState extends State<DynamicListField> {
     for (final row in _rows) {
       for (final f in widget.fields) {
         if (f.type == DynamicFieldType.number) {
-          sum += (row[f.key] as num?)?.toDouble() ?? 0;
+          final val = row[f.key];
+          if (val is num) {
+            sum += val.toDouble();
+          } else if (val is String) {
+            sum +=
+                double.tryParse(val.replaceAll('.', '').replaceAll(',', '.')) ??
+                0;
+          }
         }
       }
     }
@@ -236,7 +283,9 @@ class _DynamicListFieldState extends State<DynamicListField> {
               (row[f.key]?.toString().isNotEmpty == true)
                   ? row[f.key].toString()
                   : 'Pilih tanggal',
-              style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
+              style: TextStyle(
+                color: Theme.of(context).textTheme.bodyLarge?.color,
+              ),
             ),
           ),
         ),
@@ -252,6 +301,9 @@ class _DynamicListFieldState extends State<DynamicListField> {
         keyboardType: f.type == DynamicFieldType.number
             ? TextInputType.number
             : TextInputType.text,
+        inputFormatters: f.type == DynamicFieldType.number
+            ? [CurrencyInputFormatter()]
+            : [],
         decoration: InputDecoration(
           labelText: f.label,
           filled: true,
@@ -264,7 +316,9 @@ class _DynamicListFieldState extends State<DynamicListField> {
         onChanged: (value) {
           setState(() {
             if (f.type == DynamicFieldType.number) {
-              _rows[index][f.key] = double.tryParse(
+              // Simpan sebagai double bersih tanpa titik
+              _rows[index][f.key] =
+                  double.tryParse(
                     value.replaceAll('.', '').replaceAll(',', '.'),
                   ) ??
                   0;

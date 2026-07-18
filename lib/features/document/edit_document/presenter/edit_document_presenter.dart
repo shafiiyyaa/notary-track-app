@@ -12,6 +12,13 @@ class EditDocPresenter {
 
   EditDocPresenter(this._view);
 
+  // Helper untuk bersihkan titik dari string format Rupiah
+  double _cleanAmount(dynamic value) {
+    if (value == null) return 0;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString().replaceAll('.', '').replaceAll(',', '.')) ?? 0;
+  }
+
   Future<void> fetchDocument(String documentId) async {
     _view.showLoading();
 
@@ -123,7 +130,7 @@ class EditDocPresenter {
           .map((r) => {
                 'document_id': id,
                 'label': r['label'],
-                'amount': r['amount'],
+                'amount': _cleanAmount(r['amount']),
               })
           .toList();
 
@@ -137,7 +144,7 @@ class EditDocPresenter {
                 'document_id': id,
                 'proses': r['proses'],
                 'tanggal': r['tanggal'],
-                'amount': r['amount'],
+                'amount': _cleanAmount(r['amount']),
               })
           .toList();
 

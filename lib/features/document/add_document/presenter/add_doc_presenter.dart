@@ -8,6 +8,13 @@ class AddDocPresenter {
 
   AddDocPresenter(this._view);
 
+  // Helper untuk bersihkan titik dari string format Rupiah
+  double _cleanAmount(dynamic value) {
+    if (value == null) return 0;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString().replaceAll('.', '').replaceAll(',', '.')) ?? 0;
+  }
+
   Future<void> saveDocument({
     required String clientId,
     required String phone,
@@ -83,7 +90,7 @@ class AddDocPresenter {
           .map((r) => {
                 'document_id': documentId,
                 'label': r['label'],
-                'amount': r['amount'],
+                'amount': _cleanAmount(r['amount']),
               })
           .toList();
 
@@ -97,7 +104,7 @@ class AddDocPresenter {
                 'document_id': documentId,
                 'proses': r['proses'],
                 'tanggal': r['tanggal'],
-                'amount': r['amount'],
+                'amount': _cleanAmount(r['amount']),
               })
           .toList();
 
