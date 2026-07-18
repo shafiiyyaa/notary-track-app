@@ -146,7 +146,7 @@ class _AddNotificationSheetState extends State<AddNotificationSheet> {
             _isLoadingClients
                 ? const Center(child: CircularProgressIndicator())
                 : DropdownButtonFormField<String>(
-                    value: _selectedClientId,
+                    initialValue: _selectedClientId,
                     decoration: InputDecoration(
                       border: OutlineInputBorder(),
                       hintText: 'Pilih Klien',

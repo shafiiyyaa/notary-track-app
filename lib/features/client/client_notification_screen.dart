@@ -109,7 +109,7 @@ class _ClientNotificationScreenState extends State<ClientNotificationScreen> {
                                           Text(
                                             remainingDays == 0
                                                 ? "Hari Ini - ${schedDate.hour.toString().padLeft(2,'0')}:${schedDate.minute.toString().padLeft(2,'0')}"
-                                                : "${remainingDays} hari lagi",
+                                                : "$remainingDays hari lagi",
                                             style: GoogleFonts.plusJakartaSans(
                                               fontSize: 12,
                                               color: Colors.grey[600],

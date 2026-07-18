@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import '../../auth/login/view/login_screen.dart';
 import '../presenter/onboarding_presenter.dart';
 import 'onboarding_view.dart';
@@ -18,14 +19,16 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   final List<Map<String, String>> _onboardingData = [
     {
-      "title": "Mudah Memantau Progres Dokumen Notaris",
+      "image": "assets/images/onboarding1.png",
+      "title": "Pantau Setiap\nProses Dokumen",
       "desc":
-          "Pantau status pengerjaan dokumen akta, sertifikat, dan berkas penting lainnya secara real-time kapan saja.",
+          "Ikuti perkembangan dokumen secara real-time tanpa perlu datang langsung ke kantor notaris.",
     },
     {
-      "title": "Pengingat Tenggat Waktu Akurat",
+      "image": "assets/images/onboarding2.png",
+      "title": "Semua Dokumen,\nSatu Aplikasi",
       "desc":
-          "Jangan lewatkan batas akhir pengurusan dokumen. Sistem pintar kami akan mengingatkan tenggat waktu penting Anda.",
+          "Simpan, kelola, dan pantau seluruh dokumen penting dengan lebih praktis, aman, dan terorganisir.",
     },
   ];
 
@@ -49,7 +52,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   void navigateToLogin() {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      MaterialPageRoute(
+        builder: (context) => const LoginScreen(),
+      ),
     );
   }
 
@@ -60,67 +65,82 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       body: SafeArea(
         child: Column(
           children: [
+            /// Skip Button
             Align(
               alignment: Alignment.topRight,
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(16),
                 child: TextButton(
                   onPressed: () => _presenter.skipOnboarding(),
                   child: Text(
-                    'Lewati',
+                    "Lewati",
                     style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.w700,
                       color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               ),
             ),
 
+            /// PageView
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
-                onPageChanged: (index) => _presenter.handlePageChange(index),
                 itemCount: _onboardingData.length,
+                onPageChanged: (index) =>
+                    _presenter.handlePageChange(index),
                 itemBuilder: (context, index) {
+                  final item = _onboardingData[index];
+
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 30),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                          width: 240,
-                          height: 240,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).cardColor,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            index == 0
-                                ? Icons.assignment_outlined
-                                : Icons.alarm_on_outlined,
-                            size: 100,
-                            color: Theme.of(context).colorScheme.primary,
+
+                        /// Illustration
+                        SizedBox(
+                          width: 320,
+                          height: 320,
+                          child: Image.asset(
+                            item["image"]!,
+                            fit: BoxFit.contain,
                           ),
                         ),
-                        const SizedBox(height: 48),
+
+                        const SizedBox(height: 28),
+
+                        /// Title
                         Text(
-                          _onboardingData[index]["title"]!,
+                          item["title"]!,
                           textAlign: TextAlign.center,
                           style: GoogleFonts.comfortaa(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                            height: 1.3,
+                            color:
+                                Theme.of(context).colorScheme.primary,
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _onboardingData[index]["desc"]!,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 14,
-                            color: Theme.of(context).textTheme.bodyMedium?.color,
-                            height: 1.5,
+
+                        const SizedBox(height: 18),
+
+                        /// Description
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Text(
+                            item["desc"]!,
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 15,
+                              height: 1.7,
+                              fontWeight: FontWeight.w500,
+                              color: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.color,
+                            ),
                           ),
                         ),
                       ],
@@ -130,34 +150,54 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               ),
             ),
 
+            /// Bottom Navigation
             Padding(
-              padding: const EdgeInsets.all(32.0),
+              padding: const EdgeInsets.fromLTRB(32, 16, 32, 32),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment:
+                    MainAxisAlignment.spaceBetween,
                 children: [
+
+                  /// Indicator
                   Row(
                     children: List.generate(
                       _onboardingData.length,
-                      (index) => Container(
-                        margin: const EdgeInsets.only(right: 8),
-                        width: _presenter.currentPage == index ? 24 : 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: _presenter.currentPage == index
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).dividerColor,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
+                      (index) {
+                        final isActive =
+                            _presenter.currentPage == index;
+
+                        return AnimatedContainer(
+                          duration:
+                              const Duration(milliseconds: 250),
+                          margin:
+                              const EdgeInsets.only(right: 8),
+                          width: isActive ? 24 : 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: isActive
+                                ? Theme.of(context)
+                                    .colorScheme
+                                    .primary
+                                : Theme.of(context)
+                                    .dividerColor,
+                            borderRadius:
+                                BorderRadius.circular(10),
+                          ),
+                        );
+                      },
                     ),
                   ),
 
+                  /// Next Button
                   FloatingActionButton(
-                    onPressed: () =>
-                        _presenter.handleNextAction(_onboardingData.length),
+                    elevation: 3,
+                    onPressed: () => _presenter
+                        .handleNextAction(
+                            _onboardingData.length),
                     shape: const CircleBorder(),
                     child: Icon(
-                      _presenter.currentPage == _onboardingData.length - 1
+                      _presenter.currentPage ==
+                              _onboardingData.length - 1
                           ? Icons.check
                           : Icons.arrow_forward,
                     ),

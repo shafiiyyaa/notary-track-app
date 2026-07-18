@@ -26,19 +26,39 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
     final prefs = await SharedPreferences.getInstance();
     final clientId = prefs.getString('user_id');
 
+
+    print("DEBUG: Mencoba fetch dokumen untuk client_id: $clientId");
+
+
+    if (clientId == null || clientId.isEmpty) {
+      print("DEBUG: Client ID tidak ditemukan di SharedPreferences!");
+      if (!mounted) return;
+      setState(() {
+        _myDocuments = [];
+        _isLoading = false;
+      });
+      return;
+    }
+
     try {
       final response = await _supabase
           .from('documents')
           .select('*, document_types(name)')
-          .eq('client_id', clientId!)
+          .eq('client_id', clientId)
           .order('deadline', ascending: false);
 
+      // CEK HASIL DARI DATABASE
+      print("DEBUG: Jumlah dokumen ditemukan: ${response.length}");
+
+      if (!mounted) return;
       setState(() {
         _myDocuments = List<Map<String, dynamic>>.from(response);
         _isLoading = false;
       });
     } catch (e) {
-      print("Error fetch client docs: $e");
+      // JIKA ADA ERROR DARI SUPABASE (Misal: RLS memblokir)
+      print("ERROR FETCH CLIENT DOCS: $e");
+      if (!mounted) return;
       setState(() => _isLoading = false);
     }
   }
