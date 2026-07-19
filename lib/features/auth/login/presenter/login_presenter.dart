@@ -10,53 +10,39 @@ class LoginPresenter {
 
   Future<void> performLogin({
     required String role,
-    required String identifier, // Bisa email atau username
+    required String identifier,
     required String password,
   }) async {
     if (identifier.isEmpty || password.isEmpty) {
-      _view.onLoginError("Email/Username dan password tidak boleh kosong!");
+      _view.onLoginError("Username dan password tidak boleh kosong!");
       return;
     }
 
     _view.showLoading();
     try {
-      if (role == 'Staff') {
-        // ---- LOGIN STAFF (PAKAI SUPABASE AUTH) ----
-        final response = await _supabase.auth.signInWithPassword(
-          email: identifier,
-          password: password,
-        );
+      String tableName = role == 'Staff' ? 'staff' : 'clients';
+
+      final response = await _supabase
+          .from(tableName)
+          .select('id, name')
+          .eq('username', identifier)
+          .eq('password', password)
+          .maybeSingle();
+
+      _view.hideLoading();
+      
+      if (response != null) {
+        final userId = response['id'].toString();
+        final userName = response['name'] ?? 'User';
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_id', userId);
+        await prefs.setString('user_name', userName);
+        await prefs.setString('user_role', role);
         
-        _view.hideLoading();
-        if (response.user != null) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('user_role', 'Staff');
-          _view.onLoginSuccess('Staff');
-        }
+        _view.onLoginSuccess(role);
       } else {
-        // ---- LOGIN KLIEN (PAKAI TABEL CLIENTS) ----
-        final response = await _supabase
-            .from('clients')
-            .select('id, name')
-            .eq('username', identifier)
-            .eq('password', password)
-            .maybeSingle();
-
-        _view.hideLoading();
-        if (response != null) {
-          final userId = response['id'].toString();
-          final userName = response['name'] ?? 'Klien';
-
-          // Simpan sesi klien di SharedPreferences
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('user_id', userId);
-          await prefs.setString('user_name', userName);
-          await prefs.setString('user_role', 'Klien');
-          
-          _view.onLoginSuccess('Klien');
-        } else {
-          _view.onLoginError("Username atau password klien salah!");
-        }
+        _view.onLoginError("Username atau password salah!");
       }
     } catch (e) {
       _view.hideLoading();

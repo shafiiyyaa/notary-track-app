@@ -14,8 +14,10 @@ class PicClientPresenter {
   Future<void> fetchStaffList() async {
     _view.showLoading();
     try {
-      final staffData =
-          await _supabase.from('staff').select('id, name').order('name');
+      final staffData = await _supabase
+          .from('staff')
+          .select('id, name, username')
+          .order('name');
       final staffList = List<Map<String, dynamic>>.from(staffData);
 
       final docData = await _supabase.from('documents').select('staff_id');
@@ -32,6 +34,7 @@ class PicClientPresenter {
         return StaffModel(
           id: id,
           name: s['name'] ?? '',
+          username: s['username'] ?? '',
           jobCount: counts[id] ?? 0,
         );
       }).toList();
@@ -45,21 +48,33 @@ class PicClientPresenter {
     }
   }
 
-  Future<void> addStaff(String name) async {
-    if (name.trim().isEmpty) {
-      _view.onError('Nama tidak boleh kosong');
+  Future<void> addStaff({
+    required String name,
+    required String username,
+    required String password,
+  }) async {
+    if (name.trim().isEmpty || username.trim().isEmpty) {
+      _view.onError('Nama dan username tidak boleh kosong');
+      return;
+    }
+    if (password.length < 6) {
+      _view.onError('Password minimal 6 karakter');
       return;
     }
     _view.showLoading();
     try {
-      await _supabase.from('staff').insert({'name': name.trim()});
+      await _supabase.from('staff').insert({
+        'name': name.trim(),
+        'username': username.trim(),
+        'password': password,
+      });
       _view.hideLoading();
-      _view.onActionSuccess('PIC berhasil ditambahkan');
+      _view.onActionSuccess('Staff berhasil ditambahkan');
       fetchStaffList();
     } catch (e) {
       debugPrint('ERROR ADD STAFF: $e');
       _view.hideLoading();
-      _view.onError('Gagal menambah PIC: ${e.toString()}');
+      _view.onError('Gagal menambah Staff: ${e.toString()}');
     }
   }
 
@@ -72,12 +87,12 @@ class PicClientPresenter {
     try {
       await _supabase.from('staff').update({'name': name.trim()}).eq('id', id);
       _view.hideLoading();
-      _view.onActionSuccess('PIC berhasil diubah');
+      _view.onActionSuccess('Staff berhasil diubah');
       fetchStaffList();
     } catch (e) {
       debugPrint('ERROR UPDATE STAFF: $e');
       _view.hideLoading();
-      _view.onError('Gagal mengubah PIC: ${e.toString()}');
+      _view.onError('Gagal mengubah Staff: ${e.toString()}');
     }
   }
 
@@ -86,15 +101,15 @@ class PicClientPresenter {
     try {
       await _supabase.from('staff').delete().eq('id', id);
       _view.hideLoading();
-      _view.onActionSuccess('PIC berhasil dihapus');
+      _view.onActionSuccess('Staff berhasil dihapus');
       fetchStaffList();
     } catch (e) {
       debugPrint('ERROR DELETE STAFF: $e');
       _view.hideLoading();
       final msg = e.toString().contains('foreign key') ||
               e.toString().contains('violates')
-          ? 'PIC ini masih dipakai di salah satu dokumen, tidak bisa dihapus.'
-          : 'Gagal menghapus PIC: ${e.toString()}';
+          ? 'Staff ini masih dipakai di salah satu dokumen, tidak bisa dihapus.'
+          : 'Gagal menghapus Staff: ${e.toString()}';
       _view.onError(msg);
     }
   }
@@ -104,7 +119,6 @@ class PicClientPresenter {
   Future<void> fetchClients() async {
     _view.showLoading();
     try {
-      // Ambil id, name, dan username
       final clientData = await _supabase
           .from('clients')
           .select('id, name, username')

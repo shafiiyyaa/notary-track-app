@@ -21,9 +21,7 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
   final _searchController = TextEditingController();
   String _searchQuery = '';
 
-  // Semua / PIC / Klien
   String _filterMode = 'Semua';
-
   final List<String> _filterModeList = ['Semua', 'PIC', 'Klien'];
 
   bool get _hasActiveFilter => _filterMode != 'Semua';
@@ -45,7 +43,6 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
     super.dispose();
   }
 
-  // ================= PicClientViewContract =================
   @override
   void showLoading() => setState(() => _isLoading = true);
 
@@ -63,9 +60,7 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
   @override
   void onActionSuccess(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -76,19 +71,18 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
     );
   }
 
-  // ================= Filtering =================
   List<StaffModel> get _filteredStaff {
     if (_filterMode == 'Klien') return [];
     return _staffList.where((s) {
       return _searchQuery.isEmpty ||
-          s.name.toLowerCase().contains(_searchQuery);
+          s.name.toLowerCase().contains(_searchQuery) ||
+          s.username.toLowerCase().contains(_searchQuery);
     }).toList();
   }
 
   List<ClientModel> get _filteredClients {
     if (_filterMode == 'PIC') return [];
     return _clientList.where((c) {
-      // Pencarian berdasarkan nama dan username
       return _searchQuery.isEmpty ||
           c.name.toLowerCase().contains(_searchQuery) ||
           c.username.toLowerCase().contains(_searchQuery);
@@ -98,7 +92,6 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
   int get _totalCount => _staffList.length + _clientList.length;
   int get _filteredCount => _filteredStaff.length + _filteredClients.length;
 
-  // ================= Filter Bottom Sheet =================
   Future<void> _openFilterSheet() async {
     String tempFilterMode = _filterMode;
 
@@ -114,9 +107,7 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
           builder: (context, setSheetState) {
             return Padding(
               padding: EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: 20,
+                left: 20, right: 20, top: 20,
                 bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 20,
               ),
               child: Column(
@@ -126,8 +117,7 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
                   Text(
                     'Tampilkan daftar PIC dan klien sesuai dengan kebutuhan anda.',
                     style: GoogleFonts.comfortaa(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 15, fontWeight: FontWeight.w600,
                       color: Theme.of(context).textTheme.titleLarge?.color,
                     ),
                   ),
@@ -139,16 +129,12 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
                     items: _filterModeList,
                     itemLabelBuilder: (mode) {
                       switch (mode) {
-                        case 'PIC':
-                          return 'Hanya PIC';
-                        case 'Klien':
-                          return 'Hanya Klien';
-                        default:
-                          return 'Tampilkan Semua';
+                        case 'PIC': return 'Hanya PIC';
+                        case 'Klien': return 'Hanya Klien';
+                        default: return 'Tampilkan Semua';
                       }
                     },
-                    onChanged: (value) =>
-                        setSheetState(() => tempFilterMode = value ?? 'Semua'),
+                    onChanged: (value) => setSheetState(() => tempFilterMode = value ?? 'Semua'),
                   ),
                   const SizedBox(height: 24),
                   Row(
@@ -159,14 +145,10 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
                             backgroundColor: Theme.of(context).colorScheme.primary,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           onPressed: () {
-                            setState(() {
-                              _filterMode = tempFilterMode;
-                            });
+                            setState(() => _filterMode = tempFilterMode);
                             Navigator.pop(sheetContext);
                           },
                           child: const Text('Filter'),
@@ -177,9 +159,7 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
                         child: OutlinedButton(
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           onPressed: () => Navigator.pop(sheetContext),
                           child: const Text('Batal'),
@@ -210,60 +190,68 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
       decoration: InputDecoration(
         filled: true,
         fillColor: Theme.of(context).cardColor,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       ),
       hint: Text(hint, style: const TextStyle(fontSize: 13)),
-      items: items
-          .map((item) => DropdownMenuItem<String>(
-                value: item,
-                child: Text(
-                  itemLabelBuilder != null ? itemLabelBuilder(item) : item,
-                  style: const TextStyle(fontSize: 13),
-                ),
-              ))
-          .toList(),
+      items: items.map((item) => DropdownMenuItem<String>(
+        value: item,
+        child: Text(itemLabelBuilder != null ? itemLabelBuilder(item) : item, style: const TextStyle(fontSize: 13)),
+      )).toList(),
       onChanged: onChanged,
     );
   }
 
-  void _resetFilter() {
-    setState(() => _filterMode = 'Semua');
-  }
+  void _resetFilter() => setState(() => _filterMode = 'Semua');
 
-  // ================= Dialog: PIC =================
-  void _showPicFormDialog({StaffModel? existing}) {
-    final controller = TextEditingController(text: existing?.name ?? '');
+  // ================= Dialog: STAFF =================
+  void _showStaffFormDialog({StaffModel? existing}) {
+    final nameController = TextEditingController(text: existing?.name ?? '');
+    final usernameController = TextEditingController(text: existing?.username ?? '');
+    final passwordController = TextEditingController();
     final isEdit = existing != null;
 
     showDialog(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: Text(isEdit ? 'Edit PIC' : 'Tambah PIC'),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            decoration: const InputDecoration(
-              hintText: 'cth: Staff Arsip',
-              border: OutlineInputBorder(),
-            ),
+          title: Text(isEdit ? 'Edit Staff' : 'Tambah Staff'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                autofocus: true,
+                decoration: const InputDecoration(labelText: 'Nama Staff', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: usernameController,
+                enabled: !isEdit,
+                decoration: const InputDecoration(labelText: 'Username', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                enabled: !isEdit,
+                decoration: const InputDecoration(labelText: 'Password (min. 6 karakter)', border: OutlineInputBorder()),
+              ),
+            ],
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Batal'),
-            ),
+            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Batal')),
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext);
                 if (isEdit) {
-                  _presenter.updateStaff(existing.id, controller.text);
+                  _presenter.updateStaff(existing.id, nameController.text);
                 } else {
-                  _presenter.addStaff(controller.text);
+                  _presenter.addStaff(
+                    name: nameController.text,
+                    username: usernameController.text,
+                    password: passwordController.text,
+                  );
                 }
               },
               child: const Text('Simpan'),
@@ -274,20 +262,15 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
     );
   }
 
-  void _confirmDeletePic(StaffModel staff) {
+  void _confirmDeleteStaff(StaffModel staff) {
     showDialog(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Hapus PIC?'),
-          content: Text(
-            'PIC "${staff.name}" akan dihapus. Tindakan ini tidak bisa dibatalkan.',
-          ),
+          title: const Text('Hapus Staff?'),
+          content: Text('Akun staff "${staff.name}" akan dihapus. Tindakan ini tidak bisa dibatalkan.'),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Batal'),
-            ),
+            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Batal')),
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext);
@@ -302,7 +285,7 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
     );
   }
 
-  // ================= Dialog: Klien =================
+  // ================= Dialog: KLIEN =================
   void _showClientFormDialog() {
     final nameController = TextEditingController();
     final usernameController = TextEditingController();
@@ -319,35 +302,23 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
               TextField(
                 controller: nameController,
                 autofocus: true,
-                decoration: const InputDecoration(
-                  labelText: 'Nama Klien',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: const InputDecoration(labelText: 'Nama Klien', border: OutlineInputBorder()),
               ),
               const SizedBox(height: 10),
               TextField(
                 controller: usernameController,
-                decoration: const InputDecoration(
-                  labelText: 'Username',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: const InputDecoration(labelText: 'Username', border: OutlineInputBorder()),
               ),
               const SizedBox(height: 10),
               TextField(
                 controller: passwordController,
                 obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Password (min. 6 karakter)',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: const InputDecoration(labelText: 'Password (min. 6 karakter)', border: OutlineInputBorder()),
               ),
             ],
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Batal'),
-            ),
+            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Batal')),
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext);
@@ -371,14 +342,9 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
       builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Hapus Klien?'),
-          content: Text(
-            'Klien "${client.name}" akan dihapus. Tindakan ini tidak bisa dibatalkan.',
-          ),
+          content: Text('Akun klien "${client.name}" akan dihapus. Tindakan ini tidak bisa dibatalkan.'),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Batal'),
-            ),
+            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Batal')),
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext);
@@ -403,10 +369,10 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
             children: [
               ListTile(
                 leading: const Icon(Icons.badge_outlined),
-                title: const Text('Tambah PIC'),
+                title: const Text('Tambah Staff'),
                 onTap: () {
                   Navigator.pop(sheetContext);
-                  _showPicFormDialog();
+                  _showStaffFormDialog();
                 },
               ),
               ListTile(
@@ -440,20 +406,14 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
               Text(
                 'PIC & Klien',
                 style: GoogleFonts.comfortaa(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 22, fontWeight: FontWeight.bold,
                   color: Theme.of(context).textTheme.titleLarge?.color,
                 ),
               ),
               const SizedBox(height: 6),
               Text(
-                'Kelola daftar PIC dan akun klien yang terdaftar.',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.color?.withOpacity(0.6),
-                ),
+                'Kelola daftar Staff dan akun klien yang terdaftar.',
+                style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6)),
               ),
               const SizedBox(height: 16),
               Row(
@@ -466,10 +426,7 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
                         prefixIcon: const Icon(Icons.search),
                         filled: true,
                         fillColor: Theme.of(context).cardColor,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                       ),
                     ),
                   ),
@@ -485,27 +442,19 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
                           onTap: _openFilterSheet,
                           child: Padding(
                             padding: const EdgeInsets.all(14),
-                            child: Icon(
-                              Icons.filter_list,
-                              color: Theme.of(context).textTheme.bodyLarge?.color,
-                            ),
+                            child: Icon(Icons.filter_list, color: Theme.of(context).textTheme.bodyLarge?.color),
                           ),
                         ),
                       ),
                       if (_hasActiveFilter)
                         Positioned(
-                          top: -2,
-                          right: -2,
+                          top: -2, right: -2,
                           child: Container(
-                            width: 10,
-                            height: 10,
+                            width: 10, height: 10,
                             decoration: BoxDecoration(
                               color: Theme.of(context).colorScheme.primary,
                               shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Theme.of(context).scaffoldBackgroundColor,
-                                width: 2,
-                              ),
+                              border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 2),
                             ),
                           ),
                         ),
@@ -526,12 +475,7 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'Menampilkan $_filteredCount dari $_totalCount data',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.color?.withOpacity(0.6),
-                  ),
+                  style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6)),
                 ),
               ),
               const SizedBox(height: 12),
@@ -541,36 +485,21 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
                     : ListView(
                         children: [
                           if (_filterMode != 'Klien') ...[
-                            _sectionHeader(context, 'PIC (${staff.length})'),
+                            _sectionHeader(context, 'Staff (${staff.length})'),
                             const SizedBox(height: 8),
                             if (staff.isEmpty)
-                              _emptyText(
-                                context,
-                                _staffList.isEmpty
-                                    ? 'Belum ada PIC.'
-                                    : 'Tidak ada PIC yang cocok.',
-                              )
+                              _emptyText(context, _staffList.isEmpty ? 'Belum ada Staff.' : 'Tidak ada Staff yang cocok.')
                             else
                               ...staff.map((s) => _buildStaffCard(context, s)),
                             const SizedBox(height: 20),
                           ],
                           if (_filterMode != 'PIC') ...[
-                            _sectionHeader(
-                              context,
-                              'Klien (${clients.length})',
-                            ),
+                            _sectionHeader(context, 'Klien (${clients.length})'),
                             const SizedBox(height: 8),
                             if (clients.isEmpty)
-                              _emptyText(
-                                context,
-                                _clientList.isEmpty
-                                    ? 'Belum ada klien.'
-                                    : 'Tidak ada klien yang cocok.',
-                              )
+                              _emptyText(context, _clientList.isEmpty ? 'Belum ada klien.' : 'Tidak ada klien yang cocok.')
                             else
-                              ...clients.map(
-                                (c) => _buildClientCard(context, c),
-                              ),
+                              ...clients.map((c) => _buildClientCard(context, c)),
                           ],
                         ],
                       ),
@@ -590,38 +519,20 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
   Widget _sectionHeader(BuildContext context, String title) {
     return Text(
       title,
-      style: TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.bold,
-        color: Theme.of(context).textTheme.titleLarge?.color,
-      ),
+      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.titleLarge?.color),
     );
   }
 
   Widget _emptyText(BuildContext context, String text) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 12,
-          color: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.color?.withOpacity(0.6),
-        ),
-      ),
+      child: Text(text, style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6))),
     );
   }
 
   Widget _buildStaffCard(BuildContext context, StaffModel staff) {
     final initials = staff.name.isNotEmpty
-        ? staff.name
-            .trim()
-            .split(' ')
-            .map((w) => w.isNotEmpty ? w[0] : '')
-            .take(2)
-            .join()
-            .toUpperCase()
+        ? staff.name.trim().split(' ').map((w) => w.isNotEmpty ? w[0] : '').take(2).join().toUpperCase()
         : '?';
 
     return Container(
@@ -635,53 +546,26 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
         children: [
           CircleAvatar(
             radius: 22,
-            backgroundColor: Theme.of(
-              context,
-            ).colorScheme.primary.withOpacity(0.15),
-            child: Text(
-              initials,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
+            backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+            child: Text(initials, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
           ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  staff.name,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
-                  ),
-                ),
+                Text(staff.name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Theme.of(context).textTheme.bodyLarge?.color)),
                 const SizedBox(height: 2),
-                Text(
-                  '${staff.jobCount} pekerjaan',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.color?.withOpacity(0.6),
-                  ),
-                ),
+                Text('@${staff.username} • ${staff.jobCount} pekerjaan', style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6))),
               ],
             ),
           ),
           IconButton(
-            onPressed: () => _showPicFormDialog(existing: staff),
-            icon: Icon(
-              Icons.edit_outlined,
-              size: 20,
-              color: Theme.of(context).colorScheme.primary,
-            ),
+            onPressed: () => _showStaffFormDialog(existing: staff),
+            icon: Icon(Icons.edit_outlined, size: 20, color: Theme.of(context).colorScheme.primary),
           ),
           IconButton(
-            onPressed: () => _confirmDeletePic(staff),
+            onPressed: () => _confirmDeleteStaff(staff),
             icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
           ),
         ],
@@ -691,13 +575,7 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
 
   Widget _buildClientCard(BuildContext context, ClientModel client) {
     final initials = client.name.isNotEmpty
-        ? client.name
-            .trim()
-            .split(' ')
-            .map((w) => w.isNotEmpty ? w[0] : '')
-            .take(2)
-            .join()
-            .toUpperCase()
+        ? client.name.trim().split(' ').map((w) => w.isNotEmpty ? w[0] : '').take(2).join().toUpperCase()
         : '?';
 
     return Container(
@@ -711,38 +589,17 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
         children: [
           CircleAvatar(
             radius: 22,
-            backgroundColor: Colors.blueGrey.withOpacity(0.15),
-            child: Text(
-              initials,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.blueGrey,
-              ),
-            ),
+            backgroundColor: Colors.blueGrey.withValues(alpha: 0.15),
+            child: Text(initials, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
           ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  client.name,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
-                  ),
-                ),
+                Text(client.name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Theme.of(context).textTheme.bodyLarge?.color)),
                 const SizedBox(height: 2),
-                Text(
-                  '@${client.username} • ${client.jobCount} pekerjaan',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.color?.withOpacity(0.6),
-                  ),
-                ),
+                Text('@${client.username} • ${client.jobCount} pekerjaan', style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6))),
               ],
             ),
           ),

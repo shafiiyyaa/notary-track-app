@@ -1,4 +1,4 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../model/profile_model.dart';
 import '../view/profile_view.dart';
 
@@ -7,17 +7,12 @@ class ProfilePresenter {
 
   ProfilePresenter(this._view);
 
-  void loadProfile() {
-    final user = Supabase.instance.client.auth.currentUser;
+  void loadProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+    final name = prefs.getString('user_name') ?? 'User';
+    final role = prefs.getString('user_role') ?? '';
 
-    if (user == null) return;
-
-    final profile = ProfileModel(
-      name: user.userMetadata?['username'] ?? 'User',
-      email: user.email ?? '',
-      avatarUrl: '',
-    );
-
+    final profile = ProfileModel(name: name, email: '', avatarUrl: '', role: role);
     _view.displayProfileData(profile);
   }
 }

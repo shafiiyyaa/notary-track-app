@@ -4,7 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../dashboard/main_navigation.dart';
 import '../presenter/login_presenter.dart';
 import '../view/login_view.dart';
-import '../../register/view/register_screen.dart';
 import '../../../client/client_navigation.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -76,9 +75,9 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
-    String identifierLabel = _selectedRole == 'Staff' ? "Email" : "Username";
-    IconData identifierIcon = _selectedRole == 'Staff' ? Icons.email_outlined : Icons.person_outline;
-    TextInputType keyboardType = _selectedRole == 'Staff' ? TextInputType.emailAddress : TextInputType.text;
+    String identifierLabel = "Username"; 
+    IconData identifierIcon = Icons.person_outline;
+    TextInputType keyboardType = TextInputType.text;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -166,28 +165,11 @@ class _LoginScreenState extends State<LoginScreen>
                     ),
                     const SizedBox(height: 20),
 
-                    if (_selectedRole == 'Staff')
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text("Belum punya akun? ",
-                              style: TextStyle(fontSize: 14, color: Theme.of(context).textTheme.bodyMedium?.color)),
-                          GestureDetector(
-                            onTap: () => Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(builder: (_) => const RegisterScreen()),
-                            ),
-                            child: Text("Daftar",
-                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: primary)),
-                          ),
-                        ],
-                      )
-                    else
-                      Text(
-                        "Belum punya akun? Hubungi kantor notaris\nuntuk pembuatan akun klien.",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6)),
-                      ),
+                    Text(
+                      "Belum punya akun?\nHubungi Notaris untuk pembuatan akun baru.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6)),
+                    ),
                   ],
                 ),
               ),
@@ -270,11 +252,11 @@ Widget _buildHeader(BuildContext context, {required String title, required Strin
     child: Stack(
       clipBehavior: Clip.none,
       children: [
-        Positioned(top: 20, left: -10, child: Icon(Icons.description_outlined, size: 70, color: Colors.white.withOpacity(0.08))),
-        Positioned(top: 90, right: -20, child: Icon(Icons.edit_note, size: 100, color: Colors.white.withOpacity(0.08))),
-        Positioned(bottom: 40, left: 30, child: Icon(Icons.verified_outlined, size: 50, color: Colors.white.withOpacity(0.10))),
-        Positioned(bottom: -10, right: 40, child: Icon(Icons.gavel_outlined, size: 60, color: Colors.white.withOpacity(0.08))),
-        Positioned(top: 130, left: 60, child: Icon(Icons.fingerprint, size: 40, color: Colors.white.withOpacity(0.08))),
+        Positioned(top: 20, left: -10, child: Icon(Icons.description_outlined, size: 70, color: Colors.white.withValues(alpha: 0.08))),
+        Positioned(top: 90, right: -20, child: Icon(Icons.edit_note, size: 100, color: Colors.white.withValues(alpha: 0.08))),
+        Positioned(bottom: 40, left: 30, child: Icon(Icons.verified_outlined, size: 50, color: Colors.white.withValues(alpha: 0.10))),
+        Positioned(bottom: -10, right: 40, child: Icon(Icons.gavel_outlined, size: 60, color: Colors.white.withValues(alpha: 0.08))),
+        Positioned(top: 130, left: 60, child: Icon(Icons.fingerprint, size: 40, color: Colors.white.withValues(alpha: 0.08))),
 
         SafeArea(
           child: Padding(
@@ -288,7 +270,7 @@ Widget _buildHeader(BuildContext context, {required String title, required Strin
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
+                        color: Colors.white.withValues(alpha: 0.15),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(Icons.balance, color: Colors.white, size: 26),

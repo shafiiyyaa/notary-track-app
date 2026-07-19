@@ -1,11 +1,13 @@
 class StaffModel {
   final String id;
   final String name;
+  final String username;
   final int jobCount;
 
   StaffModel({
     required this.id,
     required this.name,
+    required this.username,
     this.jobCount = 0,
   });
 
@@ -13,6 +15,7 @@ class StaffModel {
     return StaffModel(
       id: map['id'].toString(),
       name: map['name'] ?? '',
+      username: map['username'] ?? '',
       jobCount: (map['job_count'] as num?)?.toInt() ?? 0,
     );
   }

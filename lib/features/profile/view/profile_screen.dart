@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../model/profile_model.dart';
 import '../presenter/profile.presenter.dart';
-import 'profile_view.dart';
+import '../view/profile_view.dart';
 import '../about_app/view/about_app_screen.dart';
 import '../../auth/login/view/login_screen.dart';
 import '../../notification/view/notification_screen.dart';
@@ -30,9 +30,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   @override
   void displayProfileData(ProfileModel data) {
-    setState(() {
-      _profile = data;
-    });
+    setState(() => _profile = data);
   }
 
   @override
@@ -50,103 +48,52 @@ class _ProfileScreenState extends State<ProfileScreen>
                       Text(
                         "Akun Saya",
                         style: GoogleFonts.comfortaa(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 24, fontWeight: FontWeight.bold,
                           color: Theme.of(context).textTheme.titleLarge?.color,
                         ),
                       ),
-
                       const SizedBox(height: 30),
-
-                      Stack(
-                        alignment: Alignment.bottomRight,
-                        children: [
-                          CircleAvatar(
-                            radius: 70,
-                            backgroundColor: Theme.of(context).colorScheme.primary,
-                            child: Padding(
-                              padding: const EdgeInsets.all(20),
-                              child: Image.asset(
-                                "assets/images/logo.png",
-                                fit: BoxFit.contain,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),   
-
+                      CircleAvatar(
+                        radius: 70,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Image.asset("assets/images/logo.png", fit: BoxFit.contain, color: Colors.white),
+                        ),
+                      ),
                       const SizedBox(height: 20),
-
                       Text(
                         _profile!.name,
                         style: GoogleFonts.comfortaa(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 24, fontWeight: FontWeight.bold,
                           color: Theme.of(context).textTheme.bodyLarge?.color,
                         ),
                       ),
-
                       const SizedBox(height: 5),
-
                       Text(
-                        _profile!.email,
+                        _profile!.role,
                         style: GoogleFonts.plusJakartaSans(
-                          fontSize: 14,
-                          color: Theme.of(context).textTheme.bodyMedium?.color,
+                          fontSize: 14, color: Theme.of(context).textTheme.bodyMedium?.color,
                         ),
                       ),
-
                       const SizedBox(height: 50),
-
-                      _menuTile(
-                        context,
-                        Icons.notifications_outlined,
-                        "Notifikasi",
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const NotificationScreen()),
-                          );
-                        },
-                      ),
-                      
-                      _menuTile(
-                        context,
-                        Icons.lock,
-                        "Tentang Aplikasi",
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AboutAppScreen(),
-                            ),
-                          );
-                        },
-                      ),
-
-                      _menuTile(
-                        context,
-                        Icons.logout,
-                        "Keluar",
-                        () async {
-                          // 1. Hapus sesi role di SharedPreferences
-                          final prefs = await SharedPreferences.getInstance();
-                          await prefs.clear(); 
-                          
-                          // 2. Hapus sesi Supabase Auth
-                          await Supabase.instance.client.auth.signOut();
-                          
-                          if (!mounted) return;
-                          
-                          // 3. Arahkan ke Login dan hapus semua riwayat halaman
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(builder: (_) => const LoginScreen()),
-                            (route) => false,
-                          );
-                        },
-                      ),
+                      _menuTile(context, Icons.notifications_outlined, "Notifikasi", () {
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationScreen()));
+                      }),
+                      _menuTile(context, Icons.lock, "Tentang Aplikasi", () {
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const AboutAppScreen()));
+                      }),
+                      _menuTile(context, Icons.logout, "Keluar", () async {
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.clear();
+                        await Supabase.instance.client.auth.signOut(); 
+                        if (!mounted) return;
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (_) => const LoginScreen()),
+                          (route) => false,
+                        );
+                      }),
                     ],
                   ),
                 ),
@@ -155,12 +102,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _menuTile(
-    BuildContext context,
-    IconData icon,
-    String title,
-    VoidCallback onTap,
-  ) {
+  Widget _menuTile(BuildContext context, IconData icon, String title, VoidCallback onTap) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -171,15 +113,9 @@ class _ProfileScreenState extends State<ProfileScreen>
         leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
         title: Text(
           title,
-          style: GoogleFonts.comfortaa(
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).textTheme.bodyLarge?.color,
-          ),
+          style: GoogleFonts.comfortaa(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color),
         ),
-        trailing: Icon(
-          Icons.chevron_right,
-          color: Theme.of(context).textTheme.bodyLarge?.color,
-        ),
+        trailing: Icon(Icons.chevron_right, color: Theme.of(context).textTheme.bodyLarge?.color),
         onTap: onTap,
       ),
     );
