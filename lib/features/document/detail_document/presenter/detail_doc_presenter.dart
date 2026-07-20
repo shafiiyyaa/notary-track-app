@@ -14,28 +14,34 @@ class DetailDocPresenter {
   Future<void> fetchDocumentDetail(String id) async {
     _view.showLoading();
     try {
+      // TAMBAHKAN clients(name) DI SINI AGAR NAMA KLIEN MUNCUL
       final data = await _supabase
           .from('documents')
           .select('''
             *,
+            clients(name),
             document_types(name),
             staff(name)
           ''')
           .eq('id', id)
           .single();
 
-      final incomeData =
-          await _supabase.from('document_income_details').select().eq('document_id', id);
-      final expenseData =
-          await _supabase.from('document_expenses').select().eq('document_id', id);
+      final incomeData = await _supabase
+          .from('document_income_details')
+          .select()
+          .eq('document_id', id);
+      final expenseData = await _supabase
+          .from('document_expenses')
+          .select()
+          .eq('document_id', id);
 
-      final incomeDetails = List<Map<String, dynamic>>.from(incomeData)
-          .map((m) => IncomeDetailModel.fromMap(m))
-          .toList();
+      final incomeDetails = List<Map<String, dynamic>>.from(
+        incomeData,
+      ).map((m) => IncomeDetailModel.fromMap(m)).toList();
 
-      final expenses = List<Map<String, dynamic>>.from(expenseData)
-          .map((m) => ExpenseModel.fromMap(m))
-          .toList();
+      final expenses = List<Map<String, dynamic>>.from(
+        expenseData,
+      ).map((m) => ExpenseModel.fromMap(m)).toList();
 
       final doc = DocumentModel.fromMap(
         data,

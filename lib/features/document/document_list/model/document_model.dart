@@ -5,7 +5,7 @@ class DocumentModel {
   final String id;
 
   final String clientId;
-  final String clientName; // diambil dari join clients(name), read-only
+  final String clientName; 
   final String phone;
 
   final int documentTypeId;
@@ -40,7 +40,6 @@ class DocumentModel {
   final String? tanggalMasuk;
   final String uraianSingkat;
   final String? nomorDokumen;
-  // Field progressPercent dan tanggalSelesai dihapus sesuai request
   final String dokumenDibutuhkan;
   final String dokumenDiterima;
   final String statusPembayaran;
@@ -95,17 +94,17 @@ class DocumentModel {
     return DocumentModel(
       id: map['id'].toString(),
       clientId: map['client_id']?.toString() ?? '',
-      // Mengambil name dari objek clients hasil join Supabase
+      // AMBIL DARI HASIL JOIN clients(name)
       clientName: map['clients'] != null ? (map['clients']['name'] ?? '') : '',
       phone: map['phone'] ?? '',
       documentTypeId: map['document_type_id'] is int 
           ? map['document_type_id'] 
           : int.tryParse(map['document_type_id']?.toString() ?? '0') ?? 0,
-      // Mengambil name dari objek document_types hasil join Supabase
+      // AMBIL DARI HASIL JOIN document_types(name)
       docType: map['document_types'] != null ? (map['document_types']['name'] ?? '') : '',
       kategori: map['kategori'] ?? '',
       staffId: map['staff_id']?.toString() ?? '',
-      // Mengambil name dari objek staff hasil join Supabase
+      // AMBIL DARI HASIL JOIN staff(name)
       staffName: map['staff'] != null ? (map['staff']['name'] ?? '-') : '-',
       dateIn: map['created_at']?.toString().substring(0, 10) ?? '',
       deadline: map['deadline'] ?? '',
