@@ -32,7 +32,12 @@ class NotificationService {
       iOS: iosSettings,
     );
 
-    await _plugin.initialize(settings);
+    await _plugin.initialize(
+      settings,
+      onDidReceiveNotificationResponse: (response) {
+        // Ini akan ditangani di layar utama jika aplikasi sedang dibuka
+      },
+    );
 
     final android = _plugin.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
@@ -47,6 +52,7 @@ class NotificationService {
     required String title,
     required String body,
     required DateTime scheduledDate,
+    required bool isFullScreenPopup, // Tambahan untuk pop-up H-0
   }) async {
     if (scheduledDate.isBefore(DateTime.now())) return;
 
@@ -60,11 +66,11 @@ class NotificationService {
       NotificationDetails(
         android: AndroidNotificationDetails(
           'deadline_channel',
-          'Deadline Dokumen',
-          channelDescription: 'Notifikasi deadline dokumen yang mendekat',
+          'Deadline & Janji Temu',
+          channelDescription: 'Notifikasi deadline dokumen dan janji temu',
           importance: Importance.max,
           priority: Priority.high,
-          fullScreenIntent: true,
+          fullScreenIntent: isFullScreenPopup, // Memaksa muncul pop-up layar penuh
           enableVibration: true,
           vibrationPattern: vibrationPattern,
         ),
@@ -88,53 +94,71 @@ class NotificationService {
     required DateTime appointmentTime,
   }) async {
     final jamMenit = "${appointmentTime.hour.toString().padLeft(2,'0')}:${appointmentTime.minute.toString().padLeft(2,'0')}";
+    final tanggal = "${appointmentTime.day}/${appointmentTime.month}/${appointmentTime.year}";
     
-    final h1 = DateTime(appointmentTime.year, appointmentTime.month, appointmentTime.day - 1, 12, 0);
+    // 1. H-1 (1 hari sebelumnya, jam 08:00 pagi)
+    final h1 = DateTime(appointmentTime.year, appointmentTime.month, appointmentTime.day - 1, 8, 0);
     if (h1.isAfter(DateTime.now())) {
       await scheduleDeadlineNotification(
         id: baseId + 1,
         title: 'Pengingat Janji Temu Besok',
-        body: 'Besok jam $jamMenit bersama $clientName. $message',
+        body: 'Besok jam $jamMenit ada janji temu dengan $clientName. $message',
         scheduledDate: h1,
+        isFullScreenPopup: false,
       );
     }
 
-    final h12 = appointmentTime.subtract(const Duration(hours: 12));
-    if (h12.isAfter(DateTime.now())) {
+    // 2. H-1 Jam sebelumnya
+    final h1hour = appointmentTime.subtract(const Duration(hours: 1));
+    if (h1hour.isAfter(DateTime.now())) {
       await scheduleDeadlineNotification(
         id: baseId + 2,
-        title: 'Pengingat Janji Temu (12 Jam Lagi)',
-        body: '12 jam lagi jam $jamMenit bersama $clientName. $message',
-        scheduledDate: h12,
+        title: 'Janji Temu 1 Jam Lagi',
+        body: '1 jam lagi janji temu dengan $clientName. $message',
+        scheduledDate: h1hour,
+        isFullScreenPopup: false,
       );
     }
 
+    // 3. H-10 Menit sebelumnya
     final h10m = appointmentTime.subtract(const Duration(minutes: 10));
     if (h10m.isAfter(DateTime.now())) {
       await scheduleDeadlineNotification(
         id: baseId + 3,
-        title: 'Janji Temu Segera Dimulai!',
-        body: '10 menit lagi jam $jamMenit bersama $clientName. $message',
+        title: 'Janji Temu 10 Menit Lagi!',
+        body: 'Segera bersiap, 10 menit lagi janji temu dengan $clientName.',
         scheduledDate: h10m,
+        isFullScreenPopup: false,
+      );
+    }
+
+    // 4. H-0 (Tepat saat waktu janji temu - Pop Up Dering)
+    if (appointmentTime.isAfter(DateTime.now())) {
+      await scheduleDeadlineNotification(
+        id: baseId + 4,
+        title: '🔔 Janji Temu Dimulai!',
+        body: 'Janji temu dengan $clientName pada $tanggal jam $jamMenit. $message',
+        scheduledDate: appointmentTime,
+        isFullScreenPopup: true, // Ini yang bikin muncul dering pop-up
       );
     }
   }
 
-  // ================= JADWALKAN DEADLINE DOKUMEN (H-7, H-3, H-1, H-0) =================
+  // ================= JADWALKAN DEADLINE DOKUMEN (H-14 s/d H-0) =================
   Future<void> scheduleForDocument({
     required int docId,
     required String clientName,
     required String documentType,
     required DateTime deadline,
   }) async {
-    const milestones = [7, 3, 1, 0];
+    const milestones = [14, 7, 3, 1, 0];
 
     for (final h in milestones) {
       final notifDate = DateTime(
         deadline.year,
         deadline.month,
         deadline.day - h,
-        9, 
+        8, // Jam 8 pagi
         0,
       );
 
@@ -150,12 +174,13 @@ class NotificationService {
         title: title,
         body: body,
         scheduledDate: notifDate,
+        isFullScreenPopup: false,
       );
     }
   }
 
   Future<void> cancelForDocument(int docId) async {
-    for (final h in [7, 3, 1, 0]) {
+    for (final h in [14, 7, 3, 1, 0]) {
       await _plugin.cancel(_makeId(docId, h));
     }
   }
@@ -164,6 +189,7 @@ class NotificationService {
     await _plugin.cancel(baseId + 1);
     await _plugin.cancel(baseId + 2);
     await _plugin.cancel(baseId + 3);
+    await _plugin.cancel(baseId + 4);
   }
 
   int _makeId(int docId, int h) => ('$docId-$h').hashCode & 0x7fffffff;

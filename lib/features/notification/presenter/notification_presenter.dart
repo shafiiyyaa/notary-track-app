@@ -41,11 +41,12 @@ class NotificationPresenter {
           deadline: deadline,
         );
 
-        if (remainingDays >= 0 && remainingDays <= 7) {
+        if (remainingDays >= 0 && remainingDays <= 14) {
           list.add(NotificationModel(
             id: docId,
             title: "Deadline $documentType",
             clientName: clientName,
+            description: 'Deadline dokumen pada ${deadline.day}/${deadline.month}/${deadline.year}',
             scheduledDate: deadline,
             remainingDays: remainingDays,
             isManual: false,
@@ -57,11 +58,11 @@ class NotificationPresenter {
       final manualResponse = await _supabase
           .from('notifications')
           .select('id, title, message, scheduled_at, clients(name)')
-          .gte('scheduled_at', DateTime.now().toIso8601String()) 
+          .gte('scheduled_at', DateTime.now().toUtc().toIso8601String()) 
           .order('scheduled_at', ascending: true);
 
       for (final item in manualResponse) {
-        final schedDate = DateTime.parse(item['scheduled_at']);
+        final schedDate = DateTime.parse(item['scheduled_at']).toLocal();
         final remainingDays = schedDate.difference(DateTime.now()).inDays;
         
         if (remainingDays >= 0 && remainingDays <= 7) {
@@ -81,6 +82,7 @@ class NotificationPresenter {
             id: item['id'] as int,
             title: item['title'] ?? 'Pengingat',
             clientName: item['clients']?['name'] ?? '',
+            description: item['message'] ?? '', // Masukkan deskripsi dari database
             scheduledDate: schedDate,
             remainingDays: remainingDays,
             isManual: true,
@@ -88,6 +90,7 @@ class NotificationPresenter {
         }
       }
 
+      // 3. URUTKAN BERDASARKAN WAKTU TERDEKAT
       list.sort((a, b) => a.scheduledDate.compareTo(b.scheduledDate));
 
       _view.displayNotifications(list);
