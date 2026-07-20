@@ -86,8 +86,9 @@ class HomePresenter {
 
   Future<void> fetchPriorityData() async {
     try {
+      // UBAH client_name MENJADI clients(name)
       final data = await _supabase.from('documents').select('''
-            client_name,
+            clients(name),
             deadline,
             status,
             kesepakatan_biaya,
@@ -107,7 +108,8 @@ class HomePresenter {
       for (final doc in docs) {
         final status = doc['status'] ?? 'Belum Diproses';
         final typeName = doc['document_types']?['name'] ?? '-';
-        final clientName = doc['client_name'] ?? '-';
+        // UBAH CARA AMBIL NAMA KLIEN DARI HASIL JOIN
+        final clientName = doc['clients']?['name'] ?? '-';
 
         if (status != 'Selesai' && status != 'Batal') {
           final deadlineStr = doc['deadline'];
