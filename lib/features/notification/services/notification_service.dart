@@ -32,12 +32,7 @@ class NotificationService {
       iOS: iosSettings,
     );
 
-    await _plugin.initialize(
-      settings,
-      onDidReceiveNotificationResponse: (response) {
-        // Ini akan ditangani di layar utama jika aplikasi sedang dibuka
-      },
-    );
+    await _plugin.initialize(settings);
 
     final android = _plugin.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
@@ -47,12 +42,42 @@ class NotificationService {
     _initialized = true;
   }
 
+  // ================= TES NOTIFIKASI INSTAN =================
+  Future<void> showInstantNotification({
+    required String title,
+    required String body,
+  }) async {
+    final vibrationPattern = Int64List.fromList([0, 1000, 500, 1000]);
+
+    await _plugin.show(
+      88888, // ID sementara untuk tes
+      title,
+      body,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'instant_channel',
+          'Tes Instan',
+          channelDescription: 'Channel untuk tes instan',
+          importance: Importance.max,
+          priority: Priority.high,
+          enableVibration: true,
+          vibrationPattern: vibrationPattern,
+        ),
+        iOS: const DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+    );
+  }
+
   Future<void> scheduleDeadlineNotification({
     required int id,
     required String title,
     required String body,
     required DateTime scheduledDate,
-    required bool isFullScreenPopup, // Tambahan untuk pop-up H-0
+    required bool isFullScreenPopup,
   }) async {
     if (scheduledDate.isBefore(DateTime.now())) return;
 
@@ -70,7 +95,7 @@ class NotificationService {
           channelDescription: 'Notifikasi deadline dokumen dan janji temu',
           importance: Importance.max,
           priority: Priority.high,
-          fullScreenIntent: isFullScreenPopup, // Memaksa muncul pop-up layar penuh
+          fullScreenIntent: isFullScreenPopup,
           enableVibration: true,
           vibrationPattern: vibrationPattern,
         ),
@@ -96,7 +121,6 @@ class NotificationService {
     final jamMenit = "${appointmentTime.hour.toString().padLeft(2,'0')}:${appointmentTime.minute.toString().padLeft(2,'0')}";
     final tanggal = "${appointmentTime.day}/${appointmentTime.month}/${appointmentTime.year}";
     
-    // 1. H-1 (1 hari sebelumnya, jam 08:00 pagi)
     final h1 = DateTime(appointmentTime.year, appointmentTime.month, appointmentTime.day - 1, 8, 0);
     if (h1.isAfter(DateTime.now())) {
       await scheduleDeadlineNotification(
@@ -108,7 +132,6 @@ class NotificationService {
       );
     }
 
-    // 2. H-1 Jam sebelumnya
     final h1hour = appointmentTime.subtract(const Duration(hours: 1));
     if (h1hour.isAfter(DateTime.now())) {
       await scheduleDeadlineNotification(
@@ -120,7 +143,6 @@ class NotificationService {
       );
     }
 
-    // 3. H-10 Menit sebelumnya
     final h10m = appointmentTime.subtract(const Duration(minutes: 10));
     if (h10m.isAfter(DateTime.now())) {
       await scheduleDeadlineNotification(
@@ -132,19 +154,18 @@ class NotificationService {
       );
     }
 
-    // 4. H-0 (Tepat saat waktu janji temu - Pop Up Dering)
     if (appointmentTime.isAfter(DateTime.now())) {
       await scheduleDeadlineNotification(
         id: baseId + 4,
         title: '🔔 Janji Temu Dimulai!',
         body: 'Janji temu dengan $clientName pada $tanggal jam $jamMenit. $message',
         scheduledDate: appointmentTime,
-        isFullScreenPopup: true, // Ini yang bikin muncul dering pop-up
+        isFullScreenPopup: true,
       );
     }
   }
 
-  // ================= JADWALKAN DEADLINE DOKUMEN (H-14 s/d H-0) =================
+  // ================= JADWALKAN DEADLINE DOKUMEN =================
   Future<void> scheduleForDocument({
     required int docId,
     required String clientName,
@@ -158,7 +179,7 @@ class NotificationService {
         deadline.year,
         deadline.month,
         deadline.day - h,
-        8, // Jam 8 pagi
+        8, 
         0,
       );
 

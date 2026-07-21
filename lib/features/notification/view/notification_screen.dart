@@ -37,24 +37,15 @@ class _NotificationScreenState extends State<NotificationScreen>
     });
   }
 
-  // Fungsi untuk tes notif 5 detik dari sekarang
+  // Fungsi tes notif INSTAN (Langsung muncul)
   Future<void> _testNotifNow() async {
-    await NotificationService().scheduleDeadlineNotification(
-      id: 99999,
+    await NotificationService().showInstantNotification(
       title: "TES NOTIFIKASI 🔔",
       body: "Jika ini muncul, berarti notifikasi aplikasi Anda berfungsi!",
-      scheduledDate: DateTime.now().add(
-        const Duration(seconds: 5),
-      ), // 5 detik dari sekarang
-      isFullScreenPopup: true,
     );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          "Notif tes dijadwalkan 5 detik lagi... Jangan tutup aplikasi!",
-        ),
-      ),
+      const SnackBar(content: Text("Notif instan dikirim! Cek layar atas.")),
     );
   }
 
@@ -71,7 +62,6 @@ class _NotificationScreenState extends State<NotificationScreen>
     _loadData();
   }
 
-  // Fungsi untuk menampilkan pop-up detail saat card diklik
   void _showDetailBottomSheet(NotificationModel item) {
     final formatTanggal = DateFormat('EEEE, dd MMMM yyyy', 'id_ID');
     final formatJam = DateFormat('HH:mm');
@@ -91,30 +81,20 @@ class _NotificationScreenState extends State<NotificationScreen>
             children: [
               Center(
                 child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[400],
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(color: Colors.grey[400], borderRadius: BorderRadius.circular(10)),
                 ),
               ),
               const SizedBox(height: 20),
               Row(
                 children: [
-                  Icon(
-                    item.isManual ? Icons.event_note : Icons.warning_rounded,
-                    color: item.isManual ? Colors.blue : Colors.red,
-                    size: 30,
-                  ),
+                  Icon(item.isManual ? Icons.event_note : Icons.warning_rounded, 
+                       color: item.isManual ? Colors.blue : Colors.red, size: 30),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       item.title,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -122,25 +102,17 @@ class _NotificationScreenState extends State<NotificationScreen>
               const Divider(height: 30),
               _buildDetailRow("Klien / Terkait", item.clientName),
               const SizedBox(height: 12),
-              _buildDetailRow(
-                "Tanggal",
-                formatTanggal.format(item.scheduledDate),
-              ),
+              _buildDetailRow("Tanggal", formatTanggal.format(item.scheduledDate)),
               const SizedBox(height: 12),
               _buildDetailRow("Jam", formatJam.format(item.scheduledDate)),
               const SizedBox(height: 12),
-              _buildDetailRow(
-                "Status",
-                item.remainingDays == 0
-                    ? "Hari Ini"
-                    : "${item.remainingDays} hari lagi",
-              ),
-
+              _buildDetailRow("Status", item.remainingDays == 0 ? "Hari Ini" : "${item.remainingDays} hari lagi"),
+              
               if (item.description.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 _buildDetailRow("Catatan", item.description),
               ],
-
+              
               const SizedBox(height: 30),
               SizedBox(
                 width: double.infinity,
@@ -148,19 +120,10 @@ class _NotificationScreenState extends State<NotificationScreen>
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.primary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    "Baik, saya ingat",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: const Text("Baik, saya ingat", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(height: 10),
@@ -177,21 +140,10 @@ class _NotificationScreenState extends State<NotificationScreen>
       children: [
         SizedBox(
           width: 110,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[600],
-            ),
-          ),
+          child: Text(label, style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey[600])),
         ),
         const Text(" : "),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-          ),
-        ),
+        Expanded(child: Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500))),
       ],
     );
   }
@@ -223,34 +175,26 @@ class _NotificationScreenState extends State<NotificationScreen>
                   ),
                   Text(
                     'Notifikasi',
-                    style: GoogleFonts.comfortaa(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: GoogleFonts.comfortaa(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                   const Icon(Icons.notifications_active_outlined, size: 30),
                 ],
               ),
             ),
-
-            // TOMBOL TES NOTIFIKASI
+            
+            // TOMBOL TES NOTIFIKASI INSTAN
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 8,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
               child: SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Theme.of(context).colorScheme.primary,
-                    side: BorderSide(
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
+                    side: BorderSide(color: Theme.of(context).colorScheme.primary),
                   ),
                   onPressed: _testNotifNow,
                   icon: const Icon(Icons.notifications_active),
-                  label: const Text("Tes Notifikasi (5 Detik)"),
+                  label: const Text("Tes Notifikasi (Instan)"),
                 ),
               ),
             ),
@@ -265,9 +209,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                         itemCount: _notifList.length,
                         itemBuilder: (context, index) {
                           final item = _notifList[index];
-                          Color borderColor = item.isManual
-                              ? Colors.blue.shade200
-                              : Colors.red.shade200;
+                          Color borderColor = item.isManual ? Colors.blue.shade200 : Colors.red.shade200;
 
                           return GestureDetector(
                             onTap: () => _showDetailBottomSheet(item),
@@ -280,52 +222,41 @@ class _NotificationScreenState extends State<NotificationScreen>
                                 border: Border.all(color: borderColor),
                               ),
                               child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           item.title,
                                           style: GoogleFonts.plusJakartaSans(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                            color: item.isManual
-                                                ? Colors.blue
-                                                : Colors.red,
+                                            fontWeight: FontWeight.bold, fontSize: 16,
+                                            color: item.isManual ? Colors.blue : Colors.red,
                                           ),
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
                                           item.clientName,
                                           style: GoogleFonts.plusJakartaSans(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w600,
+                                            fontSize: 14, fontWeight: FontWeight.w600,
                                           ),
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
                                           item.remainingDays == 0
-                                              ? "Hari Ini - ${item.scheduledDate.hour.toString().padLeft(2, '0')}:${item.scheduledDate.minute.toString().padLeft(2, '0')}"
+                                              ? "Hari Ini - ${item.scheduledDate.hour.toString().padLeft(2,'0')}:${item.scheduledDate.minute.toString().padLeft(2,'0')}"
                                               : "${item.remainingDays} hari lagi",
                                           style: GoogleFonts.plusJakartaSans(
-                                            fontSize: 12,
-                                            color: Colors.grey[600],
+                                            fontSize: 12, color: Colors.grey[600],
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
                                   Icon(
-                                    item.isManual
-                                        ? Icons.event_note
-                                        : Icons.warning_rounded,
-                                    color: item.isManual
-                                        ? Colors.blue
-                                        : Colors.red.shade400,
+                                    item.isManual ? Icons.event_note : Icons.warning_rounded,
+                                    color: item.isManual ? Colors.blue : Colors.red.shade400,
                                   ),
                                 ],
                               ),
