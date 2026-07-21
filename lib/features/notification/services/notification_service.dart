@@ -1,7 +1,17 @@
+import 'dart:convert';
 import 'dart:typed_data';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tzdata;
+
+import 'package:notarytrackapp/main.dart';
+import 'package:notarytrackapp/features/notification/view/reminder_ring_screen.dart';
+
+@pragma('vm:entry-point')
+void notificationTapBackgroundHandler(NotificationResponse response) {
+  NotificationService._handleTap(response);
+}
 
 class NotificationService {
   static final NotificationService _instance =
@@ -20,8 +30,7 @@ class NotificationService {
     tzdata.initializeTimeZones();
     tz.setLocalLocation(tz.getLocation('Asia/Jakarta'));
 
-    const androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -32,14 +41,46 @@ class NotificationService {
       iOS: iosSettings,
     );
 
-    await _plugin.initialize(settings);
+    await _plugin.initialize(
+      settings,
+      onDidReceiveNotificationResponse: _handleTap,
+      onDidReceiveBackgroundNotificationResponse: notificationTapBackgroundHandler,
+    );
 
-    final android = _plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
+    final android = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+
     await android?.requestNotificationsPermission();
     await android?.requestExactAlarmsPermission();
 
     _initialized = true;
+  }
+
+  // ================= HANDLER TAP NOTIFIKASI =================
+  static void _handleTap(NotificationResponse response) {
+    final payloadStr = response.payload;
+    if (payloadStr == null || payloadStr.isEmpty) return;
+
+    try {
+      final data = jsonDecode(payloadStr) as Map<String, dynamic>;
+      final isRing = data['isRing'] == true;
+      if (!isRing) return;
+
+      Future.delayed(const Duration(milliseconds: 300), () {
+        navigatorKey.currentState?.push(
+          MaterialPageRoute(
+            builder: (_) => ReminderRingScreen(
+              title: data['title'] ?? 'Pengingat',
+              subtitle: data['subtitle'] ?? '',
+              clientName: data['clientName'] ?? '',
+              location: data['location'] ?? '',
+              scheduledDateIso: data['scheduledDate'] ?? '',
+            ),
+          ),
+        );
+      });
+    } catch (e) {
+      debugPrint('Gagal parse payload notifikasi: $e');
+    }
   }
 
   // ================= TES NOTIFIKASI INSTAN =================
@@ -50,7 +91,7 @@ class NotificationService {
     final vibrationPattern = Int64List.fromList([0, 1000, 500, 1000]);
 
     await _plugin.show(
-      88888, // ID sementara untuk tes
+      88888,
       title,
       body,
       NotificationDetails(
@@ -72,16 +113,26 @@ class NotificationService {
     );
   }
 
+  // ================= JADWALKAN 1 NOTIFIKASI =================
   Future<void> scheduleDeadlineNotification({
     required int id,
     required String title,
     required String body,
     required DateTime scheduledDate,
-    required bool isFullScreenPopup,
+    required bool isRing,
+    Map<String, dynamic>? payloadData,
   }) async {
     if (scheduledDate.isBefore(DateTime.now())) return;
 
-    final vibrationPattern = Int64List.fromList([0, 1000, 500, 1000, 500, 1000, 500, 1000]);
+    final vibrationPattern = isRing
+        ? Int64List.fromList([0, 1000, 500, 1000, 500, 1000, 500, 1000])
+        : Int64List.fromList([0, 500, 250, 500]);
+
+    final payload = jsonEncode({
+      'isRing': isRing,
+      'title': title,
+      ...?payloadData,
+    });
 
     await _plugin.zonedSchedule(
       id,
@@ -90,24 +141,31 @@ class NotificationService {
       tz.TZDateTime.from(scheduledDate, tz.local),
       NotificationDetails(
         android: AndroidNotificationDetails(
-          'deadline_channel',
-          'Deadline & Janji Temu',
-          channelDescription: 'Notifikasi deadline dokumen dan janji temu',
+          isRing ? 'ring_channel' : 'deadline_channel',
+          isRing ? 'Dering Pengingat' : 'Deadline & Janji Temu',
+          channelDescription: isRing
+              ? 'Notifikasi dering saat waktu janji temu / deadline tiba'
+              : 'Notifikasi deadline dokumen dan janji temu',
           importance: Importance.max,
           priority: Priority.high,
-          fullScreenIntent: isFullScreenPopup,
+          fullScreenIntent: isRing,
           enableVibration: true,
           vibrationPattern: vibrationPattern,
+          category: isRing ? AndroidNotificationCategory.alarm : null,
+          ongoing: isRing,
+          autoCancel: !isRing,
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: true,
           presentBadge: true,
           presentSound: true,
+          interruptionLevel: InterruptionLevel.critical,
         ),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
+      payload: payload,
     );
   }
 
@@ -115,20 +173,31 @@ class NotificationService {
   Future<void> scheduleAppointmentReminders({
     required int baseId,
     required String clientName,
+    required String location,
     required String message,
     required DateTime appointmentTime,
   }) async {
-    final jamMenit = "${appointmentTime.hour.toString().padLeft(2,'0')}:${appointmentTime.minute.toString().padLeft(2,'0')}";
-    final tanggal = "${appointmentTime.day}/${appointmentTime.month}/${appointmentTime.year}";
-    
-    final h1 = DateTime(appointmentTime.year, appointmentTime.month, appointmentTime.day - 1, 8, 0);
+    final jamMenit =
+        "${appointmentTime.hour.toString().padLeft(2, '0')}:${appointmentTime.minute.toString().padLeft(2, '0')}";
+    final tanggal =
+        "${appointmentTime.day}/${appointmentTime.month}/${appointmentTime.year}";
+
+    final basePayload = {
+      'clientName': clientName,
+      'location': location,
+      'scheduledDate': appointmentTime.toIso8601String(),
+    };
+
+    final h1 = DateTime(
+        appointmentTime.year, appointmentTime.month, appointmentTime.day - 1, 8, 0);
     if (h1.isAfter(DateTime.now())) {
       await scheduleDeadlineNotification(
         id: baseId + 1,
         title: 'Pengingat Janji Temu Besok',
         body: 'Besok jam $jamMenit ada janji temu dengan $clientName. $message',
         scheduledDate: h1,
-        isFullScreenPopup: false,
+        isRing: false,
+        payloadData: {...basePayload, 'subtitle': 'Besok, $jamMenit'},
       );
     }
 
@@ -139,7 +208,8 @@ class NotificationService {
         title: 'Janji Temu 1 Jam Lagi',
         body: '1 jam lagi janji temu dengan $clientName. $message',
         scheduledDate: h1hour,
-        isFullScreenPopup: false,
+        isRing: false,
+        payloadData: {...basePayload, 'subtitle': '1 jam lagi'},
       );
     }
 
@@ -147,10 +217,11 @@ class NotificationService {
     if (h10m.isAfter(DateTime.now())) {
       await scheduleDeadlineNotification(
         id: baseId + 3,
-        title: 'Janji Temu 10 Menit Lagi!',
+        title: '🔔 Janji Temu 10 Menit Lagi!',
         body: 'Segera bersiap, 10 menit lagi janji temu dengan $clientName.',
         scheduledDate: h10m,
-        isFullScreenPopup: false,
+        isRing: true,
+        payloadData: {...basePayload, 'subtitle': '10 menit lagi'},
       );
     }
 
@@ -160,7 +231,8 @@ class NotificationService {
         title: '🔔 Janji Temu Dimulai!',
         body: 'Janji temu dengan $clientName pada $tanggal jam $jamMenit. $message',
         scheduledDate: appointmentTime,
-        isFullScreenPopup: true,
+        isRing: true,
+        payloadData: {...basePayload, 'subtitle': 'Sekarang, $jamMenit'},
       );
     }
   }
@@ -179,14 +251,15 @@ class NotificationService {
         deadline.year,
         deadline.month,
         deadline.day - h,
-        8, 
+        8,
         0,
       );
 
       final notifId = _makeId(docId, h);
+      final isRing = h == 0;
 
-      final title = h == 0 ? '⏰ Deadline Hari Ini!' : '📌 Deadline Mendekat';
-      final body = h == 0
+      final title = isRing ? '⏰🔔 Deadline Hari Ini!' : '📌 Deadline Mendekat';
+      final body = isRing
           ? 'Deadline HARI INI: $documentType - $clientName'
           : 'H-$h: $documentType milik $clientName harus selesai';
 
@@ -195,7 +268,13 @@ class NotificationService {
         title: title,
         body: body,
         scheduledDate: notifDate,
-        isFullScreenPopup: false,
+        isRing: isRing,
+        payloadData: {
+          'clientName': clientName,
+          'location': documentType,
+          'subtitle': isRing ? 'Hari ini' : 'H-$h',
+          'scheduledDate': deadline.toIso8601String(),
+        },
       );
     }
   }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../services/notification_service.dart'; // Pastikan path import benar
+import '../services/notification_service.dart';
 
 class AddNotificationSheet extends StatefulWidget {
   const AddNotificationSheet({super.key});
@@ -17,6 +17,7 @@ class _AddNotificationSheetState extends State<AddNotificationSheet> {
   String? _selectedClientId;
 
   final _titleController = TextEditingController(text: 'Janji Temu');
+  final _locationController = TextEditingController();
   final _messageController = TextEditingController();
 
   DateTime? _selectedDate;
@@ -32,7 +33,8 @@ class _AddNotificationSheetState extends State<AddNotificationSheet> {
 
   Future<void> _fetchClients() async {
     try {
-      final response = await _supabase.from('clients').select('id, name').order('name');
+      final response =
+          await _supabase.from('clients').select('id, name').order('name');
       if (mounted) {
         setState(() {
           _clients = List<Map<String, dynamic>>.from(response);
@@ -40,7 +42,7 @@ class _AddNotificationSheetState extends State<AddNotificationSheet> {
         });
       }
     } catch (e) {
-      print("Error fetch clients: $e");
+      debugPrint("Error fetch clients: $e");
       if (mounted) setState(() => _isLoadingClients = false);
     }
   }
@@ -64,7 +66,9 @@ class _AddNotificationSheetState extends State<AddNotificationSheet> {
   }
 
   Future<void> _saveNotification() async {
-    if (_selectedClientId == null || _selectedDate == null || _selectedTime == null) {
+    if (_selectedClientId == null ||
+        _selectedDate == null ||
+        _selectedTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Klien, Tanggal, dan Jam wajib diisi!')),
       );
@@ -83,32 +87,34 @@ class _AddNotificationSheetState extends State<AddNotificationSheet> {
       );
 
       final user = _supabase.auth.currentUser;
-      final clientName = _clients.firstWhere((c) => c['id'] == _selectedClientId)['name'];
+      final clientName =
+          _clients.firstWhere((c) => c['id'] == _selectedClientId)['name'];
 
       // 1. Simpan ke Database Supabase
       final insertedData = await _supabase.from('notifications').insert({
         'user_id': user?.id,
         'client_id': _selectedClientId,
         'title': _titleController.text,
+        'location': _locationController.text,
         'message': _messageController.text,
         'scheduled_at': scheduledDateTime.toIso8601String(),
       }).select('id').single();
 
-      // 2. JADWALKAN 3 ALARM PENGINGAT DI HP (H-1, H-12, H-10)
+      // 2. JADWALKAN ALARM PENGINGAT DI HP
       final notifIdInDb = insertedData['id'] as int;
-      // Pakai ID kecil agar bisa ditambah +1, +2, +3 tanpa overflow integer
-      int baseId = notifIdInDb % 100000; 
-      
+      int baseId = notifIdInDb % 100000;
+
       await NotificationService().scheduleAppointmentReminders(
         baseId: baseId,
         clientName: clientName,
+        location: _locationController.text,
         message: _messageController.text,
         appointmentTime: scheduledDateTime,
       );
 
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
-      print("Error save notif: $e");
+      debugPrint("Error save notif: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Gagal menyimpan: $e')),
@@ -133,7 +139,9 @@ class _AddNotificationSheetState extends State<AddNotificationSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Tambah Pengingat', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text('Tambah Pengingat',
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
             Text('Pilih Klien', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
@@ -141,9 +149,11 @@ class _AddNotificationSheetState extends State<AddNotificationSheet> {
                 ? const Center(child: CircularProgressIndicator())
                 : DropdownButtonFormField<String>(
                     initialValue: _selectedClientId,
-                    decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'Pilih Klien'),
+                    decoration: const InputDecoration(
+                        border: OutlineInputBorder(), hintText: 'Pilih Klien'),
                     items: _clients.map((c) {
-                      return DropdownMenuItem<String>(value: c['id'], child: Text(c['name']));
+                      return DropdownMenuItem<String>(
+                          value: c['id'], child: Text(c['name']));
                     }).toList(),
                     onChanged: (val) => setState(() => _selectedClientId = val),
                   ),
@@ -152,15 +162,29 @@ class _AddNotificationSheetState extends State<AddNotificationSheet> {
             const SizedBox(height: 8),
             TextField(
               controller: _titleController,
-              decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'cth: Janji Temu, Tanda Tangan'),
+              decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: 'cth: Janji Temu, Tanda Tangan'),
             ),
             const SizedBox(height: 16),
-            Text('Deskripsi (Opsional)', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text('Lokasi', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _locationController,
+              decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: 'cth: Kopi Kenangan, Kantor Notaris'),
+            ),
+            const SizedBox(height: 16),
+            Text('Deskripsi (Opsional)',
+                style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             TextField(
               controller: _messageController,
               maxLines: 2,
-              decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'cth: Bertemu di kantor notaris'),
+              decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: 'cth: Bertemu di kantor notaris'),
             ),
             const SizedBox(height: 16),
             Row(
@@ -175,8 +199,12 @@ class _AddNotificationSheetState extends State<AddNotificationSheet> {
                         onTap: _pickDate,
                         child: Container(
                           padding: const EdgeInsets.all(15),
-                          decoration: BoxDecoration(border: Border.all(color: Colors.grey), borderRadius: BorderRadius.circular(5)),
-                          child: Text(_selectedDate == null ? 'Pilih Tanggal' : DateFormat('dd MMM yyyy').format(_selectedDate!)),
+                          decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey),
+                              borderRadius: BorderRadius.circular(5)),
+                          child: Text(_selectedDate == null
+                              ? 'Pilih Tanggal'
+                              : DateFormat('dd MMM yyyy').format(_selectedDate!)),
                         ),
                       ),
                     ],
@@ -193,8 +221,12 @@ class _AddNotificationSheetState extends State<AddNotificationSheet> {
                         onTap: _pickTime,
                         child: Container(
                           padding: const EdgeInsets.all(15),
-                          decoration: BoxDecoration(border: Border.all(color: Colors.grey), borderRadius: BorderRadius.circular(5)),
-                          child: Text(_selectedTime == null ? 'Pilih Jam' : _selectedTime!.format(context)),
+                          decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey),
+                              borderRadius: BorderRadius.circular(5)),
+                          child: Text(_selectedTime == null
+                              ? 'Pilih Jam'
+                              : _selectedTime!.format(context)),
                         ),
                       ),
                     ],
@@ -208,7 +240,9 @@ class _AddNotificationSheetState extends State<AddNotificationSheet> {
               height: 50,
               child: ElevatedButton(
                 onPressed: _isSaving ? null : _saveNotification,
-                child: _isSaving ? const CircularProgressIndicator(color: Colors.white) : const Text('Simpan Pengingat'),
+                child: _isSaving
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text('Simpan Pengingat'),
               ),
             ),
             const SizedBox(height: 20),

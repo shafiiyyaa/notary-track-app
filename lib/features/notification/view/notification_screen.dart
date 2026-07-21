@@ -37,7 +37,6 @@ class _NotificationScreenState extends State<NotificationScreen>
     });
   }
 
-  // Fungsi tes notif INSTAN (Langsung muncul)
   Future<void> _testNotifNow() async {
     await NotificationService().showInstantNotification(
       title: "TES NOTIFIKASI 🔔",
@@ -60,6 +59,14 @@ class _NotificationScreenState extends State<NotificationScreen>
       builder: (context) => const AddNotificationSheet(),
     );
     _loadData();
+  }
+
+  Future<void> _dismissNotification(NotificationModel item) async {
+    await _presenter.dismissNotification(item);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Notifikasi ditandai selesai/dibaca')),
+    );
   }
 
   void _showDetailBottomSheet(NotificationModel item) {
@@ -88,7 +95,7 @@ class _NotificationScreenState extends State<NotificationScreen>
               const SizedBox(height: 20),
               Row(
                 children: [
-                  Icon(item.isManual ? Icons.event_note : Icons.warning_rounded, 
+                  Icon(item.isManual ? Icons.event_note : Icons.warning_rounded,
                        color: item.isManual ? Colors.blue : Colors.red, size: 30),
                   const SizedBox(width: 12),
                   Expanded(
@@ -101,18 +108,22 @@ class _NotificationScreenState extends State<NotificationScreen>
               ),
               const Divider(height: 30),
               _buildDetailRow("Klien / Terkait", item.clientName),
+              if (item.location.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                _buildDetailRow("Lokasi", item.location),
+              ],
               const SizedBox(height: 12),
               _buildDetailRow("Tanggal", formatTanggal.format(item.scheduledDate)),
               const SizedBox(height: 12),
               _buildDetailRow("Jam", formatJam.format(item.scheduledDate)),
               const SizedBox(height: 12),
               _buildDetailRow("Status", item.remainingDays == 0 ? "Hari Ini" : "${item.remainingDays} hari lagi"),
-              
+
               if (item.description.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 _buildDetailRow("Catatan", item.description),
               ],
-              
+
               const SizedBox(height: 30),
               SizedBox(
                 width: double.infinity,
@@ -122,7 +133,10 @@ class _NotificationScreenState extends State<NotificationScreen>
                     backgroundColor: Theme.of(context).colorScheme.primary,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _dismissNotification(item);
+                  },
                   child: const Text("Baik, saya ingat", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
@@ -181,8 +195,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                 ],
               ),
             ),
-            
-            // TOMBOL TES NOTIFIKASI INSTAN
+
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
               child: SizedBox(
@@ -211,54 +224,78 @@ class _NotificationScreenState extends State<NotificationScreen>
                           final item = _notifList[index];
                           Color borderColor = item.isManual ? Colors.blue.shade200 : Colors.red.shade200;
 
-                          return GestureDetector(
-                            onTap: () => _showDetailBottomSheet(item),
-                            child: Container(
+                          return Dismissible(
+                            key: ValueKey('${item.isManual}_${item.id}'),
+                            direction: DismissDirection.endToStart,
+                            onDismissed: (_) => _dismissNotification(item),
+                            background: Container(
                               margin: const EdgeInsets.only(bottom: 12),
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              alignment: Alignment.centerRight,
                               decoration: BoxDecoration(
-                                color: Theme.of(context).cardColor,
+                                color: Colors.green.shade400,
                                 borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: borderColor),
                               ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                              child: const Icon(Icons.check, color: Colors.white),
+                            ),
+                            child: GestureDetector(
+                              onTap: () => _showDetailBottomSheet(item),
+                              child: Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).cardColor,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: borderColor),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            item.title,
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontWeight: FontWeight.bold, fontSize: 16,
+                                              color: item.isManual ? Colors.blue : Colors.red,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            item.clientName,
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 14, fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            item.remainingDays == 0
+                                                ? "Hari Ini - ${item.scheduledDate.hour.toString().padLeft(2,'0')}:${item.scheduledDate.minute.toString().padLeft(2,'0')}"
+                                                : "${item.remainingDays} hari lagi",
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 12, color: Colors.grey[600],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Row(
                                       children: [
-                                        Text(
-                                          item.title,
-                                          style: GoogleFonts.plusJakartaSans(
-                                            fontWeight: FontWeight.bold, fontSize: 16,
-                                            color: item.isManual ? Colors.blue : Colors.red,
-                                          ),
+                                        IconButton(
+                                          icon: const Icon(Icons.check_circle_outline, color: Colors.green),
+                                          tooltip: 'Tandai selesai/dibaca',
+                                          onPressed: () => _dismissNotification(item),
                                         ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          item.clientName,
-                                          style: GoogleFonts.plusJakartaSans(
-                                            fontSize: 14, fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          item.remainingDays == 0
-                                              ? "Hari Ini - ${item.scheduledDate.hour.toString().padLeft(2,'0')}:${item.scheduledDate.minute.toString().padLeft(2,'0')}"
-                                              : "${item.remainingDays} hari lagi",
-                                          style: GoogleFonts.plusJakartaSans(
-                                            fontSize: 12, color: Colors.grey[600],
-                                          ),
+                                        Icon(
+                                          item.isManual ? Icons.event_note : Icons.warning_rounded,
+                                          color: item.isManual ? Colors.blue : Colors.red.shade400,
                                         ),
                                       ],
                                     ),
-                                  ),
-                                  Icon(
-                                    item.isManual ? Icons.event_note : Icons.warning_rounded,
-                                    color: item.isManual ? Colors.blue : Colors.red.shade400,
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           );
