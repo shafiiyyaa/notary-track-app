@@ -40,15 +40,13 @@ class AddDocPresenter {
     String? dokumenDibutuhkan,
     String? dokumenDiterima,
     String? statusPembayaran,
+    required String status,
   }) async {
     if (clientId.isEmpty || deadline.isEmpty) {
       _view.onSaveError("Klien dan Deadline wajib diisi!");
       return;
     }
 
-    // 🔧 DIUBAH: cek login lewat SharedPreferences, BUKAN supabase.auth.
-    // App ini pakai login manual ke tabel staff/clients, bukan Supabase Auth,
-    // jadi _supabase.auth.currentUser memang selalu null dan tidak relevan.
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getString('user_id');
     final userRole = prefs.getString('user_role');
@@ -70,7 +68,7 @@ class AddDocPresenter {
             'kategori': kategori,
             'deadline': deadline,
             'notes': note,
-            'status': 'Belum Diproses',
+            'status': status,
             'staff_id': staffId,
             'kesepakatan_biaya': kesepakatanBiaya,
             'uang_muka_tanggal': uangMukaTanggal,

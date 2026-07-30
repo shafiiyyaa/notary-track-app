@@ -7,7 +7,7 @@ import '../../document_list/model/document_model.dart';
 import '../presenter/edit_document_presenter.dart';
 import 'edit_document_view.dart';
 
-// ================= CLASS BARU UNTUK FORMAT RUPIAH =================
+// ================= CLASS FORMAT RUPIAH =================
 class CurrencyInputFormatter extends TextInputFormatter {
   final NumberFormat _formatter = NumberFormat.decimalPattern('id_ID');
 
@@ -34,11 +34,17 @@ class CurrencyInputFormatter extends TextInputFormatter {
     );
   }
 }
+
+// ================= CLASS UNTUK CHECKLIST DOKUMEN =================
+class RequiredDoc {
+  String name;
+  bool isReceived;
+  RequiredDoc(this.name, {this.isReceived = false});
+}
 // =================================================================
 
 class EditDocumentScreen extends StatefulWidget {
   final DocumentModel document;
-
   final int initialStep;
 
   const EditDocumentScreen({
@@ -65,8 +71,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   final _tanggalMasukController = TextEditingController();
   final _uraianSingkatController = TextEditingController();
   final _nomorDokumenController = TextEditingController();
-  final _dokumenDibutuhkanController = TextEditingController();
-  final _dokumenDiterimaController = TextEditingController();
+  final _newDocController = TextEditingController();
 
   String? _uangMukaTanggal;
   String? _tambahanTanggal;
@@ -74,6 +79,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
 
   List<Map<String, dynamic>> _incomeDetailRows = [];
   List<Map<String, dynamic>> _expenseRows = [];
+  List<RequiredDoc> _requiredDocs = []; // List untuk checklist dokumen
   bool _financialLoaded = false;
 
   List<Map<String, dynamic>> _documentTypes = [];
@@ -179,30 +185,33 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
 
   double get _sisaKas => _totalPemohon + _kasBesarJumlah - _totalPengeluaran;
 
-  // ================= STATUS OTOMATIS =================
-  bool get _hasDocumentData =>
-      _parseAmount(_kesepakatanBiayaController.text) > 0 ||
-      _uraianSingkatController.text.trim().isNotEmpty ||
-      _dokumenDibutuhkanController.text.trim().isNotEmpty ||
-      _dokumenDiterimaController.text.trim().isNotEmpty;
-
+  // ================= STATUS OTOMATIS (DIPERBAIKI) =================
   bool get _hasFinanceData =>
       _uangMukaJumlah > 0 ||
       _tambahanJumlah > 0 ||
-      _kasBesarJumlah > 0 ||
-      _incomeDetailRows.any((r) => ((r['amount'] as num?) ?? 0) > 0) ||
-      _expenseRows.any((r) => ((r['amount'] as num?) ?? 0) > 0);
+      _kasBesarJumlah > 0;
 
   bool get _isLunas {
     final kesepakatan = _parseAmount(_kesepakatanBiayaController.text);
     return kesepakatan > 0 && _totalPemohon >= kesepakatan;
   }
 
+  // Cek apakah ada minimal 1 dokumen yang sudah diceklis (diterima)
+  bool get _hasDocReceived =>
+      _requiredDocs.any((doc) => doc.isReceived);
+
+  // Cek apakah SEMUA dokumen yang dibutuhkan sudah diceklis
+  bool get _isAllDocsReceived {
+    if (_requiredDocs.isEmpty) return true;
+    return _requiredDocs.every((doc) => doc.isReceived);
+  }
+
   String get _autoStatus {
-    if (!_hasDocumentData && !_hasFinanceData) return 'Belum Diproses';
-    if (_hasDocumentData && _isLunas) return 'Selesai';
+    if (!_hasFinanceData && !_hasDocReceived) return 'Belum Diproses';
+    if (_isAllDocsReceived && _isLunas) return 'Selesai';
     return 'Diproses';
   }
+  // =================================================================
 
   String get _autoStatusPembayaran {
     final kesepakatan = _parseAmount(_kesepakatanBiayaController.text);
@@ -232,8 +241,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
     _tanggalMasukController.dispose();
     _uraianSingkatController.dispose();
     _nomorDokumenController.dispose();
-    _dokumenDibutuhkanController.dispose();
-    _dokumenDiterimaController.dispose();
+    _newDocController.dispose();
     super.dispose();
   }
 
@@ -279,6 +287,15 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         )
         .toList();
 
+    // Parse dokumen dibutuhkan & diterima menjadi list checklist
+    List<String> dibutuhkanList = document.dokumenDibutuhkan.split('\n').where((e) => e.trim().isNotEmpty).toList();
+    List<String> diterimaList = document.dokumenDiterima.split('\n').where((e) => e.trim().isNotEmpty).toList();
+    
+    _requiredDocs = dibutuhkanList.map((name) {
+      bool isReceived = diterimaList.any((r) => r.trim() == name.trim());
+      return RequiredDoc(name, isReceived: isReceived);
+    }).toList();
+
     _selectedDocumentTypeId = document.documentTypeId;
     _selectedKategori = document.kategori.isNotEmpty ? document.kategori : null;
     _selectedStaffId = document.staffId;
@@ -291,8 +308,6 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
     _tanggalMasukController.text = document.tanggalMasuk ?? '';
     _uraianSingkatController.text = document.uraianSingkat;
     _nomorDokumenController.text = document.nomorDokumen ?? '';
-    _dokumenDibutuhkanController.text = document.dokumenDibutuhkan;
-    _dokumenDiterimaController.text = document.dokumenDiterima;
 
     setState(() {});
   }
@@ -386,6 +401,10 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   void _submit() {
     if (!_validateStep(0) || !_validateStep(1)) return;
 
+    // Ubah list checkbox menjadi string dipisah newline
+    String dokumenDibutuhkan = _requiredDocs.map((d) => d.name).join('\n');
+    String dokumenDiterima = _requiredDocs.where((d) => d.isReceived).map((d) => d.name).join('\n');
+
     _presenter.updateDocument(
       id: widget.document.id,
       clientId: _selectedClientId!,
@@ -413,8 +432,8 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
       nomorDokumen: _nomorDokumenController.text.isEmpty
           ? null
           : _nomorDokumenController.text,
-      dokumenDibutuhkan: _dokumenDibutuhkanController.text,
-      dokumenDiterima: _dokumenDiterimaController.text,
+      dokumenDibutuhkan: dokumenDibutuhkan,
+      dokumenDiterima: dokumenDiterima,
       statusPembayaran: _autoStatusPembayaran,
     );
   }
@@ -753,7 +772,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Status otomatis: $_autoStatus',
+                'Status otomatis: $_finalStatus',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Theme.of(context).colorScheme.primary,
@@ -772,9 +791,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           'Status dihitung otomatis berdasarkan data dokumen & keuangan yang sudah diisi.',
           style: TextStyle(
             fontSize: 11,
-            color: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+            color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
           ),
         ),
         const SizedBox(height: 12),
@@ -831,28 +848,100 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         const SizedBox(height: 16),
         Divider(color: Theme.of(context).dividerColor),
         const SizedBox(height: 8),
-        _buildLabel(context, 'Dokumen Dibutuhkan'),
-        TextField(
-          controller: _dokumenDibutuhkanController,
-          maxLines: 3,
-          onChanged: (_) => setState(() {}),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Theme.of(context).cardColor,
-            border: InputBorder.none,
+        
+        // ===== UI CHECKLIST DOKUMEN =====
+        _buildLabel(context, 'Dokumen Dibutuhkan & Diterima'),
+        Text(
+          'Tambahkan dokumen yang dibutuhkan, lalu centang jika sudah diterima.',
+          style: TextStyle(
+            fontSize: 11,
+            color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
           ),
         ),
-        _buildLabel(context, 'Dokumen Diterima'),
-        TextField(
-          controller: _dokumenDiterimaController,
-          maxLines: 3,
-          onChanged: (_) => setState(() {}),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Theme.of(context).cardColor,
-            border: InputBorder.none,
-          ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _newDocController,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
+                  border: InputBorder.none,
+                  hintText: 'Masukkan nama dokumen...',
+                ),
+                onSubmitted: (val) {
+                  if (val.trim().isNotEmpty) {
+                    setState(() {
+                      _requiredDocs.add(RequiredDoc(val.trim()));
+                      _newDocController.clear();
+                    });
+                  }
+                },
+              ),
+            ),
+            IconButton(
+              icon: Icon(Icons.add_circle, color: Theme.of(context).colorScheme.primary),
+              onPressed: () {
+                if (_newDocController.text.trim().isNotEmpty) {
+                  setState(() {
+                    _requiredDocs.add(RequiredDoc(_newDocController.text.trim()));
+                    _newDocController.clear();
+                  });
+                }
+              },
+            ),
+          ],
         ),
+        const SizedBox(height: 12),
+        _requiredDocs.isEmpty
+            ? Text('Belum ada dokumen dibutuhkan.', style: TextStyle(fontSize: 12, color: Colors.grey))
+            : Column(
+                children: _requiredDocs.map((doc) {
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardColor,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: doc.isReceived ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Checkbox(
+                          value: doc.isReceived,
+                          onChanged: (val) {
+                            setState(() {
+                              doc.isReceived = val ?? false;
+                            });
+                          },
+                          activeColor: Theme.of(context).colorScheme.primary,
+                        ),
+                        Expanded(
+                          child: Text(
+                            doc.name,
+                            style: TextStyle(
+                              decoration: doc.isReceived ? TextDecoration.lineThrough : TextDecoration.none,
+                              color: doc.isReceived ? Colors.grey : Theme.of(context).textTheme.bodyLarge?.color,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, size: 18, color: Colors.red),
+                          onPressed: () {
+                            setState(() {
+                              _requiredDocs.remove(doc);
+                            });
+                          },
+                        )
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
       ],
     );
   }
@@ -905,9 +994,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           'Status pembayaran dihitung otomatis berdasarkan total uang masuk pemohon vs kesepakatan biaya.',
           style: TextStyle(
             fontSize: 11,
-            color: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+            color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
           ),
         ),
         const SizedBox(height: 20),
