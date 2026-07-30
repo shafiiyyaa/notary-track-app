@@ -8,7 +8,13 @@ import '../../edit_document/view/edit_document_screen.dart';
 
 class DetailDocumentScreen extends StatefulWidget {
   final String documentId;
-  const DetailDocumentScreen({super.key, required this.documentId});
+  final String userRole; // Tambahkan ini untuk cek Staff/Klien
+
+  const DetailDocumentScreen({
+    super.key,
+    required this.documentId,
+    this.userRole = 'Staff', // Default Staff
+  });
 
   @override
   State<DetailDocumentScreen> createState() => _DetailDocumentScreenState();
@@ -77,8 +83,6 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
     );
   }
 
-  /// Navigasi ke halaman Edit Dokumen, langsung ke step tertentu.
-  /// step 0 = Identitas Klien, 1 = Dokumen, 2 = Keuangan.
   Future<void> _goToEdit(DocumentModel doc, {int step = 0}) async {
     await Navigator.push(
       context,
@@ -123,11 +127,6 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
               ),
               const SizedBox(height: 20),
 
-              // ===== STATUS PROGRES DOKUMEN =====
-              // Catatan: persentase keseluruhan TIDAK dihitung/ditampilkan di sini lagi.
-              // Persentase itu adalah angka gabungan semua dokumen dan tempatnya di Dashboard,
-              // dihitung dari bobot status tiap dokumen (Selesai=100%, Diproses=50%, Belum=0%),
-              // lalu dirata-rata. Di halaman ini cukup ditampilkan status dokumen ini saja.
               Text(
                 "Progress Dokumen",
                 style: GoogleFonts.comfortaa(
@@ -139,7 +138,6 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
               const SizedBox(height: 15),
               _buildProgress(context, doc),
               const SizedBox(height: 30),
-              // ===== END STATUS PROGRES DOKUMEN =====
 
               // ===== DATA KLIEN =====
               Row(
@@ -153,14 +151,15 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                       color: Theme.of(context).textTheme.titleLarge?.color,
                     ),
                   ),
-                  IconButton(
-                    onPressed: () => _goToEdit(doc, step: 0),
-                    icon: Icon(Icons.edit, color: Theme.of(context).colorScheme.primary),
-                  ),
+                  // Tombol Edit hanya untuk Staff
+                  if (widget.userRole == 'Staff')
+                    IconButton(
+                      onPressed: () => _goToEdit(doc, step: 0),
+                      icon: Icon(Icons.edit, color: Theme.of(context).colorScheme.primary),
+                    ),
                 ],
               ),
               const SizedBox(height: 8),
-
               Card(
                 elevation: 2,
                 color: Theme.of(context).cardColor,
@@ -176,25 +175,18 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                       _buildItem(context, "Deadline", doc.deadline),
                       _buildItem(context, "Status", doc.status),
                       _buildItem(context, "Staff", doc.staffName),
-                      _buildItem(context, "Uraian Singkat",
-                          doc.uraianSingkat.isEmpty ? '-' : doc.uraianSingkat),
+                      _buildItem(context, "Uraian Singkat", doc.uraianSingkat.isEmpty ? '-' : doc.uraianSingkat),
                       _buildItem(context, "Nomor Akta/Dokumen", doc.nomorDokumen ?? '-'),
-                      _buildItem(
-                        context,
-                        "Kesepakatan Biaya",
-                        doc.kesepakatanBiaya == 0
-                            ? '-'
-                            : _rupiah.format(doc.kesepakatanBiaya),
-                      ),
+                      _buildItem(context, "Kesepakatan Biaya", doc.kesepakatanBiaya == 0 ? '-' : _rupiah.format(doc.kesepakatanBiaya)),
                       _buildItem(context, "Status Pembayaran", doc.statusPembayaran),
                       _buildItem(context, "Catatan/Kendala", _notes),
                     ],
                   ),
                 ),
               ),
-              // ===== END DATA KLIEN =====
-
               const SizedBox(height: 30),
+
+              // ===== DATA DOKUMEN =====
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -206,10 +198,12 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                       color: Theme.of(context).textTheme.titleLarge?.color,
                     ),
                   ),
-                  IconButton(
-                    onPressed: () => _goToEdit(doc, step: 1),
-                    icon: Icon(Icons.edit, color: Theme.of(context).colorScheme.primary),
-                  ),
+                  // Tombol Edit hanya untuk Staff
+                  if (widget.userRole == 'Staff')
+                    IconButton(
+                      onPressed: () => _goToEdit(doc, step: 1),
+                      icon: Icon(Icons.edit, color: Theme.of(context).colorScheme.primary),
+                    ),
                 ],
               ),
               const SizedBox(height: 8),
@@ -222,31 +216,20 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Dokumen Dibutuhkan",
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).textTheme.bodyLarge?.color)),
+                      Text("Dokumen Dibutuhkan", style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
                       const SizedBox(height: 4),
-                      Text(
-                        doc.dokumenDibutuhkan.isEmpty ? '-' : doc.dokumenDibutuhkan,
-                        style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
-                      ),
+                      Text(doc.dokumenDibutuhkan.isEmpty ? '-' : doc.dokumenDibutuhkan, style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
                       const SizedBox(height: 16),
-                      Text("Dokumen Diterima",
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).textTheme.bodyLarge?.color)),
+                      Text("Dokumen Diterima", style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
                       const SizedBox(height: 4),
-                      Text(
-                        doc.dokumenDiterima.isEmpty ? '-' : doc.dokumenDiterima,
-                        style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
-                      ),
+                      Text(doc.dokumenDiterima.isEmpty ? '-' : doc.dokumenDiterima, style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
                     ],
                   ),
                 ),
               ),
-
               const SizedBox(height: 30),
+
+              // ===== RINCIAN KEUANGAN =====
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -258,14 +241,15 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                       color: Theme.of(context).textTheme.titleLarge?.color,
                     ),
                   ),
-                  IconButton(
-                    onPressed: () => _goToEdit(doc, step: 2),
-                    icon: Icon(Icons.edit, color: Theme.of(context).colorScheme.primary),
-                  ),
+                  // Tombol Edit hanya untuk Staff
+                  if (widget.userRole == 'Staff')
+                    IconButton(
+                      onPressed: () => _goToEdit(doc, step: 2),
+                      icon: Icon(Icons.edit, color: Theme.of(context).colorScheme.primary),
+                    ),
                 ],
               ),
               const SizedBox(height: 8),
-
               Card(
                 elevation: 2,
                 color: Theme.of(context).cardColor,
@@ -275,55 +259,29 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Uang Masuk dari Pemohon",
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).textTheme.bodyLarge?.color)),
+                      Text("Uang Masuk dari Pemohon", style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
                       const SizedBox(height: 6),
-                      _buildItem(context, "Uang Muka",
-                          "${doc.uangMukaTanggal ?? '-'} • ${_rupiah.format(doc.uangMukaJumlah)}"),
-                      _buildItem(context, "Tambahan",
-                          "${doc.tambahanTanggal ?? '-'} • ${_rupiah.format(doc.tambahanJumlah)}"),
+                      _buildItem(context, "Uang Muka", "${doc.uangMukaTanggal ?? '-'} • ${_rupiah.format(doc.uangMukaJumlah)}"),
+                      _buildItem(context, "Tambahan", "${doc.tambahanTanggal ?? '-'} • ${_rupiah.format(doc.tambahanJumlah)}"),
                       _summaryRow(context, "Total Pemohon", doc.totalPemohon, isBold: true),
-
                       if (doc.incomeDetails.isNotEmpty) ...[
                         const SizedBox(height: 16),
-                        Text("Rincian Uang Masuk",
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).textTheme.bodyLarge?.color)),
+                        Text("Rincian Uang Masuk", style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
                         const SizedBox(height: 6),
-                        ...doc.incomeDetails.map(
-                          (item) => _buildItem(context, item.label, _rupiah.format(item.amount)),
-                        ),
+                        ...doc.incomeDetails.map((item) => _buildItem(context, item.label, _rupiah.format(item.amount))),
                       ],
-
                       const Divider(height: 32),
-                      Text("Uang Masuk dari Kas Besar",
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).textTheme.bodyLarge?.color)),
+                      Text("Uang Masuk dari Kas Besar", style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
                       const SizedBox(height: 6),
                       _buildItem(context, "Tanggal", doc.kasBesarTanggal ?? '-'),
                       _summaryRow(context, "Jumlah Kas Besar", doc.kasBesarJumlah, isBold: true),
-
                       if (doc.expenses.isNotEmpty) ...[
                         const Divider(height: 32),
-                        Text("Pengeluaran",
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).textTheme.bodyLarge?.color)),
+                        Text("Pengeluaran", style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
                         const SizedBox(height: 6),
-                        ...doc.expenses.map(
-                          (item) => _buildItem(
-                            context,
-                            item.proses,
-                            "${item.tanggal ?? '-'} • ${_rupiah.format(item.amount)}",
-                          ),
-                        ),
+                        ...doc.expenses.map((item) => _buildItem(context, item.proses, "${item.tanggal ?? '-'} • ${_rupiah.format(item.amount)}")),
                         _summaryRow(context, "Total Pengeluaran", doc.totalPengeluaran, isBold: true),
                       ],
-
                       const Divider(height: 32),
                       _summaryRow(context, "Sisa Kas", doc.sisaKas, isBold: true, highlight: true),
                     ],
@@ -331,21 +289,23 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                 ),
               ),
 
-              const SizedBox(height: 30),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.delete_outline, color: Colors.red),
-                  label: const Text("Hapus Dokumen",
-                      style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.red),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              // Tombol Hapus HANYA untuk Staff
+              if (widget.userRole == 'Staff') ...[
+                const SizedBox(height: 30),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                    label: const Text("Hapus Dokumen", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.red),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: _confirmDelete,
                   ),
-                  onPressed: _confirmDelete,
                 ),
-              ),
+              ],
             ],
           ),
         ),
@@ -361,29 +321,21 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
         children: [
           SizedBox(
             width: 130,
-            child: Text(title,
-                style: TextStyle(
-                    fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
+            child: Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
           ),
-          Expanded(
-            child: Text(value, style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
-          ),
+          Expanded(child: Text(value, style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
         ],
       ),
     );
   }
 
-  Widget _summaryRow(BuildContext context, String label, double value,
-      {bool isBold = false, bool highlight = false}) {
+  Widget _summaryRow(BuildContext context, String label, double value, {bool isBold = false, bool highlight = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: TextStyle(
-                  fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-                  color: Theme.of(context).textTheme.bodyLarge?.color)),
+          Text(label, style: TextStyle(fontWeight: isBold ? FontWeight.bold : FontWeight.normal, color: Theme.of(context).textTheme.bodyLarge?.color)),
           Text(
             _rupiah.format(value),
             style: TextStyle(
@@ -397,7 +349,6 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
     );
   }
 
-  // ================= STATUS PROGRES (bukan persentase, hanya penanda tahap) =================
   Widget _buildProgress(BuildContext context, DocumentModel doc) {
     final primary = Theme.of(context).colorScheme.primary;
     final inactiveColor = Theme.of(context).dividerColor;
@@ -410,31 +361,15 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
         _circle(context, "Belum", step >= 0, primary, inactiveColor),
-        Expanded(
-          child: Divider(
-            thickness: 2,
-            color: step >= 1 ? primary : inactiveColor,
-          ),
-        ),
+        Expanded(child: Divider(thickness: 2, color: step >= 1 ? primary : inactiveColor)),
         _circle(context, "Proses", step >= 1, primary, inactiveColor),
-        Expanded(
-          child: Divider(
-            thickness: 2,
-            color: step >= 2 ? primary : inactiveColor,
-          ),
-        ),
+        Expanded(child: Divider(thickness: 2, color: step >= 2 ? primary : inactiveColor)),
         _circle(context, "Selesai", step >= 2, primary, inactiveColor),
       ],
     );
   }
 
-  Widget _circle(
-    BuildContext context,
-    String title,
-    bool active,
-    Color primary,
-    Color inactiveColor,
-  ) {
+  Widget _circle(BuildContext context, String title, bool active, Color primary, Color inactiveColor) {
     return Column(
       children: [
         Container(
@@ -443,17 +378,10 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: active ? primary : Theme.of(context).cardColor,
-            border: Border.all(
-              color: active ? primary : inactiveColor,
-              width: 2,
-            ),
+            border: Border.all(color: active ? primary : inactiveColor, width: 2),
           ),
           alignment: Alignment.center,
-          child: Icon(
-            Icons.check,
-            size: 18,
-            color: active ? Colors.white : inactiveColor,
-          ),
+          child: Icon(Icons.check, size: 18, color: active ? Colors.white : inactiveColor),
         ),
         const SizedBox(height: 5),
         Text(

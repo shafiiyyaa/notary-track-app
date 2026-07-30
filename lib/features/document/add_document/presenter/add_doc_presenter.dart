@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../view/add_doc_view.dart';
 
@@ -45,9 +46,15 @@ class AddDocPresenter {
       return;
     }
 
-    final user = _supabase.auth.currentUser;
-    if (user == null) {
-      _view.onSaveError("Silakan login terlebih dahulu.");
+    // 🔧 DIUBAH: cek login lewat SharedPreferences, BUKAN supabase.auth.
+    // App ini pakai login manual ke tabel staff/clients, bukan Supabase Auth,
+    // jadi _supabase.auth.currentUser memang selalu null dan tidak relevan.
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('user_id');
+    final userRole = prefs.getString('user_role');
+
+    if (userId == null || userRole == null) {
+      _view.onSaveError("Sesi login tidak ditemukan. Silakan login ulang.");
       return;
     }
 

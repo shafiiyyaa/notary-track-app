@@ -49,8 +49,11 @@ class NotificationService {
 
     final android = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
 
-    await android?.requestNotificationsPermission();
-    await android?.requestExactAlarmsPermission();
+    final notifGranted = await android?.requestNotificationsPermission();
+    final exactAlarmGranted = await android?.requestExactAlarmsPermission();
+
+    debugPrint('Notification permission granted: $notifGranted');
+    debugPrint('Exact alarm permission granted: $exactAlarmGranted');
 
     _initialized = true;
   }
@@ -122,7 +125,10 @@ class NotificationService {
     required bool isRing,
     Map<String, dynamic>? payloadData,
   }) async {
-    if (scheduledDate.isBefore(DateTime.now())) return;
+    if (scheduledDate.isBefore(DateTime.now())) {
+      debugPrint('SKIP schedule id=$id: waktu ($scheduledDate) sudah lewat');
+      return;
+    }
 
     final vibrationPattern = isRing
         ? Int64List.fromList([0, 1000, 500, 1000, 500, 1000, 500, 1000])
@@ -134,39 +140,45 @@ class NotificationService {
       ...?payloadData,
     });
 
-    await _plugin.zonedSchedule(
-      id,
-      title,
-      body,
-      tz.TZDateTime.from(scheduledDate, tz.local),
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          isRing ? 'ring_channel' : 'deadline_channel',
-          isRing ? 'Dering Pengingat' : 'Deadline & Janji Temu',
-          channelDescription: isRing
-              ? 'Notifikasi dering saat waktu janji temu / deadline tiba'
-              : 'Notifikasi deadline dokumen dan janji temu',
-          importance: Importance.max,
-          priority: Priority.high,
-          fullScreenIntent: isRing,
-          enableVibration: true,
-          vibrationPattern: vibrationPattern,
-          category: isRing ? AndroidNotificationCategory.alarm : null,
-          ongoing: isRing,
-          autoCancel: !isRing,
+    try {
+      await _plugin.zonedSchedule(
+        id,
+        title,
+        body,
+        tz.TZDateTime.from(scheduledDate, tz.local),
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            isRing ? 'ring_channel' : 'deadline_channel',
+            isRing ? 'Dering Pengingat' : 'Deadline & Janji Temu',
+            channelDescription: isRing
+                ? 'Notifikasi dering saat waktu janji temu / deadline tiba'
+                : 'Notifikasi deadline dokumen dan janji temu',
+            importance: Importance.max,
+            priority: Priority.high,
+            fullScreenIntent: isRing,
+            enableVibration: true,
+            vibrationPattern: vibrationPattern,
+            category: isRing ? AndroidNotificationCategory.alarm : null,
+            ongoing: isRing,
+            autoCancel: !isRing,
+          ),
+          iOS: const DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+            interruptionLevel: InterruptionLevel.critical,
+          ),
         ),
-        iOS: const DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-          interruptionLevel: InterruptionLevel.critical,
-        ),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      payload: payload,
-    );
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        payload: payload,
+      );
+      debugPrint('OK schedule id=$id "$title" pada $scheduledDate (tz: ${tz.TZDateTime.from(scheduledDate, tz.local)})');
+    } catch (e, stack) {
+      debugPrint('GAGAL schedule id=$id "$title": $e');
+      debugPrint('$stack');
+    }
   }
 
   // ================= JADWALKAN PENGINGAT JANJI TEMU =================
@@ -292,5 +304,26 @@ class NotificationService {
     await _plugin.cancel(baseId + 4);
   }
 
+  // ================= DEBUG: CEK PENDING NOTIFICATION =================
+  Future<List<PendingNotificationRequest>> getPendingNotifications() async {
+    final pending = await _plugin.pendingNotificationRequests();
+    debugPrint('===== PENDING NOTIFICATIONS (${pending.length}) =====');
+    for (final p in pending) {
+      debugPrint('ID: ${p.id} | Title: ${p.title} | Body: ${p.body}');
+    }
+    debugPrint('=====================================');
+    return pending;
+  }
+
+  // ================= DEBUG: CEK EXACT ALARM PERMISSION STATUS =================
+  Future<bool?> canScheduleExactAlarms() async {
+    final android = _plugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    final canSchedule = await android?.canScheduleExactNotifications();
+    debugPrint('Can schedule exact alarms: $canSchedule');
+    return canSchedule;
+  }
+
   int _makeId(int docId, int h) => ('$docId-$h').hashCode & 0x7fffffff;
 }
+

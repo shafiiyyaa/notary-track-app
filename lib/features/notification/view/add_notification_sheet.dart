@@ -102,7 +102,9 @@ class _AddNotificationSheetState extends State<AddNotificationSheet> {
 
       // 2. JADWALKAN ALARM PENGINGAT DI HP
       final notifIdInDb = insertedData['id'] as int;
-      int baseId = notifIdInDb % 100000;
+      // PENTING: dikali 10 biar tiap janji temu punya "slot" ID sendiri
+      // (masing2 pakai +1 s/d +4), jadi gak numpuk/overwrite punya janji temu lain.
+      int baseId = (notifIdInDb % 200000) * 10;
 
       await NotificationService().scheduleAppointmentReminders(
         baseId: baseId,
@@ -111,6 +113,10 @@ class _AddNotificationSheetState extends State<AddNotificationSheet> {
         message: _messageController.text,
         appointmentTime: scheduledDateTime,
       );
+
+      // 3. DEBUG: cek apakah exact alarm permission aktif & notif ke-schedule
+      await NotificationService().canScheduleExactAlarms();
+      await NotificationService().getPendingNotifications();
 
       if (mounted) Navigator.pop(context, true);
     } catch (e) {

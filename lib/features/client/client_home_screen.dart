@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../constants/constants.dart'; // Sesuaikan path constants Anda
+import '../../../constants/constants.dart';
+import '../../features/document/detail_document/view/detail_doc_screen.dart'; // Sesuaikan path import detail_doc_screen
 
 class ClientHomeScreen extends StatefulWidget {
   const ClientHomeScreen({super.key});
@@ -26,12 +27,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
     final prefs = await SharedPreferences.getInstance();
     final clientId = prefs.getString('user_id');
 
-
-    print("DEBUG: Mencoba fetch dokumen untuk client_id: $clientId");
-
-
     if (clientId == null || clientId.isEmpty) {
-      print("DEBUG: Client ID tidak ditemukan di SharedPreferences!");
       if (!mounted) return;
       setState(() {
         _myDocuments = [];
@@ -43,12 +39,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
     try {
       final response = await _supabase
           .from('documents')
-          .select('*, document_types(name)')
+          .select('*, document_types(name), staff(name)')
           .eq('client_id', clientId)
           .order('deadline', ascending: false);
-
-      // CEK HASIL DARI DATABASE
-      print("DEBUG: Jumlah dokumen ditemukan: ${response.length}");
 
       if (!mounted) return;
       setState(() {
@@ -56,7 +49,6 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      // JIKA ADA ERROR DARI SUPABASE (Misal: RLS memblokir)
       print("ERROR FETCH CLIENT DOCS: $e");
       if (!mounted) return;
       setState(() => _isLoading = false);
@@ -99,6 +91,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                               final docType = doc['document_types']?['name'] ?? 'Dokumen';
                               final status = doc['status'] ?? 'Belum Diproses';
                               final deadline = doc['deadline'] ?? '-';
+                              final docId = doc['id'].toString();
 
                               Color statusColor = AppColors.statusBelumProses;
                               if (status == 'Diproses') statusColor = AppColors.statusDiproses;
@@ -106,40 +99,55 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                               if (status == 'Tertunda') statusColor = AppColors.statusTertunda;
                               if (status == 'Batal') statusColor = AppColors.statusBatal;
 
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 16),
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).cardColor,
-                                  borderRadius: BorderRadius.circular(24),
-                                ),
-                                child: Row(
-                                  children: [
-                                    CircleAvatar(
-                                      backgroundColor: Theme.of(context).dividerColor,
-                                      child: Icon(Icons.article_outlined, color: Theme.of(context).textTheme.bodyLarge?.color),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(docType, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                          const SizedBox(height: 5),
-                                          Text('Deadline: $deadline', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
-                                          const SizedBox(height: 10),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                            decoration: BoxDecoration(
-                                              color: statusColor,
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
-                                            child: Text(status, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
-                                          )
-                                        ],
+                              // Kartu dibungkus InkWell agar bisa diklik
+                              return InkWell(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => DetailDocumentScreen(
+                                        documentId: docId,
+                                        userRole: 'Klien', // Klien tidak bisa edit/hapus
                                       ),
-                                    )
-                                  ],
+                                    ),
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(24),
+                                child: Container(
+                                  margin: const EdgeInsets.only(bottom: 16),
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).cardColor,
+                                    borderRadius: BorderRadius.circular(24),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      CircleAvatar(
+                                        backgroundColor: Theme.of(context).dividerColor,
+                                        child: Icon(Icons.article_outlined, color: Theme.of(context).textTheme.bodyLarge?.color),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(docType, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                            const SizedBox(height: 5),
+                                            Text('Deadline: $deadline', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                                            const SizedBox(height: 10),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: statusColor,
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                              child: Text(status, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
+                                            )
+                                          ],
+                                        ),
+                                      )
+                                    ],
+                                  ),
                                 ),
                               );
                             },
