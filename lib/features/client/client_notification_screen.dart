@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,7 +8,8 @@ class ClientNotificationScreen extends StatefulWidget {
   const ClientNotificationScreen({super.key});
 
   @override
-  State<ClientNotificationScreen> createState() => _ClientNotificationScreenState();
+  State<ClientNotificationScreen> createState() =>
+      _ClientNotificationScreenState();
 }
 
 class _ClientNotificationScreenState extends State<ClientNotificationScreen> {
@@ -38,7 +40,7 @@ class _ClientNotificationScreenState extends State<ClientNotificationScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      print("Error fetch client notif: $e");
+      debugPrint("Error fetch client notif: $e");
       setState(() => _isLoading = false);
     }
   }
@@ -68,63 +70,74 @@ class _ClientNotificationScreenState extends State<ClientNotificationScreen> {
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _notifList.isEmpty
-                      ? const Center(child: Text("Tidak ada notifikasi aktif"))
-                      : RefreshIndicator(
-                          onRefresh: _fetchMyNotifications,
-                          child: ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            itemCount: _notifList.length,
-                            itemBuilder: (context, index) {
-                              final item = _notifList[index];
-                              final schedDate = DateTime.parse(item['scheduled_at']).toLocal();
-                              final remainingDays = schedDate.difference(DateTime.now()).inDays;
+                  ? const Center(child: Text("Tidak ada notifikasi aktif"))
+                  : RefreshIndicator(
+                      onRefresh: _fetchMyNotifications,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: _notifList.length,
+                        itemBuilder: (context, index) {
+                          final item = _notifList[index];
+                          final schedDate = DateTime.parse(
+                            item['scheduled_at'],
+                          ).toLocal();
+                          final remainingDays = schedDate
+                              .difference(DateTime.now())
+                              .inDays;
 
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).cardColor,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: Colors.blue.shade200),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            item['title'] ?? 'Pengingat',
-                                            style: GoogleFonts.plusJakartaSans(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                              color: Colors.blue,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          if (item['message'] != null)
-                                            Text(item['message'], style: const TextStyle(fontSize: 14)),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            remainingDays == 0
-                                                ? "Hari Ini - ${schedDate.hour.toString().padLeft(2,'0')}:${schedDate.minute.toString().padLeft(2,'0')}"
-                                                : "$remainingDays hari lagi",
-                                            style: GoogleFonts.plusJakartaSans(
-                                              fontSize: 12,
-                                              color: Colors.grey[600],
-                                            ),
-                                          ),
-                                        ],
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).cardColor,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: Colors.blue.shade200),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item['title'] ?? 'Pengingat',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                          color: Colors.blue,
+                                        ),
                                       ),
-                                    ),
-                                    const Icon(Icons.event_note, color: Colors.blue),
-                                  ],
+                                      const SizedBox(height: 4),
+                                      if (item['message'] != null)
+                                        Text(
+                                          item['message'],
+                                          style: const TextStyle(fontSize: 14),
+                                        ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        remainingDays == 0
+                                            ? "Hari Ini - ${schedDate.hour.toString().padLeft(2, '0')}:${schedDate.minute.toString().padLeft(2, '0')}"
+                                            : "$remainingDays hari lagi",
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 12,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              );
-                            },
-                          ),
-                        ),
+                                const Icon(
+                                  Icons.event_note,
+                                  color: Colors.blue,
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
             ),
           ],
         ),

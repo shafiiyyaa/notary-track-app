@@ -114,10 +114,6 @@ class _AddNotificationSheetState extends State<AddNotificationSheet> {
         appointmentTime: scheduledDateTime,
       );
 
-      // 3. DEBUG: cek apakah exact alarm permission aktif & notif ke-schedule
-      await NotificationService().canScheduleExactAlarms();
-      await NotificationService().getPendingNotifications();
-
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       debugPrint("Error save notif: $e");

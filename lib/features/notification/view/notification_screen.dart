@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../model/notification_model.dart';
 import '../presenter/notification_presenter.dart';
-import '../services/notification_service.dart';
 import 'notification_view.dart';
 import 'add_notification_sheet.dart';
 
@@ -35,17 +34,6 @@ class _NotificationScreenState extends State<NotificationScreen>
     setState(() {
       _notifList = list;
     });
-  }
-
-  Future<void> _testNotifNow() async {
-    await NotificationService().showInstantNotification(
-      title: "TES NOTIFIKASI 🔔",
-      body: "Jika ini muncul, berarti notifikasi aplikasi Anda berfungsi!",
-    );
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Notif instan dikirim! Cek layar atas.")),
-    );
   }
 
   Future<void> _openAddNotifSheet() async {
@@ -193,22 +181,6 @@ class _NotificationScreenState extends State<NotificationScreen>
                   ),
                   const Icon(Icons.notifications_active_outlined, size: 30),
                 ],
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
-              child: SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Theme.of(context).colorScheme.primary,
-                    side: BorderSide(color: Theme.of(context).colorScheme.primary),
-                  ),
-                  onPressed: _testNotifNow,
-                  icon: const Icon(Icons.notifications_active),
-                  label: const Text("Tes Notifikasi (Instan)"),
-                ),
               ),
             ),
 

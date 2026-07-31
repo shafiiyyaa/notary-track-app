@@ -256,9 +256,10 @@ class NotificationService {
     required String documentType,
     required DateTime deadline,
   }) async {
-    const milestones = [14, 7, 3, 1, 0];
+    // 1. Reminder harian: H-14, H-7, H-3, H-1, dan H-0 (hari H), jam 08:00
+    const dayMilestones = [14, 7, 3, 1, 0];
 
-    for (final h in milestones) {
+    for (final h in dayMilestones) {
       final notifDate = DateTime(
         deadline.year,
         deadline.month,
@@ -267,7 +268,7 @@ class NotificationService {
         0,
       );
 
-      final notifId = _makeId(docId, h);
+      final notifId = _makeId(docId, 'd$h');
       final isRing = h == 0;
 
       final title = isRing ? '⏰🔔 Deadline Hari Ini!' : '📌 Deadline Mendekat';
@@ -289,12 +290,46 @@ class NotificationService {
         },
       );
     }
+
+    // 2. Reminder 1 jam sebelum waktu deadline
+    final h1jam = deadline.subtract(const Duration(hours: 1));
+    await scheduleDeadlineNotification(
+      id: _makeId(docId, '1jam'),
+      title: '🔔 Deadline 1 Jam Lagi!',
+      body: '1 jam lagi deadline: $documentType - $clientName',
+      scheduledDate: h1jam,
+      isRing: true,
+      payloadData: {
+        'clientName': clientName,
+        'location': documentType,
+        'subtitle': '1 jam lagi',
+        'scheduledDate': deadline.toIso8601String(),
+      },
+    );
+
+    // 3. [UJI COBA] Reminder 5 detik sebelum waktu deadline
+    final h5detik = deadline.subtract(const Duration(seconds: 5));
+    await scheduleDeadlineNotification(
+      id: _makeId(docId, '5detik'),
+      title: '🔔 [TES] Deadline 5 Detik Lagi!',
+      body: '[Uji coba] 5 detik lagi deadline: $documentType - $clientName',
+      scheduledDate: h5detik,
+      isRing: true,
+      payloadData: {
+        'clientName': clientName,
+        'location': documentType,
+        'subtitle': '5 detik lagi (tes)',
+        'scheduledDate': deadline.toIso8601String(),
+      },
+    );
   }
 
   Future<void> cancelForDocument(int docId) async {
     for (final h in [14, 7, 3, 1, 0]) {
-      await _plugin.cancel(_makeId(docId, h));
+      await _plugin.cancel(_makeId(docId, 'd$h'));
     }
+    await _plugin.cancel(_makeId(docId, '1jam'));
+    await _plugin.cancel(_makeId(docId, '5detik'));
   }
 
   Future<void> cancelAppointmentReminders(int baseId) async {
@@ -324,6 +359,5 @@ class NotificationService {
     return canSchedule;
   }
 
-  int _makeId(int docId, int h) => ('$docId-$h').hashCode & 0x7fffffff;
+  int _makeId(int docId, String suffix) => ('$docId-$suffix').hashCode & 0x7fffffff;
 }
-
