@@ -77,6 +77,9 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   String? _tambahanTanggal;
   String? _kasBesarTanggal;
 
+  // Deadline sekarang menyimpan tanggal + jam sekaligus.
+  DateTime? _deadlineDateTime;
+
   List<Map<String, dynamic>> _incomeDetailRows = [];
   List<Map<String, dynamic>> _expenseRows = [];
   List<RequiredDoc> _requiredDocs = []; // List untuk checklist dokumen
@@ -135,7 +138,12 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
 
     _selectedClientId = doc.clientId.isEmpty ? null : doc.clientId;
     _phoneController.text = doc.phone;
-    _deadlineController.text = doc.deadline;
+
+    _deadlineDateTime = DateTime.tryParse(doc.deadline);
+    _deadlineController.text = _deadlineDateTime != null
+        ? DateFormat('dd MMMM yyyy, HH:mm', 'id_ID').format(_deadlineDateTime!)
+        : doc.deadline;
+
     _noteController.text = doc.notes;
     if (doc.status == 'Tertunda' || doc.status == 'Batal') {
       _manualOverride = true;
@@ -187,9 +195,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
 
   // ================= STATUS OTOMATIS (DIPERBAIKI) =================
   bool get _hasFinanceData =>
-      _uangMukaJumlah > 0 ||
-      _tambahanJumlah > 0 ||
-      _kasBesarJumlah > 0;
+      _uangMukaJumlah > 0 || _tambahanJumlah > 0 || _kasBesarJumlah > 0;
 
   bool get _isLunas {
     final kesepakatan = _parseAmount(_kesepakatanBiayaController.text);
@@ -197,8 +203,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   }
 
   // Cek apakah ada minimal 1 dokumen yang sudah diceklis (diterima)
-  bool get _hasDocReceived =>
-      _requiredDocs.any((doc) => doc.isReceived);
+  bool get _hasDocReceived => _requiredDocs.any((doc) => doc.isReceived);
 
   // Cek apakah SEMUA dokumen yang dibutuhkan sudah diceklis
   bool get _isAllDocsReceived {
@@ -255,7 +260,12 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   void onDocumentLoaded(DocumentModel document) {
     _selectedClientId = document.clientId.isEmpty ? null : document.clientId;
     _phoneController.text = document.phone;
-    _deadlineController.text = document.deadline;
+
+    _deadlineDateTime = DateTime.tryParse(document.deadline);
+    _deadlineController.text = _deadlineDateTime != null
+        ? DateFormat('dd MMMM yyyy, HH:mm', 'id_ID').format(_deadlineDateTime!)
+        : document.deadline;
+
     _noteController.text = document.notes;
 
     _kesepakatanBiayaController.text = document.kesepakatanBiaya == 0
@@ -288,9 +298,15 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         .toList();
 
     // Parse dokumen dibutuhkan & diterima menjadi list checklist
-    List<String> dibutuhkanList = document.dokumenDibutuhkan.split('\n').where((e) => e.trim().isNotEmpty).toList();
-    List<String> diterimaList = document.dokumenDiterima.split('\n').where((e) => e.trim().isNotEmpty).toList();
-    
+    List<String> dibutuhkanList = document.dokumenDibutuhkan
+        .split('\n')
+        .where((e) => e.trim().isNotEmpty)
+        .toList();
+    List<String> diterimaList = document.dokumenDiterima
+        .split('\n')
+        .where((e) => e.trim().isNotEmpty)
+        .toList();
+
     _requiredDocs = dibutuhkanList.map((name) {
       bool isReceived = diterimaList.any((r) => r.trim() == name.trim());
       return RequiredDoc(name, isReceived: isReceived);
@@ -337,6 +353,43 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
     }
   }
 
+  // ================= PICK TANGGAL + JAM UNTUK DEADLINE =================
+  Future<void> _pickDeadlineDateTime() async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _deadlineDateTime ?? DateTime.now(),
+      firstDate: DateTime(2024),
+      lastDate: DateTime(2100),
+    );
+    if (pickedDate == null) return;
+    if (!mounted) return;
+
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: _deadlineDateTime != null
+          ? TimeOfDay.fromDateTime(_deadlineDateTime!)
+          : const TimeOfDay(hour: 8, minute: 0),
+    );
+    if (pickedTime == null) return;
+
+    final combined = DateTime(
+      pickedDate.year,
+      pickedDate.month,
+      pickedDate.day,
+      pickedTime.hour,
+      pickedTime.minute,
+    );
+
+    setState(() {
+      _deadlineDateTime = combined;
+      _deadlineController.text = DateFormat(
+        'dd MMMM yyyy, HH:mm',
+        'id_ID',
+      ).format(combined);
+    });
+  }
+  // =======================================================================
+
   void _showSnack(String message) {
     ScaffoldMessenger.of(
       context,
@@ -368,8 +421,8 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         _showSnack('Pilih status Tertunda/Batal, atau matikan toggle manual');
         return false;
       }
-      if (_deadlineController.text.isEmpty) {
-        _showSnack('Pilih deadline dulu');
+      if (_deadlineDateTime == null) {
+        _showSnack('Pilih tanggal & jam deadline dulu');
         return false;
       }
       return true;
@@ -403,7 +456,10 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
 
     // Ubah list checkbox menjadi string dipisah newline
     String dokumenDibutuhkan = _requiredDocs.map((d) => d.name).join('\n');
-    String dokumenDiterima = _requiredDocs.where((d) => d.isReceived).map((d) => d.name).join('\n');
+    String dokumenDiterima = _requiredDocs
+        .where((d) => d.isReceived)
+        .map((d) => d.name)
+        .join('\n');
 
     _presenter.updateDocument(
       id: widget.document.id,
@@ -412,7 +468,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
       documentTypeId: _selectedDocumentTypeId!,
       kategori: _selectedKategori!,
       staffId: _selectedStaffId!,
-      deadline: _deadlineController.text,
+      deadline: _deadlineDateTime!.toIso8601String(),
       status: _finalStatus,
       notes: _noteController.text,
       kesepakatanBiaya: _parseAmount(_kesepakatanBiayaController.text),
@@ -791,7 +847,9 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           'Status dihitung otomatis berdasarkan data dokumen & keuangan yang sudah diisi.',
           style: TextStyle(
             fontSize: 11,
-            color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+            color: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
           ),
         ),
         const SizedBox(height: 12),
@@ -840,22 +898,24 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
             filled: true,
             fillColor: Theme.of(context).cardColor,
             border: InputBorder.none,
-            suffixIcon: const Icon(Icons.calendar_today),
+            hintText: 'Pilih tanggal & jam deadline',
+            suffixIcon: const Icon(Icons.event),
           ),
-          onTap: () =>
-              _pickDate((v) => setState(() => _deadlineController.text = v)),
+          onTap: _pickDeadlineDateTime,
         ),
         const SizedBox(height: 16),
         Divider(color: Theme.of(context).dividerColor),
         const SizedBox(height: 8),
-        
+
         // ===== UI CHECKLIST DOKUMEN =====
         _buildLabel(context, 'Dokumen Dibutuhkan & Diterima'),
         Text(
           'Tambahkan dokumen yang dibutuhkan, lalu centang jika sudah diterima.',
           style: TextStyle(
             fontSize: 11,
-            color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+            color: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
           ),
         ),
         const SizedBox(height: 8),
@@ -881,11 +941,16 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
               ),
             ),
             IconButton(
-              icon: Icon(Icons.add_circle, color: Theme.of(context).colorScheme.primary),
+              icon: Icon(
+                Icons.add_circle,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               onPressed: () {
                 if (_newDocController.text.trim().isNotEmpty) {
                   setState(() {
-                    _requiredDocs.add(RequiredDoc(_newDocController.text.trim()));
+                    _requiredDocs.add(
+                      RequiredDoc(_newDocController.text.trim()),
+                    );
                     _newDocController.clear();
                   });
                 }
@@ -895,17 +960,25 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         ),
         const SizedBox(height: 12),
         _requiredDocs.isEmpty
-            ? Text('Belum ada dokumen dibutuhkan.', style: TextStyle(fontSize: 12, color: Colors.grey))
+            ? Text(
+                'Belum ada dokumen dibutuhkan.',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              )
             : Column(
                 children: _requiredDocs.map((doc) {
                   return Container(
                     margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: doc.isReceived ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                        color: doc.isReceived
+                            ? Theme.of(context).colorScheme.primary
+                            : Colors.transparent,
                         width: 1.5,
                       ),
                     ),
@@ -924,19 +997,29 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                           child: Text(
                             doc.name,
                             style: TextStyle(
-                              decoration: doc.isReceived ? TextDecoration.lineThrough : TextDecoration.none,
-                              color: doc.isReceived ? Colors.grey : Theme.of(context).textTheme.bodyLarge?.color,
+                              decoration: doc.isReceived
+                                  ? TextDecoration.lineThrough
+                                  : TextDecoration.none,
+                              color: doc.isReceived
+                                  ? Colors.grey
+                                  : Theme.of(
+                                      context,
+                                    ).textTheme.bodyLarge?.color,
                             ),
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close, size: 18, color: Colors.red),
+                          icon: const Icon(
+                            Icons.close,
+                            size: 18,
+                            color: Colors.red,
+                          ),
                           onPressed: () {
                             setState(() {
                               _requiredDocs.remove(doc);
                             });
                           },
-                        )
+                        ),
                       ],
                     ),
                   );
@@ -994,7 +1077,9 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           'Status pembayaran dihitung otomatis berdasarkan total uang masuk pemohon vs kesepakatan biaya.',
           style: TextStyle(
             fontSize: 11,
-            color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+            color: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
           ),
         ),
         const SizedBox(height: 20),

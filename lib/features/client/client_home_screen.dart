@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../constants/constants.dart';
-import '../../features/document/detail_document/view/detail_doc_screen.dart'; // Sesuaikan path import detail_doc_screen
+import '../document/detail_document/view/detail_doc_screen.dart';
 
 class ClientHomeScreen extends StatefulWidget {
   const ClientHomeScreen({super.key});

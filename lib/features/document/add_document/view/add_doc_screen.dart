@@ -69,6 +69,9 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
   String? _tambahanTanggal;
   String? _kasBesarTanggal;
 
+  // Deadline sekarang menyimpan tanggal + jam sekaligus.
+  DateTime? _deadlineDateTime;
+
   List<Map<String, dynamic>> _incomeDetailRows = [];
   List<Map<String, dynamic>> _expenseRows = [];
   List<RequiredDoc> _requiredDocs = [];
@@ -240,6 +243,41 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
     }
   }
 
+  // ================= PICK TANGGAL + JAM UNTUK DEADLINE =================
+  Future<void> _pickDeadlineDateTime() async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _deadlineDateTime ?? DateTime.now(),
+      firstDate: DateTime(2024),
+      lastDate: DateTime(2100),
+    );
+    if (pickedDate == null) return;
+    if (!mounted) return;
+
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: _deadlineDateTime != null
+          ? TimeOfDay.fromDateTime(_deadlineDateTime!)
+          : const TimeOfDay(hour: 8, minute: 0),
+    );
+    if (pickedTime == null) return;
+
+    final combined = DateTime(
+      pickedDate.year,
+      pickedDate.month,
+      pickedDate.day,
+      pickedTime.hour,
+      pickedTime.minute,
+    );
+
+    setState(() {
+      _deadlineDateTime = combined;
+      _deadlineController.text =
+          DateFormat('dd MMMM yyyy, HH:mm', 'id_ID').format(combined);
+    });
+  }
+  // =======================================================================
+
   void _showSnack(String message) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
@@ -265,8 +303,8 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
         _showSnack('Pilih staff penanggung jawab dulu');
         return false;
       }
-      if (_deadlineController.text.isEmpty) {
-        _showSnack('Pilih deadline dulu');
+      if (_deadlineDateTime == null) {
+        _showSnack('Pilih tanggal & jam deadline dulu');
         return false;
       }
       return true;
@@ -306,7 +344,7 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
       phone: _phoneController.text,
       documentTypeId: _selectedDocumentTypeId!,
       kategori: _selectedKategori!,
-      deadline: _deadlineController.text,
+      deadline: _deadlineDateTime!.toIso8601String(),
       staffId: _selectedStaffId!,
       note: _noteController.text,
       kesepakatanBiaya: _parseAmount(_kesepakatanBiayaController.text),
@@ -593,8 +631,14 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
         TextField(
           controller: _deadlineController,
           readOnly: true,
-          decoration: InputDecoration(filled: true, fillColor: Theme.of(context).cardColor, border: InputBorder.none, suffixIcon: const Icon(Icons.calendar_today)),
-          onTap: () => _pickDate((v) => setState(() => _deadlineController.text = v)),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Theme.of(context).cardColor,
+            border: InputBorder.none,
+            hintText: 'Pilih tanggal & jam deadline',
+            suffixIcon: const Icon(Icons.event),
+          ),
+          onTap: _pickDeadlineDateTime,
         ),
         const SizedBox(height: 16),
         Divider(color: Theme.of(context).dividerColor),

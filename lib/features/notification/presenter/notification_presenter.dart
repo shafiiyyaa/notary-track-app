@@ -8,9 +8,21 @@ import '../services/notification_dismiss_service.dart';
 class NotificationPresenter {
   final NotificationViewContract _view;
   final SupabaseClient _supabase = Supabase.instance.client;
-  final NotificationDismissService _dismissService = NotificationDismissService();
+  final NotificationDismissService _dismissService =
+      NotificationDismissService();
 
   NotificationPresenter(this._view);
+
+  // ⚡ FUNGSI BANTU: Parse waktu dari Supabase supaya jamnya sesuai WIB (tidak +7 jam)
+  DateTime _parseTz(dynamic input) {
+    if (input == null) return DateTime.now();
+    String str = input.toString();
+    DateTime dt = DateTime.parse(str);
+    if (str.contains('Z') || str.contains('+00:00')) {
+      return DateTime(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second);
+    }
+    return dt;
+  }
 
   Future<void> loadNotifications() async {
     try {
@@ -24,7 +36,8 @@ class NotificationPresenter {
           .order('deadline', ascending: true);
 
       for (final item in docResponse) {
-        final deadline = DateTime.parse(item['deadline']);
+        // ⚡ GUNAKAN FUNGSI WIB DI SINI
+        final deadline = _parseTz(item['deadline']);
         final remainingDays = deadline.difference(DateTime.now()).inDays;
 
         final docId = item['id'] as int;
@@ -41,24 +54,29 @@ class NotificationPresenter {
           docId: docId,
           clientName: clientName,
           documentType: documentType,
-          deadline: deadline,
+          deadline: deadline, // ⚡ Sekarang sudah WIB
         );
 
-        final key = NotificationDismissService.buildKey(id: docId, isManual: false);
+        final key = NotificationDismissService.buildKey(
+          id: docId,
+          isManual: false,
+        );
         if (dismissedKeys.contains(key)) continue;
 
         if (remainingDays >= 0 && remainingDays <= 14) {
-          list.add(NotificationModel(
-            id: docId,
-            title: "Deadline $documentType",
-            clientName: clientName,
-            location: documentType,
-            description:
-                'Deadline dokumen pada ${deadline.day}/${deadline.month}/${deadline.year}',
-            scheduledDate: deadline,
-            remainingDays: remainingDays,
-            isManual: false,
-          ));
+          list.add(
+            NotificationModel(
+              id: docId,
+              title: "Deadline $documentType",
+              clientName: clientName,
+              location: documentType,
+              description:
+                  'Deadline dokumen pada ${deadline.day}/${deadline.month}/${deadline.year}',
+              scheduledDate: deadline,
+              remainingDays: remainingDays,
+              isManual: false,
+            ),
+          );
         }
       }
 
@@ -70,37 +88,43 @@ class NotificationPresenter {
           .order('scheduled_at', ascending: true);
 
       for (final item in manualResponse) {
-        final schedDate = DateTime.parse(item['scheduled_at']).toLocal();
+        // ⚡ GUNAKAN FUNGSI WIB DI SINI JUGA
+        final schedDate = _parseTz(item['scheduled_at']);
         final remainingDays = schedDate.difference(DateTime.now()).inDays;
         final location = item['location'] ?? '';
         final notifIdInDb = item['id'] as int;
 
-        final key = NotificationDismissService.buildKey(id: notifIdInDb, isManual: true);
+        final key = NotificationDismissService.buildKey(
+          id: notifIdInDb,
+          isManual: true,
+        );
         if (dismissedKeys.contains(key)) continue;
 
         if (remainingDays >= 0 && remainingDays <= 7) {
           if (schedDate.isAfter(DateTime.now())) {
-            int baseId = notifIdInDb % 100000;
+            int baseId = (notifIdInDb % 200000) * 10;
 
             await NotificationService().scheduleAppointmentReminders(
               baseId: baseId,
               clientName: item['clients']?['name'] ?? '',
               location: location,
               message: item['message'] ?? '',
-              appointmentTime: schedDate,
+              appointmentTime: schedDate, // ⚡ Sekarang sudah WIB
             );
           }
 
-          list.add(NotificationModel(
-            id: notifIdInDb,
-            title: item['title'] ?? 'Pengingat',
-            clientName: item['clients']?['name'] ?? '',
-            location: location,
-            description: item['message'] ?? '',
-            scheduledDate: schedDate,
-            remainingDays: remainingDays,
-            isManual: true,
-          ));
+          list.add(
+            NotificationModel(
+              id: notifIdInDb,
+              title: item['title'] ?? 'Pengingat',
+              clientName: item['clients']?['name'] ?? '',
+              location: location,
+              description: item['message'] ?? '',
+              scheduledDate: schedDate,
+              remainingDays: remainingDays,
+              isManual: true,
+            ),
+          );
         }
       }
 

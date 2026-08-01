@@ -93,6 +93,27 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
     _presenter.fetchDocumentDetail(widget.documentId);
   }
 
+  // ⚡ FUNGSI WIB: Memformat deadline agar jamnya sesuai inputan di Indonesia
+  String _formatDeadline(dynamic deadlineInput) {
+    if (deadlineInput == null) return '-';
+    String deadlineStr = deadlineInput.toString();
+    if (deadlineStr.isEmpty || deadlineStr == 'null') return '-';
+    
+    try {
+      DateTime dt = DateTime.parse(deadlineStr);
+      
+      // Cek apakah data dari database berbentuk UTC (ada 'Z' atau '+00:00')
+      // Jika iya, kita ambil bagian jam & menitnya saja sebagai waktu WIB
+      if (deadlineStr.contains('Z') || deadlineStr.contains('+00:00')) {
+        dt = DateTime(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second);
+      }
+      
+      return DateFormat('EEEE, dd MMMM yyyy, HH:mm', 'id_ID').format(dt);
+    } catch (e) {
+      return deadlineStr; // Fallback kalau formatnya beda
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading || _document == null) {
@@ -172,7 +193,8 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                       _buildItem(context, "Jenis Dokumen", doc.docType),
                       _buildItem(context, "Kategori", doc.kategori.isEmpty ? '-' : doc.kategori),
                       _buildItem(context, "Tanggal Masuk", doc.tanggalMasuk ?? '-'),
-                      _buildItem(context, "Deadline", doc.deadline),
+                      // ⚡ GUNAKAN FUNGSI WIB DI SINI
+                      _buildItem(context, "Deadline", _formatDeadline(doc.deadline)),
                       _buildItem(context, "Status", doc.status),
                       _buildItem(context, "Staff", doc.staffName),
                       _buildItem(context, "Uraian Singkat", doc.uraianSingkat.isEmpty ? '-' : doc.uraianSingkat),

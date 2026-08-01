@@ -189,6 +189,9 @@ class NotificationService {
     required String message,
     required DateTime appointmentTime,
   }) async {
+    // Cancel dulu reminders lama supaya tidak dobel/numpuk jadwal lama
+    await cancelAppointmentReminders(baseId);
+
     final jamMenit =
         "${appointmentTime.hour.toString().padLeft(2, '0')}:${appointmentTime.minute.toString().padLeft(2, '0')}";
     final tanggal =
@@ -256,10 +259,16 @@ class NotificationService {
     required String documentType,
     required DateTime deadline,
   }) async {
-    // 1. Reminder harian: H-14, H-7, H-3, H-1, dan H-0 (hari H), jam 08:00
-    const dayMilestones = [14, 7, 3, 1, 0];
+    // Cancel dulu semua jadwal notifikasi lama untuk dokumen ini
+    await cancelForDocument(docId);
 
-    for (final h in dayMilestones) {
+    final jamMenitDeadline =
+        "${deadline.hour.toString().padLeft(2, '0')}:${deadline.minute.toString().padLeft(2, '0')}";
+
+    // 1. Reminder harian H-14, H-7, H-3, H-1 (jam 08:00 pagi, sebagai pengingat awal)
+    const daysBeforeMilestones = [14, 7, 3, 1];
+
+    for (final h in daysBeforeMilestones) {
       final notifDate = DateTime(
         deadline.year,
         deadline.month,
@@ -268,30 +277,37 @@ class NotificationService {
         0,
       );
 
-      final notifId = _makeId(docId, 'd$h');
-      final isRing = h == 0;
-
-      final title = isRing ? '⏰🔔 Deadline Hari Ini!' : '📌 Deadline Mendekat';
-      final body = isRing
-          ? 'Deadline HARI INI: $documentType - $clientName'
-          : 'H-$h: $documentType milik $clientName harus selesai';
-
       await scheduleDeadlineNotification(
-        id: notifId,
-        title: title,
-        body: body,
+        id: _makeId(docId, 'd$h'),
+        title: '📌 Deadline Mendekat',
+        body: 'H-$h: $documentType milik $clientName harus selesai (deadline jam $jamMenitDeadline)',
         scheduledDate: notifDate,
-        isRing: isRing,
+        isRing: false,
         payloadData: {
           'clientName': clientName,
           'location': documentType,
-          'subtitle': isRing ? 'Hari ini' : 'H-$h',
+          'subtitle': 'H-$h',
           'scheduledDate': deadline.toIso8601String(),
         },
       );
     }
 
-    // 2. Reminder 1 jam sebelum waktu deadline
+    // 2. Reminder TEPAT pada waktu deadline (hari H, jam sesuai deadline sungguhan)
+    await scheduleDeadlineNotification(
+      id: _makeId(docId, 'd0'),
+      title: '⏰🔔 Deadline Hari Ini!',
+      body: 'Deadline HARI INI jam $jamMenitDeadline: $documentType - $clientName',
+      scheduledDate: deadline,
+      isRing: true,
+      payloadData: {
+        'clientName': clientName,
+        'location': documentType,
+        'subtitle': 'Hari ini, $jamMenitDeadline',
+        'scheduledDate': deadline.toIso8601String(),
+      },
+    );
+
+    // 3. Reminder 1 jam sebelum waktu deadline
     final h1jam = deadline.subtract(const Duration(hours: 1));
     await scheduleDeadlineNotification(
       id: _makeId(docId, '1jam'),
@@ -307,7 +323,7 @@ class NotificationService {
       },
     );
 
-    // 3. [UJI COBA] Reminder 5 detik sebelum waktu deadline
+    // 4. [UJI COBA] Reminder 5 detik sebelum waktu deadline
     final h5detik = deadline.subtract(const Duration(seconds: 5));
     await scheduleDeadlineNotification(
       id: _makeId(docId, '5detik'),
