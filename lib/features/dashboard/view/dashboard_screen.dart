@@ -260,7 +260,7 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
           "Terlambat",
           "${summary.terlambat}",
           Icons.error_outline,
-          AppColors.statusBelumProses,
+          Colors.red.shade700, // ⚡ Warna merah
         ),
       ],
     );
@@ -374,7 +374,7 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Prioritas & Perhatian",
+          "Pengingat Dokumen & Tagihan",
           style: GoogleFonts.comfortaa(
             fontSize: 15,
             fontWeight: FontWeight.bold,
@@ -401,7 +401,7 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
           context,
           "Terlambat",
           Icons.error_outline,
-          AppColors.statusBelumProses,
+          Colors.red.shade700, // ⚡ Warna merah
           _terlambatList.isEmpty
               ? null
               : _terlambatList
@@ -588,6 +588,7 @@ class _HomeScreenState extends State<HomeScreen> implements HomeViewContract {
       'Tertunda': AppColors.statusTertunda,
       'Batal': AppColors.statusBatal,
       'Selesai': AppColors.statusSelesai,
+      'Terlambat': Colors.red.shade700, // ⚡ TAMBAHAN WARNA MERAH
     };
 
     final entries = summary.statusComposition.entries.toList();

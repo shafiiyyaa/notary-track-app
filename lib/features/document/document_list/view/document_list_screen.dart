@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import '../../../../constants/constants.dart';
 import '../model/document_model.dart';
 import '../presenter/doc_list_presenter.dart';
@@ -22,18 +23,38 @@ class DocumentListScreenState extends State<DocumentListScreen>
   final _searchController = TextEditingController();
   String _searchQuery = '';
 
-  // Filter yang sudah di-"apply" (dipakai buat filtering list).
   String? _selectedKategoriFilter;
   String? _selectedStatusFilter;
   int? _selectedBulanFilter; // 1-12
   String? _selectedTahunFilter;
 
-  final List<String> _kategoriList = ['Notaris', 'PPAT', 'Waarmerking', 'Legalisasi'];
-  final List<String> _statusList = ['Belum Diproses', 'Diproses', 'Tertunda', 'Batal', 'Selesai'];
+  final List<String> _kategoriList = [
+    'Notaris',
+    'PPAT',
+    'Waarmerking',
+    'Legalisasi',
+  ];
+  final List<String> _statusList = [
+    'Belum Diproses',
+    'Diproses',
+    'Tertunda',
+    'Batal',
+    'Selesai',
+  ];
 
   static const List<String> _bulanList = [
-    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
   ];
 
   bool get _hasActiveFilter =>
@@ -58,8 +79,6 @@ class DocumentListScreenState extends State<DocumentListScreen>
     super.dispose();
   }
 
-  // Dipanggil dari luar (misal dari MainNavigation lewat GlobalKey)
-  // untuk refresh data tanpa perlu keluar-masuk tab.
   void refreshDocuments() {
     _presenter.fetchAllDocuments();
   }
@@ -80,40 +99,74 @@ class DocumentListScreenState extends State<DocumentListScreen>
   @override
   void onDocumentsError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   DateTime? _parseDeadline(String deadline) => DateTime.tryParse(deadline);
 
-  // Tahun mulai dari 2026. Kalau butuh tahun lain, tinggal tambah manual di sini.
-  static const List<String> _tahunOptions = [
-    '2026',
-    '2027',
-    '2028',
-  ];
+  static const List<String> _tahunOptions = ['2026', '2027', '2028'];
+
+  String _formatDeadline(String? deadlineStr) {
+    if (deadlineStr == null || deadlineStr.isEmpty) return '-';
+    try {
+      DateTime dt = DateTime.parse(deadlineStr);
+      if (deadlineStr.contains('Z') || deadlineStr.contains('+00:00')) {
+        dt = DateTime(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second);
+      }
+      String dateStr = DateFormat('dd MMM yyyy', 'id_ID').format(dt);
+      String timeStr = DateFormat('hh.mm a', 'en_US').format(dt);
+      return '$dateStr\n$timeStr';
+    } catch (e) {
+      return deadlineStr;
+    }
+  }
 
   List<DocumentModel> get _filteredList {
-    return _documentList.where((doc) {
-      final matchSearch = _searchQuery.isEmpty ||
+    var filtered = _documentList.where((doc) {
+      final matchSearch =
+          _searchQuery.isEmpty ||
           doc.clientName.toLowerCase().contains(_searchQuery) ||
           doc.docType.toLowerCase().contains(_searchQuery);
       final matchKategori =
-          _selectedKategoriFilter == null || doc.kategori == _selectedKategoriFilter;
+          _selectedKategoriFilter == null ||
+          doc.kategori == _selectedKategoriFilter;
       final matchStatus =
           _selectedStatusFilter == null || doc.status == _selectedStatusFilter;
 
       final date = _parseDeadline(doc.deadline);
-      final matchBulan = _selectedBulanFilter == null ||
+      final matchBulan =
+          _selectedBulanFilter == null ||
           (date != null && date.month == _selectedBulanFilter);
-      final matchTahun = _selectedTahunFilter == null ||
+      final matchTahun =
+          _selectedTahunFilter == null ||
           (date != null && date.year.toString() == _selectedTahunFilter);
 
-      return matchSearch && matchKategori && matchStatus && matchBulan && matchTahun;
+      return matchSearch &&
+          matchKategori &&
+          matchStatus &&
+          matchBulan &&
+          matchTahun;
     }).toList();
+
+    // SORTING: Pin yang terlambat ke atas, lalu urutkan berdasarkan deadline terdekat
+    filtered.sort((a, b) {
+      if (a.isLate && !b.isLate) return -1; // A terlambat, taro ke atas
+      if (!a.isLate && b.isLate) return 1; // B terlambat, taro ke atas
+      // Kalau sama-sama terlambat atau tidak, urutkan berdasar tanggal deadline
+      final dateA = _parseDeadline(a.deadline);
+      final dateB = _parseDeadline(b.deadline);
+      if (dateA != null && dateB != null) {
+        return dateA.compareTo(dateB);
+      }
+      return 0;
+    });
+
+    return filtered;
   }
 
   Future<void> _openFilterSheet() async {
-    // Nilai sementara di dalam sheet, baru di-commit ke state utama kalau user tekan "Filter".
     String? tempKategori = _selectedKategoriFilter;
     String? tempStatus = _selectedStatusFilter;
     int? tempBulan = _selectedBulanFilter;
@@ -155,7 +208,8 @@ class DocumentListScreenState extends State<DocumentListScreen>
                     hint: 'Semua Kategori',
                     value: tempKategori,
                     items: _kategoriList,
-                    onChanged: (value) => setSheetState(() => tempKategori = value),
+                    onChanged: (value) =>
+                        setSheetState(() => tempKategori = value),
                   ),
                   const SizedBox(height: 12),
 
@@ -164,7 +218,8 @@ class DocumentListScreenState extends State<DocumentListScreen>
                     hint: 'Semua Status',
                     value: tempStatus,
                     items: _statusList,
-                    onChanged: (value) => setSheetState(() => tempStatus = value),
+                    onChanged: (value) =>
+                        setSheetState(() => tempStatus = value),
                   ),
                   const SizedBox(height: 12),
 
@@ -174,7 +229,8 @@ class DocumentListScreenState extends State<DocumentListScreen>
                     value: tempBulan,
                     items: List.generate(12, (i) => i + 1),
                     itemLabelBuilder: (bulan) => _bulanList[bulan - 1],
-                    onChanged: (value) => setSheetState(() => tempBulan = value),
+                    onChanged: (value) =>
+                        setSheetState(() => tempBulan = value),
                   ),
                   const SizedBox(height: 12),
 
@@ -183,7 +239,8 @@ class DocumentListScreenState extends State<DocumentListScreen>
                     hint: 'Semua Tahun',
                     value: tempTahun,
                     items: _tahunOptions,
-                    onChanged: (value) => setSheetState(() => tempTahun = value),
+                    onChanged: (value) =>
+                        setSheetState(() => tempTahun = value),
                   ),
                   const SizedBox(height: 24),
 
@@ -192,7 +249,9 @@ class DocumentListScreenState extends State<DocumentListScreen>
                       Expanded(
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primary,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
@@ -257,13 +316,17 @@ class DocumentListScreenState extends State<DocumentListScreen>
       ),
       hint: Text(hint, style: const TextStyle(fontSize: 13)),
       items: items
-          .map((item) => DropdownMenuItem<T>(
-                value: item,
-                child: Text(
-                  itemLabelBuilder != null ? itemLabelBuilder(item) : item.toString(),
-                  style: const TextStyle(fontSize: 13),
-                ),
-              ))
+          .map(
+            (item) => DropdownMenuItem<T>(
+              value: item,
+              child: Text(
+                itemLabelBuilder != null
+                    ? itemLabelBuilder(item)
+                    : item.toString(),
+                style: const TextStyle(fontSize: 13),
+              ),
+            ),
+          )
           .toList(),
       onChanged: onChanged,
     );
@@ -330,7 +393,9 @@ class DocumentListScreenState extends State<DocumentListScreen>
                             padding: const EdgeInsets.all(14),
                             child: Icon(
                               Icons.filter_list,
-                              color: Theme.of(context).textTheme.bodyLarge?.color,
+                              color: Theme.of(
+                                context,
+                              ).textTheme.bodyLarge?.color,
                             ),
                           ),
                         ),
@@ -346,7 +411,9 @@ class DocumentListScreenState extends State<DocumentListScreen>
                               color: Theme.of(context).colorScheme.primary,
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: Theme.of(context).scaffoldBackgroundColor,
+                                color: Theme.of(
+                                  context,
+                                ).scaffoldBackgroundColor,
                                 width: 2,
                               ),
                             ),
@@ -362,7 +429,10 @@ class DocumentListScreenState extends State<DocumentListScreen>
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: _resetFilter,
-                    child: const Text('Reset Filter', style: TextStyle(fontSize: 12)),
+                    child: const Text(
+                      'Reset Filter',
+                      style: TextStyle(fontSize: 12),
+                    ),
                   ),
                 ),
 
@@ -373,7 +443,9 @@ class DocumentListScreenState extends State<DocumentListScreen>
                   'Menampilkan ${filtered.length} dari ${_documentList.length} pekerjaan',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                    color: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.color?.withOpacity(0.6),
                   ),
                 ),
               ),
@@ -383,32 +455,30 @@ class DocumentListScreenState extends State<DocumentListScreen>
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : filtered.isEmpty
-                        ? Center(
-                            child: Text(
-                              _documentList.isEmpty
-                                  ? 'Belum ada dokumen'
-                                  : 'Tidak ada pekerjaan yang cocok dengan filter',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.color
-                                    ?.withOpacity(0.6),
-                              ),
-                            ),
-                          )
-                        : RefreshIndicator(
-                            onRefresh: () => _presenter.fetchAllDocuments(),
-                            child: ListView.builder(
-                              itemCount: filtered.length,
-                              itemBuilder: (context, index) {
-                                final doc = filtered[index];
-                                return _buildDocCard(context, doc);
-                              },
-                            ),
+                    ? Center(
+                        child: Text(
+                          _documentList.isEmpty
+                              ? 'Belum ada dokumen'
+                              : 'Tidak ada pekerjaan yang cocok dengan filter',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.color?.withOpacity(0.6),
                           ),
-              )
+                        ),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: () => _presenter.fetchAllDocuments(),
+                        child: ListView.builder(
+                          itemCount: filtered.length,
+                          itemBuilder: (context, index) {
+                            final doc = filtered[index];
+                            return _buildDocCard(context, doc);
+                          },
+                        ),
+                      ),
+              ),
             ],
           ),
         ),
@@ -440,16 +510,26 @@ class DocumentListScreenState extends State<DocumentListScreen>
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
+          color: Theme.of(context).cardColor, // Card tetap putih
           borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: doc.isLate
+                ? Colors.red.shade700.withOpacity(0.5)
+                : Colors.transparent,
+            width: 1.5,
+          ),
         ),
         child: Row(
           children: [
             CircleAvatar(
               backgroundColor: Theme.of(context).dividerColor,
               child: Icon(
-                Icons.article_outlined,
-                color: Theme.of(context).textTheme.bodyLarge?.color,
+                doc.isLate
+                    ? Icons.warning_amber_rounded
+                    : Icons.article_outlined,
+                color: doc.isLate
+                    ? Colors.red.shade700
+                    : Theme.of(context).textTheme.bodyLarge?.color,
               ),
             ),
             const SizedBox(width: 16),
@@ -474,38 +554,71 @@ class DocumentListScreenState extends State<DocumentListScreen>
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    'Deadline: ${doc.deadline}',
+                    'Deadline: ${_formatDeadline(doc.deadline)}',
+                    maxLines: 2,
                     style: TextStyle(
-                      color: Theme.of(context)
-                          .textTheme
-                          .bodyMedium
-                          ?.color
-                          ?.withOpacity(0.6),
+                      color: doc.isLate
+                          ? Colors.red.shade700
+                          : Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.color?.withOpacity(0.6),
                       fontSize: 13,
+                      height: 1.4,
+                      fontWeight: doc.isLate
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: statusColor,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      doc.status,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
+                  // ⚡ TAMPILAN STATUS BERSEBELAHAN
+                  Row(
+                    children: [
+                      // Badge Status Asli (Kuning/Berdasarkan Status)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: statusColor,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          doc.status, // Tampilkan status asli (Diproses/Belum Diproses)
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
+                        ),
                       ),
-                    ),
-                  )
+                      // Jika Terlambat, tampilkan badge merah di sebelahnya
+                      if (doc.isLate) ...[
+                        const SizedBox(width: 8), // Jarak antar badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade700,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text(
+                            'Terlambat',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),

@@ -8,12 +8,12 @@ import '../../edit_document/view/edit_document_screen.dart';
 
 class DetailDocumentScreen extends StatefulWidget {
   final String documentId;
-  final String userRole; // Tambahkan ini untuk cek Staff/Klien
+  final String userRole;
 
   const DetailDocumentScreen({
     super.key,
     required this.documentId,
-    this.userRole = 'Staff', // Default Staff
+    this.userRole = 'Staff',
   });
 
   @override
@@ -93,7 +93,6 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
     _presenter.fetchDocumentDetail(widget.documentId);
   }
 
-  // ⚡ FUNGSI WIB: Memformat deadline agar jamnya sesuai inputan di Indonesia
   String _formatDeadline(dynamic deadlineInput) {
     if (deadlineInput == null) return '-';
     String deadlineStr = deadlineInput.toString();
@@ -102,15 +101,13 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
     try {
       DateTime dt = DateTime.parse(deadlineStr);
       
-      // Cek apakah data dari database berbentuk UTC (ada 'Z' atau '+00:00')
-      // Jika iya, kita ambil bagian jam & menitnya saja sebagai waktu WIB
       if (deadlineStr.contains('Z') || deadlineStr.contains('+00:00')) {
         dt = DateTime(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second);
       }
       
       return DateFormat('EEEE, dd MMMM yyyy, HH:mm', 'id_ID').format(dt);
     } catch (e) {
-      return deadlineStr; // Fallback kalau formatnya beda
+      return deadlineStr;
     }
   }
 
@@ -172,7 +169,6 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                       color: Theme.of(context).textTheme.titleLarge?.color,
                     ),
                   ),
-                  // Tombol Edit hanya untuk Staff
                   if (widget.userRole == 'Staff')
                     IconButton(
                       onPressed: () => _goToEdit(doc, step: 0),
@@ -193,9 +189,9 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                       _buildItem(context, "Jenis Dokumen", doc.docType),
                       _buildItem(context, "Kategori", doc.kategori.isEmpty ? '-' : doc.kategori),
                       _buildItem(context, "Tanggal Masuk", doc.tanggalMasuk ?? '-'),
-                      // ⚡ GUNAKAN FUNGSI WIB DI SINI
                       _buildItem(context, "Deadline", _formatDeadline(doc.deadline)),
-                      _buildItem(context, "Status", doc.status),
+                      // ⚡ UBAH INI: Teks hitam biasa tanpa warna
+                      _buildStatusItem(context, "Status", doc.status, doc.isLate),
                       _buildItem(context, "Staff", doc.staffName),
                       _buildItem(context, "Uraian Singkat", doc.uraianSingkat.isEmpty ? '-' : doc.uraianSingkat),
                       _buildItem(context, "Nomor Akta/Dokumen", doc.nomorDokumen ?? '-'),
@@ -220,7 +216,6 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                       color: Theme.of(context).textTheme.titleLarge?.color,
                     ),
                   ),
-                  // Tombol Edit hanya untuk Staff
                   if (widget.userRole == 'Staff')
                     IconButton(
                       onPressed: () => _goToEdit(doc, step: 1),
@@ -263,7 +258,6 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                       color: Theme.of(context).textTheme.titleLarge?.color,
                     ),
                   ),
-                  // Tombol Edit hanya untuk Staff
                   if (widget.userRole == 'Staff')
                     IconButton(
                       onPressed: () => _goToEdit(doc, step: 2),
@@ -311,7 +305,6 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                 ),
               ),
 
-              // Tombol Hapus HANYA untuk Staff
               if (widget.userRole == 'Staff') ...[
                 const SizedBox(height: 30),
                 SizedBox(
@@ -349,6 +342,12 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
         ],
       ),
     );
+  }
+
+  // ⚡ FUNGSI BARU: Teks hitam formal biasa, hanya menambahkan tulisan terlambat di belakangnya
+  Widget _buildStatusItem(BuildContext context, String title, String status, bool isLate) {
+    String displayStatus = isLate ? '$status - Terlambat' : status;
+    return _buildItem(context, title, displayStatus);
   }
 
   Widget _summaryRow(BuildContext context, String label, double value, {bool isBold = false, bool highlight = false}) {

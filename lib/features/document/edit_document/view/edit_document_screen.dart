@@ -402,6 +402,11 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         _showSnack('Pilih klien dulu');
         return false;
       }
+      // ⚡ VALIDASI NOMOR TELEPON (10-13 DIGIT)
+      if (_phoneController.text.length < 10 || _phoneController.text.length > 13) {
+        _showSnack('Nomor telepon harus terdiri dari 10-13 digit');
+        return false;
+      }
       return true;
     }
     if (step == 1) {
@@ -552,7 +557,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
     );
   }
 
-  Widget _buildStepIndicator() {
+ Widget _buildStepIndicator() {
     final primary = Theme.of(context).colorScheme.primary;
     final inactiveColor = Theme.of(context).dividerColor;
 
@@ -727,12 +732,18 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           keyboardType: TextInputType.phone,
           inputFormatters: [
             FilteringTextInputFormatter.digitsOnly,
-            LengthLimitingTextInputFormatter(15),
+            // ⚡ BATASAN MAKSIMAL 13 DIGIT
+            LengthLimitingTextInputFormatter(13),
           ],
+          onChanged: (val) => setState(() {}),
           decoration: InputDecoration(
             filled: true,
             fillColor: Theme.of(context).cardColor,
             border: InputBorder.none,
+            hintText: '10-13 digit nomor telepon',
+            // ⚡ ERROR TEXT JIKA KURANG DARI 10 DIGIT
+            errorText: (_phoneController.text.isNotEmpty && _phoneController.text.length < 10) 
+                ? 'Nomor telepon minimal 10 digit' : null,
           ),
         ),
       ],

@@ -9,6 +9,17 @@ class HomePresenter {
 
   HomePresenter(this._view);
 
+  // ⚡ FUNGSI BANTU: Parse waktu dari Supabase supaya jamnya sesuai WIB (tidak +7 jam)
+  DateTime _parseTz(dynamic input) {
+    if (input == null) return DateTime.now();
+    String str = input.toString();
+    DateTime dt = DateTime.parse(str);
+    if (str.contains('Z') || str.contains('+00:00')) {
+      return DateTime(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second);
+    }
+    return dt;
+  }
+
   Future<void> fetchDashboardSummary() async {
     try {
       final data = await _supabase.from('documents').select('''
@@ -30,8 +41,6 @@ class HomePresenter {
 
       for (final doc in docs) {
         final status = doc['status'] ?? 'Belum Diproses';
-        statusComposition[status] = (statusComposition[status] ?? 0) + 1;
-
         final typeName = doc['document_types']?['name'] ?? 'Lainnya';
         categoryComposition[typeName] = (categoryComposition[typeName] ?? 0) + 1;
 
@@ -50,13 +59,20 @@ class HomePresenter {
           totalLunas += kesepakatan;
         }
 
+        bool isLate = false;
         final deadlineStr = doc['deadline'];
         if (deadlineStr != null && status != 'Selesai' && status != 'Batal') {
-          final deadlineDate = DateTime.tryParse(deadlineStr);
-          if (deadlineDate != null && deadlineDate.isBefore(today)) {
+          // ⚡ GUNAKAN FUNGSI WIB DI SINI
+          final deadlineDate = _parseTz(deadlineStr);
+          if (deadlineDate.isBefore(today)) {
             terlambat++;
+            isLate = true;
           }
         }
+
+        // ⚡ MASUKKAN STATUS TERLAMBAT KE PIE CHART
+        final effectiveStatus = isLate ? 'Terlambat' : status;
+        statusComposition[effectiveStatus] = (statusComposition[effectiveStatus] ?? 0) + 1;
       }
 
       final total = docs.length;
@@ -86,7 +102,6 @@ class HomePresenter {
 
   Future<void> fetchPriorityData() async {
     try {
-      // UBAH client_name MENJADI clients(name)
       final data = await _supabase.from('documents').select('''
             clients(name),
             deadline,
@@ -108,26 +123,27 @@ class HomePresenter {
       for (final doc in docs) {
         final status = doc['status'] ?? 'Belum Diproses';
         final typeName = doc['document_types']?['name'] ?? '-';
-        // UBAH CARA AMBIL NAMA KLIEN DARI HASIL JOIN
         final clientName = doc['clients']?['name'] ?? '-';
 
         if (status != 'Selesai' && status != 'Batal') {
           final deadlineStr = doc['deadline'];
           if (deadlineStr != null) {
-            final deadlineDate = DateTime.tryParse(deadlineStr);
-            if (deadlineDate != null) {
-              final remaining = deadlineDate.difference(todayDate).inDays;
-              final item = PriorityDeadlineItem(
-                clientName: clientName,
-                documentType: typeName,
-                deadline: deadlineDate,
-                remainingDays: remaining,
-              );
-              if (remaining < 0) {
-                terlambat.add(item);
-              } else if (remaining <= 14) {
-                mendekati.add(item);
-              }
+            // ⚡ GUNAKAN FUNGSI WIB DI SINI JUGA
+            final deadlineDate = _parseTz(deadlineStr);
+            
+            final remaining = deadlineDate.difference(todayDate).inDays;
+            final item = PriorityDeadlineItem(
+              clientName: clientName,
+              documentType: typeName,
+              deadline: deadlineDate,
+              remainingDays: remaining,
+            );
+            
+            // ⚡ CEK JUGA JAM NYA (KALAU HARI INI TAPI JAMNYA SUDAH LEWAT = TELAT)
+            if (deadlineDate.isBefore(now)) {
+              terlambat.add(item);
+            } else if (remaining <= 14) {
+              mendekati.add(item);
             }
           }
         }
@@ -146,8 +162,10 @@ class HomePresenter {
         }
       }
 
-      mendekati.sort((a, b) => a.remainingDays.compareTo(b.remainingDays));
-      terlambat.sort((a, b) => a.remainingDays.compareTo(b.remainingDays));
+      // Urutkan dari paling telat
+      terlambat.sort((a, b) => a.deadline.compareTo(b.deadline));
+      // Urutkan dari paling mendekati deadline
+      mendekati.sort((a, b) => a.deadline.compareTo(b.deadline));
 
       _view.onPriorityLoaded(mendekati, terlambat, belumLunas);
     } catch (e) {

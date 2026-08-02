@@ -86,6 +86,28 @@ class DocumentModel {
 
   double get sisaKas => totalPemohon + kasBesarJumlah - totalPengeluaran;
 
+  // ⚡ PERBAIKAN: Cek telat dengan parser yang lebih tangguh
+  bool get isLate {
+    if (status == 'Selesai' || status == 'Batal') return false;
+    if (deadline.isEmpty) return false;
+    
+    DateTime? dt;
+    try {
+      // Jika formatnya pakai spasi (contoh: "2026-08-02 21:45:00"), ganti spasi jadi T
+      String cleanDeadline = deadline.contains(' ') ? deadline.replaceAll(' ', 'T') : deadline;
+      dt = DateTime.parse(cleanDeadline);
+    } catch (e) {
+      dt = DateTime.tryParse(deadline);
+    }
+    
+    if (dt == null) return false;
+    
+    return dt.isBefore(DateTime.now());
+  }
+
+  // ⚡ Status efektif untuk UI
+  String get effectiveStatus => isLate ? 'Terlambat' : status;
+
   factory DocumentModel.fromMap(
     Map<String, dynamic> map, {
     List<IncomeDetailModel> incomeDetails = const [],
@@ -94,17 +116,14 @@ class DocumentModel {
     return DocumentModel(
       id: map['id'].toString(),
       clientId: map['client_id']?.toString() ?? '',
-      // AMBIL DARI HASIL JOIN clients(name)
       clientName: map['clients'] != null ? (map['clients']['name'] ?? '') : '',
       phone: map['phone'] ?? '',
       documentTypeId: map['document_type_id'] is int 
           ? map['document_type_id'] 
           : int.tryParse(map['document_type_id']?.toString() ?? '0') ?? 0,
-      // AMBIL DARI HASIL JOIN document_types(name)
       docType: map['document_types'] != null ? (map['document_types']['name'] ?? '') : '',
       kategori: map['kategori'] ?? '',
       staffId: map['staff_id']?.toString() ?? '',
-      // AMBIL DARI HASIL JOIN staff(name)
       staffName: map['staff'] != null ? (map['staff']['name'] ?? '-') : '-',
       dateIn: map['created_at']?.toString().substring(0, 10) ?? '',
       deadline: map['deadline'] ?? '',
