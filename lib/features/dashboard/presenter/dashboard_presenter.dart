@@ -2,23 +2,13 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../model/dashboard_model.dart';
 import '../view/dashboard_view.dart';
+import '../../utils/date_helper.dart'; 
 
 class HomePresenter {
   final HomeViewContract _view;
   final SupabaseClient _supabase = Supabase.instance.client;
 
   HomePresenter(this._view);
-
-  // ⚡ FUNGSI BANTU: Parse waktu dari Supabase supaya jamnya sesuai WIB (tidak +7 jam)
-  DateTime _parseTz(dynamic input) {
-    if (input == null) return DateTime.now();
-    String str = input.toString();
-    DateTime dt = DateTime.parse(str);
-    if (str.contains('Z') || str.contains('+00:00')) {
-      return DateTime(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second);
-    }
-    return dt;
-  }
 
   Future<void> fetchDashboardSummary() async {
     try {
@@ -32,7 +22,6 @@ class HomePresenter {
           ''');
 
       final docs = List<Map<String, dynamic>>.from(data);
-      final today = DateTime.now();
 
       int aktif = 0, selesai = 0, tertunda = 0, batal = 0, terlambat = 0;
       double totalNilaiJasa = 0, totalLunas = 0;
@@ -59,16 +48,11 @@ class HomePresenter {
           totalLunas += kesepakatan;
         }
 
-        bool isLate = false;
-        final deadlineStr = doc['deadline'];
-        if (deadlineStr != null && status != 'Selesai' && status != 'Batal') {
-          // ⚡ GUNAKAN FUNGSI WIB DI SINI
-          final deadlineDate = _parseTz(deadlineStr);
-          if (deadlineDate.isBefore(today)) {
-            terlambat++;
-            isLate = true;
-          }
-        }
+        // ⚡ PERBAIKAN: pakai DateHelper.isLate biar logikanya SAMA PERSIS
+        // dengan DocumentModel.isLate yang dipakai di Daftar Pekerjaan.
+        final deadlineStr = doc['deadline'] as String?;
+        final isLate = DateHelper.isLate(deadlineStr, status: status);
+        if (isLate) terlambat++;
 
         // ⚡ MASUKKAN STATUS TERLAMBAT KE PIE CHART
         final effectiveStatus = isLate ? 'Terlambat' : status;
@@ -113,8 +97,6 @@ class HomePresenter {
           ''');
 
       final docs = List<Map<String, dynamic>>.from(data);
-      final now = DateTime.now();
-      final todayDate = DateTime(now.year, now.month, now.day);
 
       final mendekati = <PriorityDeadlineItem>[];
       final terlambat = <PriorityDeadlineItem>[];
@@ -126,21 +108,21 @@ class HomePresenter {
         final clientName = doc['clients']?['name'] ?? '-';
 
         if (status != 'Selesai' && status != 'Batal') {
-          final deadlineStr = doc['deadline'];
-          if (deadlineStr != null) {
-            // ⚡ GUNAKAN FUNGSI WIB DI SINI JUGA
-            final deadlineDate = _parseTz(deadlineStr);
-            
-            final remaining = deadlineDate.difference(todayDate).inDays;
+          final deadlineStr = doc['deadline'] as String?;
+          final deadlineDate = DateHelper.parseDeadline(deadlineStr);
+
+          if (deadlineDate != null) {
+            final remaining = DateHelper.remainingDays(deadlineStr) ?? 0;
             final item = PriorityDeadlineItem(
               clientName: clientName,
               documentType: typeName,
               deadline: deadlineDate,
               remainingDays: remaining,
             );
-            
-            // ⚡ CEK JUGA JAM NYA (KALAU HARI INI TAPI JAMNYA SUDAH LEWAT = TELAT)
-            if (deadlineDate.isBefore(now)) {
+
+            // ⚡ PERBAIKAN: pakai DateHelper.isLate (cek jam juga, bukan cuma
+            // tanggal) biar konsisten dengan document_model.dart
+            if (DateHelper.isLate(deadlineStr, status: status)) {
               terlambat.add(item);
             } else if (remaining <= 14) {
               mendekati.add(item);

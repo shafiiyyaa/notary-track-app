@@ -1,5 +1,6 @@
 import 'income_detail_model.dart';
 import 'expense_model.dart';
+import '../../../utils/date_helper.dart'; 
 
 class DocumentModel {
   final String id;
@@ -86,24 +87,10 @@ class DocumentModel {
 
   double get sisaKas => totalPemohon + kasBesarJumlah - totalPengeluaran;
 
-  // ⚡ PERBAIKAN: Cek telat dengan parser yang lebih tangguh
-  bool get isLate {
-    if (status == 'Selesai' || status == 'Batal') return false;
-    if (deadline.isEmpty) return false;
-    
-    DateTime? dt;
-    try {
-      // Jika formatnya pakai spasi (contoh: "2026-08-02 21:45:00"), ganti spasi jadi T
-      String cleanDeadline = deadline.contains(' ') ? deadline.replaceAll(' ', 'T') : deadline;
-      dt = DateTime.parse(cleanDeadline);
-    } catch (e) {
-      dt = DateTime.tryParse(deadline);
-    }
-    
-    if (dt == null) return false;
-    
-    return dt.isBefore(DateTime.now());
-  }
+  // ⚡ PERBAIKAN: pakai DateHelper biar logika parsing timezone SAMA PERSIS
+  // dengan yang dipakai di dashboard_presenter.dart. Sebelumnya di sini
+  // tidak ada penanganan 'Z'/UTC, jadi hasilnya beda dengan dashboard.
+  bool get isLate => DateHelper.isLate(deadline, status: status);
 
   // ⚡ Status efektif untuk UI
   String get effectiveStatus => isLate ? 'Terlambat' : status;
