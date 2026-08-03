@@ -274,16 +274,21 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
 
                                       Color statusColor =
                                           AppColors.statusBelumProses;
-                                      if (displayStatus == 'Diproses')
+                                      if (displayStatus == 'Diproses') {
                                         statusColor = AppColors.statusDiproses;
-                                      if (displayStatus == 'Selesai')
+                                      }
+                                      if (displayStatus == 'Selesai') {
                                         statusColor = AppColors.statusSelesai;
-                                      if (displayStatus == 'Tertunda')
+                                      }
+                                      if (displayStatus == 'Tertunda') {
                                         statusColor = AppColors.statusTertunda;
-                                      if (displayStatus == 'Batal')
+                                      }
+                                      if (displayStatus == 'Batal') {
                                         statusColor = AppColors.statusBatal;
-                                      if (displayStatus == 'Terlambat')
+                                      }
+                                      if (displayStatus == 'Terlambat') {
                                         statusColor = Colors.red.shade700;
+                                      }
 
                                       return InkWell(
                                         onTap: () {

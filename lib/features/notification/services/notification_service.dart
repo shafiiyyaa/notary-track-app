@@ -30,7 +30,8 @@ class NotificationService {
     tzdata.initializeTimeZones();
     tz.setLocalLocation(tz.getLocation('Asia/Jakarta'));
 
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    // ⚡ GANTI: pakai icon notifikasi custom (siluet putih), bukan ic_launcher
+    const androidSettings = AndroidInitializationSettings('ic_notification');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -102,6 +103,7 @@ class NotificationService {
           'instant_channel',
           'Tes Instan',
           channelDescription: 'Channel untuk tes instan',
+          icon: 'ic_notification', // ⚡ TAMBAHKAN
           importance: Importance.max,
           priority: Priority.high,
           enableVibration: true,
@@ -153,6 +155,7 @@ class NotificationService {
             channelDescription: isRing
                 ? 'Notifikasi dering saat waktu janji temu / deadline tiba'
                 : 'Notifikasi deadline dokumen dan janji temu',
+            icon: 'ic_notification', // ⚡ TAMBAHKAN
             importance: Importance.max,
             priority: Priority.high,
             fullScreenIntent: isRing,
