@@ -16,7 +16,10 @@ class EditDocPresenter {
   double _cleanAmount(dynamic value) {
     if (value == null) return 0;
     if (value is num) return value.toDouble();
-    return double.tryParse(value.toString().replaceAll('.', '').replaceAll(',', '.')) ?? 0;
+    return double.tryParse(
+          value.toString().replaceAll('.', '').replaceAll(',', '.'),
+        ) ??
+        0;
   }
 
   Future<void> fetchDocument(String documentId) async {
@@ -44,13 +47,13 @@ class EditDocPresenter {
           .select()
           .eq('document_id', documentId);
 
-      final incomeDetails = List<Map<String, dynamic>>.from(incomeData)
-          .map((m) => IncomeDetailModel.fromMap(m))
-          .toList();
+      final incomeDetails = List<Map<String, dynamic>>.from(
+        incomeData,
+      ).map((m) => IncomeDetailModel.fromMap(m)).toList();
 
-      final expenses = List<Map<String, dynamic>>.from(expenseData)
-          .map((m) => ExpenseModel.fromMap(m))
-          .toList();
+      final expenses = List<Map<String, dynamic>>.from(
+        expenseData,
+      ).map((m) => ExpenseModel.fromMap(m)).toList();
 
       final document = DocumentModel.fromMap(
         data,
@@ -67,6 +70,7 @@ class EditDocPresenter {
     }
   }
 
+  // ⚡ PARAMETER TAMBAHAN & KAS BESAR DIHAPUS DARI SINI
   Future<void> updateDocument({
     required String id,
     required String clientId,
@@ -80,10 +84,6 @@ class EditDocPresenter {
     required double kesepakatanBiaya,
     String? uangMukaTanggal,
     required double uangMukaJumlah,
-    String? tambahanTanggal,
-    required double tambahanJumlah,
-    String? kasBesarTanggal,
-    required double kasBesarJumlah,
     required String keteranganKeuangan,
     required List<Map<String, dynamic>> incomeDetails,
     required List<Map<String, dynamic>> expenses,
@@ -97,41 +97,49 @@ class EditDocPresenter {
     _view.showLoading();
 
     try {
-      await _supabase.from('documents').update({
-        'client_id': clientId,
-        'phone': phone,
-        'document_type_id': documentTypeId,
-        'kategori': kategori,
-        'staff_id': staffId,
-        'deadline': deadline,
-        'status': status,
-        'notes': notes,
-        'kesepakatan_biaya': kesepakatanBiaya,
-        'uang_muka_tanggal': uangMukaTanggal,
-        'uang_muka_jumlah': uangMukaJumlah,
-        'tambahan_tanggal': tambahanTanggal,
-        'tambahan_jumlah': tambahanJumlah,
-        'kas_besar_tanggal': kasBesarTanggal,
-        'kas_besar_jumlah': kasBesarJumlah,
-        'keterangan_keuangan': keteranganKeuangan,
-        'tanggal_masuk': tanggalMasuk,
-        'uraian_singkat': uraianSingkat,
-        'nomor_dokumen': nomorDokumen,
-        'dokumen_dibutuhkan': dokumenDibutuhkan,
-        'dokumen_diterima': dokumenDiterima,
-        'status_pembayaran': statusPembayaran,
-      }).eq('id', id);
+      await _supabase
+          .from('documents')
+          .update({
+            'client_id': clientId,
+            'phone': phone,
+            'document_type_id': documentTypeId,
+            'kategori': kategori,
+            'staff_id': staffId,
+            'deadline': deadline,
+            'status': status,
+            'notes': notes,
+            'kesepakatan_biaya': kesepakatanBiaya,
+            'uang_muka_tanggal': uangMukaTanggal,
+            'uang_muka_jumlah': uangMukaJumlah,
+            'tambahan_tanggal': null, // ⚡ DISET NULL AGAR DATA LAMA TERHAPUS
+            'tambahan_jumlah': 0, // ⚡ DISET 0
+            'kas_besar_tanggal': null, // ⚡ DISET NULL
+            'kas_besar_jumlah': 0, // ⚡ DISET 0
+            'keterangan_keuangan': keteranganKeuangan,
+            'tanggal_masuk': tanggalMasuk,
+            'uraian_singkat': uraianSingkat,
+            'nomor_dokumen': nomorDokumen,
+            'dokumen_dibutuhkan': dokumenDibutuhkan,
+            'dokumen_diterima': dokumenDiterima,
+            'status_pembayaran': statusPembayaran,
+          })
+          .eq('id', id);
 
-      await _supabase.from('document_income_details').delete().eq('document_id', id);
+      await _supabase
+          .from('document_income_details')
+          .delete()
+          .eq('document_id', id);
       await _supabase.from('document_expenses').delete().eq('document_id', id);
 
       final incomeRows = incomeDetails
           .where((r) => (r['label'] as String? ?? '').trim().isNotEmpty)
-          .map((r) => {
-                'document_id': id,
-                'label': r['label'],
-                'amount': _cleanAmount(r['amount']),
-              })
+          .map(
+            (r) => {
+              'document_id': id,
+              'label': r['label'],
+              'amount': _cleanAmount(r['amount']),
+            },
+          )
           .toList();
 
       if (incomeRows.isNotEmpty) {
@@ -140,12 +148,14 @@ class EditDocPresenter {
 
       final expenseRows = expenses
           .where((r) => (r['proses'] as String? ?? '').trim().isNotEmpty)
-          .map((r) => {
-                'document_id': id,
-                'proses': r['proses'],
-                'tanggal': r['tanggal'],
-                'amount': _cleanAmount(r['amount']),
-              })
+          .map(
+            (r) => {
+              'document_id': id,
+              'proses': r['proses'],
+              'tanggal': r['tanggal'],
+              'amount': _cleanAmount(r['amount']),
+            },
+          )
           .toList();
 
       if (expenseRows.isNotEmpty) {
@@ -163,8 +173,10 @@ class EditDocPresenter {
 
   Future<List<Map<String, dynamic>>> getDocumentTypes() async {
     try {
-      final response =
-          await _supabase.from('document_types').select().order('name');
+      final response = await _supabase
+          .from('document_types')
+          .select()
+          .order('name');
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       debugPrint('ERROR DOCUMENT TYPES: $e');
@@ -174,8 +186,10 @@ class EditDocPresenter {
 
   Future<List<Map<String, dynamic>>> getStaffs() async {
     try {
-      final response =
-          await _supabase.from('staff').select('id, name').order('name');
+      final response = await _supabase
+          .from('staff')
+          .select('id, name')
+          .order('name');
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       debugPrint('ERROR STAFF LIST: $e');
@@ -185,7 +199,10 @@ class EditDocPresenter {
 
   Future<List<Map<String, dynamic>>> getClients() async {
     try {
-      final response = await _supabase.from('clients').select('id, name').order('name');
+      final response = await _supabase
+          .from('clients')
+          .select('id, name')
+          .order('name');
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       debugPrint('ERROR CLIENT LIST: $e');

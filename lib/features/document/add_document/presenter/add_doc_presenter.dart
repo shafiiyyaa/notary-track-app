@@ -27,10 +27,6 @@ class AddDocPresenter {
     required double kesepakatanBiaya,
     String? uangMukaTanggal,
     required double uangMukaJumlah,
-    String? tambahanTanggal,
-    required double tambahanJumlah,
-    String? kasBesarTanggal,
-    required double kasBesarJumlah,
     required String keteranganKeuangan,
     required List<Map<String, dynamic>> incomeDetails,
     required List<Map<String, dynamic>> expenses,
@@ -73,10 +69,10 @@ class AddDocPresenter {
             'kesepakatan_biaya': kesepakatanBiaya,
             'uang_muka_tanggal': uangMukaTanggal,
             'uang_muka_jumlah': uangMukaJumlah,
-            'tambahan_tanggal': tambahanTanggal,
-            'tambahan_jumlah': tambahanJumlah,
-            'kas_besar_tanggal': kasBesarTanggal,
-            'kas_besar_jumlah': kasBesarJumlah,
+            'tambahan_tanggal': null, // ⚡ DIKOSONGKAN KARENA PAKAI CICILAN
+            'tambahan_jumlah': 0,     // ⚡ DIKOSONGKAN KARENA PAKAI CICILAN
+            'kas_besar_tanggal': null, // ⚡ DIKOSONGKAN KARENA KAS BESAR DIHAPUS
+            'kas_besar_jumlah': 0,     // ⚡ DIKOSONGKAN KARENA KAS BESAR DIHAPUS
             'keterangan_keuangan': keteranganKeuangan,
             'tanggal_masuk': tanggalMasuk,
             'uraian_singkat': uraianSingkat,

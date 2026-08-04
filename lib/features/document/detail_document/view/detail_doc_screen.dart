@@ -122,6 +122,11 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
 
     final doc = _document!;
 
+    // ⚡ HITUNG KURANG BAYAR
+    double totalDibayarKlien = doc.totalPemohon + doc.totalRincian;
+    double kurangBayar = doc.kesepakatanBiaya - totalDibayarKlien;
+    if (kurangBayar < 0) kurangBayar = 0;
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
@@ -190,12 +195,10 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                       _buildItem(context, "Kategori", doc.kategori.isEmpty ? '-' : doc.kategori),
                       _buildItem(context, "Tanggal Masuk", doc.tanggalMasuk ?? '-'),
                       _buildItem(context, "Deadline", _formatDeadline(doc.deadline)),
-                      // ⚡ UBAH INI: Teks hitam biasa tanpa warna
                       _buildStatusItem(context, "Status", doc.status, doc.isLate),
                       _buildItem(context, "Staff", doc.staffName),
                       _buildItem(context, "Uraian Singkat", doc.uraianSingkat.isEmpty ? '-' : doc.uraianSingkat),
                       _buildItem(context, "Nomor Akta/Dokumen", doc.nomorDokumen ?? '-'),
-                      _buildItem(context, "Kesepakatan Biaya", doc.kesepakatanBiaya == 0 ? '-' : _rupiah.format(doc.kesepakatanBiaya)),
                       _buildItem(context, "Status Pembayaran", doc.statusPembayaran),
                       _buildItem(context, "Catatan/Kendala", _notes),
                     ],
@@ -275,31 +278,43 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // 1. UANG MASUK DARI PEMOHON
                       Text("Uang Masuk dari Pemohon", style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
                       const SizedBox(height: 6),
                       _buildItem(context, "Uang Muka", "${doc.uangMukaTanggal ?? '-'} • ${_rupiah.format(doc.uangMukaJumlah)}"),
-                      _buildItem(context, "Tambahan", "${doc.tambahanTanggal ?? '-'} • ${_rupiah.format(doc.tambahanJumlah)}"),
-                      _summaryRow(context, "Total Pemohon", doc.totalPemohon, isBold: true),
                       if (doc.incomeDetails.isNotEmpty) ...[
-                        const SizedBox(height: 16),
-                        Text("Rincian Uang Masuk", style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
-                        const SizedBox(height: 6),
                         ...doc.incomeDetails.map((item) => _buildItem(context, item.label, _rupiah.format(item.amount))),
                       ],
+                      _summaryRow(context, "Total Uang Pemohon", doc.totalPemohon, isBold: true),
+                      
+                      // 2. KESEPAKATAN BIAYA & KURANG BAYAR
                       const Divider(height: 32),
-                      Text("Uang Masuk dari Kas Besar", style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
+                      Text("Pembayaran Klien", style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
                       const SizedBox(height: 6),
-                      _buildItem(context, "Tanggal", doc.kasBesarTanggal ?? '-'),
-                      _summaryRow(context, "Jumlah Kas Besar", doc.kasBesarJumlah, isBold: true),
+                      _summaryRow(context, "Kesepakatan Biaya", doc.kesepakatanBiaya, isBold: true),
+                      _summaryRow(context, "Sudah Dibayar", totalDibayarKlien, isBold: true),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text("Kurang Bayar", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+                            Text(
+                              _rupiah.format(kurangBayar),
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red, fontSize: 16),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // 3. PENGELUARAN
                       if (doc.expenses.isNotEmpty) ...[
                         const Divider(height: 32),
-                        Text("Pengeluaran", style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
+                        Text("Pengeluaran Operasional", style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
                         const SizedBox(height: 6),
                         ...doc.expenses.map((item) => _buildItem(context, item.proses, "${item.tanggal ?? '-'} • ${_rupiah.format(item.amount)}")),
                         _summaryRow(context, "Total Pengeluaran", doc.totalPengeluaran, isBold: true),
                       ],
-                      const Divider(height: 32),
-                      _summaryRow(context, "Sisa Kas", doc.sisaKas, isBold: true, highlight: true),
                     ],
                   ),
                 ),
@@ -344,7 +359,6 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
     );
   }
 
-  // ⚡ FUNGSI BARU: Teks hitam formal biasa, hanya menambahkan tulisan terlambat di belakangnya
   Widget _buildStatusItem(BuildContext context, String title, String status, bool isLate) {
     String displayStatus = isLate ? '$status - Terlambat' : status;
     return _buildItem(context, title, displayStatus);

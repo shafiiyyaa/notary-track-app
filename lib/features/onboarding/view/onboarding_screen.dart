@@ -88,62 +88,61 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               child: PageView.builder(
                 controller: _pageController,
                 itemCount: _onboardingData.length,
-                onPageChanged: (index) =>
-                    _presenter.handlePageChange(index),
+                onPageChanged: (index) => _presenter.handlePageChange(index),
                 itemBuilder: (context, index) {
                   final item = _onboardingData[index];
 
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 30),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-
-                        /// Illustration
-                        SizedBox(
-                          width: 320,
-                          height: 320,
-                          child: Image.asset(
-                            item["image"]!,
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-
-                        const SizedBox(height: 28),
-
-                        /// Title
-                        Text(
-                          item["title"]!,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.comfortaa(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w700,
-                            height: 1.3,
-                            color:
-                                Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-
-                        const SizedBox(height: 18),
-
-                        /// Description
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Text(
-                            item["desc"]!,
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 15,
-                              height: 1.7,
-                              fontWeight: FontWeight.w500,
-                              color: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.color,
+                  // ⚡ BUNGKUS DENGAN SingleChildScrollView BIAR GA OVERFLOW
+                  return SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 30),
+                      child: Column(
+                        // mainAxisAlignment dihapus agar bisa scroll dengan baik
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          SizedBox(height: MediaQuery.of(context).size.height * 0.05),
+                          
+                          /// Illustration (Dikecilin biar muat)
+                          SizedBox(
+                            width: 260, 
+                            height: 260,
+                            child: Image.asset(
+                              item["image"]!,
+                              fit: BoxFit.contain,
                             ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 28),
+
+                          /// Title
+                          Text(
+                            item["title"]!,
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.comfortaa(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w700,
+                              height: 1.3,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+
+                          /// Description
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text(
+                              item["desc"]!,
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 15,
+                                height: 1.7,
+                                fontWeight: FontWeight.w500,
+                                color: Theme.of(context).textTheme.bodyMedium?.color,
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: MediaQuery.of(context).size.height * 0.05),
+                        ],
+                      ),
                     ),
                   );
                 },
@@ -154,34 +153,24 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             Padding(
               padding: const EdgeInsets.fromLTRB(32, 16, 32, 32),
               child: Row(
-                mainAxisAlignment:
-                    MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-
                   /// Indicator
                   Row(
                     children: List.generate(
                       _onboardingData.length,
                       (index) {
-                        final isActive =
-                            _presenter.currentPage == index;
-
+                        final isActive = _presenter.currentPage == index;
                         return AnimatedContainer(
-                          duration:
-                              const Duration(milliseconds: 250),
-                          margin:
-                              const EdgeInsets.only(right: 8),
+                          duration: const Duration(milliseconds: 250),
+                          margin: const EdgeInsets.only(right: 8),
                           width: isActive ? 24 : 8,
                           height: 8,
                           decoration: BoxDecoration(
                             color: isActive
-                                ? Theme.of(context)
-                                    .colorScheme
-                                    .primary
-                                : Theme.of(context)
-                                    .dividerColor,
-                            borderRadius:
-                                BorderRadius.circular(10),
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).dividerColor,
+                            borderRadius: BorderRadius.circular(10),
                           ),
                         );
                       },
@@ -191,13 +180,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   /// Next Button
                   FloatingActionButton(
                     elevation: 3,
-                    onPressed: () => _presenter
-                        .handleNextAction(
-                            _onboardingData.length),
+                    onPressed: () => _presenter.handleNextAction(_onboardingData.length),
                     shape: const CircleBorder(),
                     child: Icon(
-                      _presenter.currentPage ==
-                              _onboardingData.length - 1
+                      _presenter.currentPage == _onboardingData.length - 1
                           ? Icons.check
                           : Icons.arrow_forward,
                     ),
