@@ -14,7 +14,6 @@ class PicClientPresenter {
   Future<void> fetchStaffList() async {
     _view.showLoading();
     try {
-      // ⚡ TAMBAHKAN password DI SELECT
       final staffData = await _supabase
           .from('staff')
           .select('id, name, username, password')
@@ -36,7 +35,7 @@ class PicClientPresenter {
           id: id,
           name: s['name'] ?? '',
           username: s['username'] ?? '',
-          password: s['password'] ?? '', // ⚡ DITAMBAHKAN
+          password: s['password'] ?? '',
           jobCount: counts[id] ?? 0,
         );
       }).toList();
@@ -80,14 +79,29 @@ class PicClientPresenter {
     }
   }
 
-  Future<void> updateStaff(String id, String name) async {
-    if (name.trim().isEmpty) {
-      _view.onError('Nama tidak boleh kosong');
+  // ⚡ DITAMBAHKAN: Parameter username & password
+  Future<void> updateStaff({
+    required String id,
+    required String name,
+    required String username,
+    required String password,
+  }) async {
+    if (name.trim().isEmpty || username.trim().isEmpty) {
+      _view.onError('Nama dan username tidak boleh kosong');
+      return;
+    }
+    if (password.length < 6) {
+      _view.onError('Password minimal 6 karakter');
       return;
     }
     _view.showLoading();
     try {
-      await _supabase.from('staff').update({'name': name.trim()}).eq('id', id);
+      await _supabase.from('staff').update({
+        'name': name.trim(),
+        'username': username.trim(),
+        'password': password,
+      }).eq('id', id);
+      
       _view.hideLoading();
       _view.onActionSuccess('Staff berhasil diubah');
       fetchStaffList();
@@ -121,7 +135,6 @@ class PicClientPresenter {
   Future<void> fetchClients() async {
     _view.showLoading();
     try {
-      // ⚡ TAMBAHKAN password DI SELECT
       final clientData = await _supabase
           .from('clients')
           .select('id, name, username, password')
@@ -143,7 +156,7 @@ class PicClientPresenter {
           id: id,
           name: c['name'] ?? '',
           username: c['username'] ?? '',
-          password: c['password'] ?? '', // ⚡ DITAMBAHKAN
+          password: c['password'] ?? '',
           jobCount: counts[id] ?? 0,
         );
       }).toList();

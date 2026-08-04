@@ -9,11 +9,12 @@ class AddDocPresenter {
 
   AddDocPresenter(this._view);
 
-  // Helper untuk bersihkan titik dari string format Rupiah
   double _cleanAmount(dynamic value) {
     if (value == null) return 0;
     if (value is num) return value.toDouble();
-    return double.tryParse(value.toString().replaceAll('.', '').replaceAll(',', '.')) ?? 0;
+    return double.tryParse(
+            value.toString().replaceAll('.', '').replaceAll(',', '.')) ??
+        0;
   }
 
   Future<void> saveDocument({
@@ -69,10 +70,10 @@ class AddDocPresenter {
             'kesepakatan_biaya': kesepakatanBiaya,
             'uang_muka_tanggal': uangMukaTanggal,
             'uang_muka_jumlah': uangMukaJumlah,
-            'tambahan_tanggal': null, // ⚡ DIKOSONGKAN KARENA PAKAI CICILAN
-            'tambahan_jumlah': 0,     // ⚡ DIKOSONGKAN KARENA PAKAI CICILAN
-            'kas_besar_tanggal': null, // ⚡ DIKOSONGKAN KARENA KAS BESAR DIHAPUS
-            'kas_besar_jumlah': 0,     // ⚡ DIKOSONGKAN KARENA KAS BESAR DIHAPUS
+            'tambahan_tanggal': null,
+            'tambahan_jumlah': 0,
+            'kas_besar_tanggal': null,
+            'kas_besar_jumlah': 0,
             'keterangan_keuangan': keteranganKeuangan,
             'tanggal_masuk': tanggalMasuk,
             'uraian_singkat': uraianSingkat,
@@ -91,6 +92,7 @@ class AddDocPresenter {
           .map((r) => {
                 'document_id': documentId,
                 'label': r['label'],
+                'tanggal': r['tanggal'], // Tambahan fitur tanggal
                 'amount': _cleanAmount(r['amount']),
               })
           .toList();
@@ -124,7 +126,10 @@ class AddDocPresenter {
 
   Future<List<Map<String, dynamic>>> getDocumentTypes() async {
     try {
-      final response = await _supabase.from('document_types').select().order('name');
+      final response = await _supabase
+          .from('document_types')
+          .select()
+          .order('name');
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       debugPrint('ERROR DOCUMENT TYPES: $e');
@@ -134,7 +139,8 @@ class AddDocPresenter {
 
   Future<List<Map<String, dynamic>>> getStaffList() async {
     try {
-      final response = await _supabase.from('staff').select('id, name').order('name');
+      final response =
+          await _supabase.from('staff').select('id, name').order('name');
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       debugPrint('ERROR STAFF LIST: $e');
@@ -144,7 +150,8 @@ class AddDocPresenter {
 
   Future<List<Map<String, dynamic>>> getClients() async {
     try {
-      final response = await _supabase.from('clients').select('id, name').order('name');
+      final response =
+          await _supabase.from('clients').select('id, name').order('name');
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       debugPrint('ERROR CLIENT LIST: $e');

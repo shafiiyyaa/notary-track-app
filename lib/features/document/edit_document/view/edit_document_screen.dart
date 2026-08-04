@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:notarytrackapp/shared/widgets/dynamic_list_field.dart';
 import '../../document_list/model/document_model.dart';
 import '../presenter/edit_document_presenter.dart';
 import 'edit_document_view.dart';
 
-// ================= CLASS FORMAT RUPIAH =================
 class CurrencyInputFormatter extends TextInputFormatter {
   final NumberFormat _formatter = NumberFormat.decimalPattern('id_ID');
 
@@ -35,13 +33,11 @@ class CurrencyInputFormatter extends TextInputFormatter {
   }
 }
 
-// ================= CLASS UNTUK CHECKLIST DOKUMEN =================
 class RequiredDoc {
   String name;
   bool isReceived;
   RequiredDoc(this.name, {this.isReceived = false});
 }
-// =================================================================
 
 class EditDocumentScreen extends StatefulWidget {
   final DocumentModel document;
@@ -63,7 +59,6 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   final _deadlineController = TextEditingController();
   final _noteController = TextEditingController();
   final _kesepakatanBiayaController = TextEditingController();
-
   final _uangMukaJumlahController = TextEditingController();
   final _tanggalMasukController = TextEditingController();
   final _uraianSingkatController = TextEditingController();
@@ -74,6 +69,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   DateTime? _deadlineDateTime;
 
   List<Map<String, dynamic>> _incomeDetailRows = [];
+  List<Map<String, dynamic>> _expenseRows = [];
   List<RequiredDoc> _requiredDocs = [];
   bool _financialLoaded = false;
 
@@ -176,6 +172,11 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
 
   double get _totalPemohon => _uangMukaJumlah + _totalIncomeDetails;
 
+  double get _totalPengeluaran => _expenseRows.fold(
+    0,
+    (sum, r) => sum + ((r['amount'] as num?)?.toDouble() ?? 0),
+  );
+
   bool get _hasFinanceData => _uangMukaJumlah > 0 || _totalIncomeDetails > 0;
 
   bool get _isLunas {
@@ -253,16 +254,29 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         ? ''
         : _numberFormat.format(document.uangMukaJumlah);
 
-    _incomeDetailRows = document.incomeDetails
-        .map((e) => {'label': e.label, 'amount': e.amount})
-        .toList();
+    _incomeDetailRows = document.incomeDetails.map((e) {
+      return {
+        'tanggal': (e as dynamic).tanggal, 
+        'label': e.label,
+        'amount': e.amount,
+      };
+    }).toList();
 
     if (document.tambahanJumlah > 0) {
       _incomeDetailRows.insert(0, {
-        'label': 'Tambahan (${document.tambahanTanggal ?? '-'})',
+        'tanggal': document.tambahanTanggal,
+        'label': 'Tambahan',
         'amount': document.tambahanJumlah,
       });
     }
+
+    _expenseRows = document.expenses.map((e) {
+      return {
+        'proses': e.proses,
+        'tanggal': e.tanggal,
+        'amount': e.amount,
+      };
+    }).toList();
 
     List<String> dibutuhkanList = document.dokumenDibutuhkan
         .split('\n')
@@ -300,9 +314,9 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   @override
   void onError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   Future<void> _pickDate(void Function(String) onPicked) async {
@@ -355,9 +369,9 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   }
 
   void _showSnack(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   bool _validateStep(int step) {
@@ -444,7 +458,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
       uangMukaJumlah: _uangMukaJumlah,
       keteranganKeuangan: _noteController.text,
       incomeDetails: _incomeDetailRows,
-      expenses: [],
+      expenses: _expenseRows,
       tanggalMasuk: _tanggalMasukController.text.isEmpty
           ? null
           : _tanggalMasukController.text,
@@ -458,7 +472,6 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
     );
   }
 
-  // ⚡ DEKORASI INPUT YANG LEBIH RAMPING (KOTAK PUTIH KECIL)
   InputDecoration _compactInputDecoration(String hint) {
     return InputDecoration(
       filled: true,
@@ -641,8 +654,8 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
               onPressed: _isLoading
                   ? null
                   : (_currentStep < _stepTitles.length - 1
-                        ? _nextStep
-                        : _submit),
+                      ? _nextStep
+                      : _submit),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -677,7 +690,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         DropdownButtonFormField<String>(
           initialValue: _selectedClientId,
           isExpanded: true,
-          menuMaxHeight: 250, // ⚡ BATAS TINGGI DROPDOWN BIAR BISA SCROLL
+          menuMaxHeight: 250,
           decoration: _compactInputDecoration('Pilih klien'),
           items: _clientList
               .map(
@@ -712,8 +725,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           onChanged: (val) => setState(() {}),
           decoration: _compactInputDecoration('10-13 digit nomor telepon')
               .copyWith(
-                errorText:
-                    (_phoneController.text.isNotEmpty &&
+                errorText: (_phoneController.text.isNotEmpty &&
                         _phoneController.text.length < 10)
                     ? 'Nomor telepon minimal 10 digit'
                     : null,
@@ -731,7 +743,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         DropdownButtonFormField<String>(
           initialValue: _selectedKategori,
           isExpanded: true,
-          menuMaxHeight: 250, // ⚡ BATAS TINGGI DROPDOWN
+          menuMaxHeight: 250,
           decoration: _compactInputDecoration('Pilih kategori'),
           items: _kategoriList
               .map(
@@ -747,7 +759,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         DropdownButtonFormField<int>(
           initialValue: _selectedDocumentTypeId,
           isExpanded: true,
-          menuMaxHeight: 250, // ⚡ BATAS TINGGI DROPDOWN
+          menuMaxHeight: 250,
           decoration: _compactInputDecoration('Pilih jenis dokumen'),
           items: _documentTypes
               .map(
@@ -780,7 +792,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         DropdownButtonFormField<String>(
           initialValue: _selectedStaffId,
           isExpanded: true,
-          menuMaxHeight: 250, // ⚡ BATAS TINGGI DROPDOWN
+          menuMaxHeight: 250,
           decoration: _compactInputDecoration('Pilih staff'),
           items: _staffs
               .map(
@@ -824,9 +836,11 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           'Status dihitung otomatis berdasarkan data dokumen & keuangan yang sudah diisi.',
           style: TextStyle(
             fontSize: 11,
-            color: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+            color: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.color
+                ?.withValues(alpha: 0.6),
           ),
         ),
         const SizedBox(height: 12),
@@ -883,15 +897,16 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         const SizedBox(height: 16),
         Divider(color: Theme.of(context).dividerColor),
         const SizedBox(height: 8),
-
         _buildLabel(context, 'Dokumen Dibutuhkan & Diterima'),
         Text(
           'Tambahkan dokumen yang dibutuhkan, lalu centang jika sudah diterima.',
           style: TextStyle(
             fontSize: 11,
-            color: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+            color: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.color
+                ?.withValues(alpha: 0.6),
           ),
         ),
         const SizedBox(height: 8),
@@ -975,9 +990,10 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                                   : TextDecoration.none,
                               color: doc.isReceived
                                   ? Colors.grey
-                                  : Theme.of(
-                                      context,
-                                    ).textTheme.bodyLarge?.color,
+                                  : Theme.of(context)
+                                      .textTheme
+                                      .bodyLarge
+                                      ?.color,
                             ),
                           ),
                         ),
@@ -1049,9 +1065,11 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           'Status pembayaran dihitung otomatis berdasarkan total uang masuk pemohon vs kesepakatan biaya.',
           style: TextStyle(
             fontSize: 11,
-            color: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+            color: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.color
+                ?.withValues(alpha: 0.6),
           ),
         ),
         const SizedBox(height: 20),
@@ -1072,7 +1090,6 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           _uangMukaTanggal,
           (v) => setState(() => _uangMukaTanggal = v),
         ),
-
         _buildLabel(context, 'Uang Muka - Nominal Pembayaran'),
         TextField(
           controller: _uangMukaJumlahController,
@@ -1082,7 +1099,6 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           onChanged: (_) => setState(() {}),
           decoration: _compactInputDecoration('0'),
         ),
-
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.all(12),
@@ -1113,30 +1129,102 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           ),
         ),
         const SizedBox(height: 20),
-
-        if (_financialLoaded)
-          DynamicListField(
-            title: 'Pembayaran Tambahan / Cicilan',
-            fields: [
-              DynamicFieldConfig(
-                key: 'label',
-                label: 'Keterangan Cicilan',
-                type: DynamicFieldType.text,
-              ),
-              DynamicFieldConfig(
-                key: 'amount',
-                label: 'Nominal Pembayaran',
-                type: DynamicFieldType.number,
-              ),
-            ],
-            initialRows: _incomeDetailRows,
-            onChanged: (rows) => setState(() => _incomeDetailRows = rows),
+        Divider(color: Theme.of(context).dividerColor),
+        const SizedBox(height: 12),
+        Text(
+          "Pembayaran Tambahan",
+          style: GoogleFonts.comfortaa(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).textTheme.titleLarge?.color,
           ),
-
+        ),
+        const SizedBox(height: 12),
+        if (_financialLoaded)
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _incomeDetailRows.length,
+            itemBuilder: (context, index) {
+              return _DynamicFinanceRow(
+                index: index,
+                data: _incomeDetailRows[index],
+                isExpense: false,
+                onChanged: (newData) {
+                  setState(() {
+                    _incomeDetailRows[index] = newData;
+                  });
+                },
+                onRemove: () {
+                  setState(() {
+                    _incomeDetailRows.removeAt(index);
+                  });
+                },
+              );
+            },
+          ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () {
+              setState(() {
+                _incomeDetailRows.add({'tanggal': null, 'label': '', 'amount': 0});
+              });
+            },
+            icon: Icon(Icons.add, color: Theme.of(context).colorScheme.primary),
+            label: Text('Tambah Pembayaran', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+          ),
+        ),
         const SizedBox(height: 24),
         Divider(color: Theme.of(context).dividerColor),
         const SizedBox(height: 12),
-
+        Text(
+          "Pengeluaran Operasional",
+          style: GoogleFonts.comfortaa(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).textTheme.titleLarge?.color,
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (_financialLoaded)
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _expenseRows.length,
+            itemBuilder: (context, index) {
+              return _DynamicFinanceRow(
+                index: index,
+                data: _expenseRows[index],
+                isExpense: true,
+                onChanged: (newData) {
+                  setState(() {
+                    _expenseRows[index] = newData;
+                  });
+                },
+                onRemove: () {
+                  setState(() {
+                    _expenseRows.removeAt(index);
+                  });
+                },
+              );
+            },
+          ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () {
+              setState(() {
+                _expenseRows.add({'tanggal': null, 'proses': '', 'amount': 0});
+              });
+            },
+            icon: Icon(Icons.add, color: Theme.of(context).colorScheme.primary),
+            label: Text('Tambah Pengeluaran', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+          ),
+        ),
+        const SizedBox(height: 24),
+        Divider(color: Theme.of(context).dividerColor),
+        const SizedBox(height: 12),
         _buildLabel(context, 'Catatan/Kendala'),
         TextField(
           controller: _noteController,
@@ -1163,6 +1251,12 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                 context,
                 'Total Dibayar Pemohon',
                 _totalPemohon,
+                isBold: true,
+              ),
+              _summaryRow(
+                context,
+                'Total Pengeluaran',
+                _totalPengeluaran,
                 isBold: true,
               ),
               const Divider(),
@@ -1256,6 +1350,193 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           color: Colors.black54,
         ),
       ),
+    );
+  }
+}
+
+// ================= CUSTOM WIDGET UNTUK FORM DINAMIS =================
+class _DynamicFinanceRow extends StatefulWidget {
+  final int index;
+  final Map<String, dynamic> data;
+  final Function(Map<String, dynamic>) onChanged;
+  final bool isExpense;
+  final VoidCallback onRemove;
+
+  const _DynamicFinanceRow({
+    required this.index,
+    required this.data,
+    required this.onChanged,
+    required this.isExpense,
+    required this.onRemove,
+  });
+
+  @override
+  State<_DynamicFinanceRow> createState() => _DynamicFinanceRowState();
+}
+
+class _DynamicFinanceRowState extends State<_DynamicFinanceRow> {
+  late TextEditingController _descController;
+  late TextEditingController _amountController;
+  String? _date;
+
+  @override
+  void initState() {
+    super.initState();
+    _descController = TextEditingController(
+      text: widget.isExpense ? (widget.data['proses'] ?? '') : (widget.data['label'] ?? ''),
+    );
+    
+    final amount = widget.data['amount'];
+    if (amount != null && amount != 0) {
+      _amountController = TextEditingController(
+        text: NumberFormat.decimalPattern('id_ID').format(amount),
+      );
+    } else {
+      _amountController = TextEditingController(text: '');
+    }
+    
+    _date = widget.data['tanggal'];
+  }
+
+  void _updateData() {
+    final data = Map<String, dynamic>.from(widget.data);
+    if (widget.isExpense) {
+      data['proses'] = _descController.text;
+    } else {
+      data['label'] = _descController.text;
+    }
+    data['tanggal'] = _date;
+    data['amount'] = double.tryParse(_amountController.text.replaceAll('.', '').replaceAll(',', '.')) ?? 0;
+    widget.onChanged(data);
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2024),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) {
+      setState(() {
+        _date = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+        _updateData();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _descController.dispose();
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              widget.isExpense ? 'Pengeluaran ${widget.index + 1}' : 'Pembayaran ${widget.index + 1}',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black54),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+              onPressed: widget.onRemove,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            )
+          ],
+        ),
+        const SizedBox(height: 8),
+        // Tanggal
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Text(
+            'Tanggal',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              color: Theme.of(context).textTheme.bodyLarge?.color,
+            ),
+          ),
+        ),
+        InkWell(
+          onTap: _pickDate,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+            margin: const EdgeInsets.only(bottom: 8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _date ?? 'Pilih tanggal',
+                  style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
+                ),
+                const Icon(Icons.calendar_today, size: 18),
+              ],
+            ),
+          ),
+        ),
+        // Keterangan
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Text(
+            widget.isExpense ? 'Keterangan Pengeluaran' : 'Keterangan',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              color: Theme.of(context).textTheme.bodyLarge?.color,
+            ),
+          ),
+        ),
+        TextField(
+          controller: _descController,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Theme.of(context).cardColor,
+            border: InputBorder.none,
+            hintText: widget.isExpense ? 'Masukkan keterangan pengeluaran' : 'Masukkan keterangan',
+          ),
+          onChanged: (val) => _updateData(),
+        ),
+        const SizedBox(height: 8),
+        // Nominal
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Text(
+            'Nominal Pembayaran',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              color: Theme.of(context).textTheme.bodyLarge?.color,
+            ),
+          ),
+        ),
+        TextField(
+          controller: _amountController,
+          keyboardType: TextInputType.number,
+          inputFormatters: [CurrencyInputFormatter()],
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Theme.of(context).cardColor,
+            border: InputBorder.none,
+          ),
+          onChanged: (val) => _updateData(),
+        ),
+        const SizedBox(height: 16),
+        Divider(color: Theme.of(context).dividerColor),
+        const SizedBox(height: 16),
+      ],
     );
   }
 }

@@ -12,7 +12,6 @@ class EditDocPresenter {
 
   EditDocPresenter(this._view);
 
-  // Helper untuk bersihkan titik dari string format Rupiah
   double _cleanAmount(dynamic value) {
     if (value == null) return 0;
     if (value is num) return value.toDouble();
@@ -70,7 +69,6 @@ class EditDocPresenter {
     }
   }
 
-  // ⚡ PARAMETER TAMBAHAN & KAS BESAR DIHAPUS DARI SINI
   Future<void> updateDocument({
     required String id,
     required String clientId,
@@ -111,10 +109,10 @@ class EditDocPresenter {
             'kesepakatan_biaya': kesepakatanBiaya,
             'uang_muka_tanggal': uangMukaTanggal,
             'uang_muka_jumlah': uangMukaJumlah,
-            'tambahan_tanggal': null, // ⚡ DISET NULL AGAR DATA LAMA TERHAPUS
-            'tambahan_jumlah': 0, // ⚡ DISET 0
-            'kas_besar_tanggal': null, // ⚡ DISET NULL
-            'kas_besar_jumlah': 0, // ⚡ DISET 0
+            'tambahan_tanggal': null,
+            'tambahan_jumlah': 0,
+            'kas_besar_tanggal': null,
+            'kas_besar_jumlah': 0,
             'keterangan_keuangan': keteranganKeuangan,
             'tanggal_masuk': tanggalMasuk,
             'uraian_singkat': uraianSingkat,
@@ -137,6 +135,7 @@ class EditDocPresenter {
             (r) => {
               'document_id': id,
               'label': r['label'],
+              'tanggal': r['tanggal'], // Tambahan fitur tanggal
               'amount': _cleanAmount(r['amount']),
             },
           )

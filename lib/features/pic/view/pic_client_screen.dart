@@ -208,7 +208,8 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
   void _showStaffFormDialog({StaffModel? existing}) {
     final nameController = TextEditingController(text: existing?.name ?? '');
     final usernameController = TextEditingController(text: existing?.username ?? '');
-    final passwordController = TextEditingController();
+    // ⚡ TAMBAHKAN INI: Agar password lama bisa dilihat dan diedit
+    final passwordController = TextEditingController(text: existing?.password ?? '');
     final isEdit = existing != null;
 
     showDialog(
@@ -227,14 +228,14 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
               const SizedBox(height: 10),
               TextField(
                 controller: usernameController,
-                enabled: !isEdit,
+                // ⚡ HAPUS enabled: !isEdit AGAR BISA DIEDIT
                 decoration: const InputDecoration(labelText: 'Username', border: OutlineInputBorder()),
               ),
               const SizedBox(height: 10),
               TextField(
                 controller: passwordController,
                 obscureText: true,
-                enabled: !isEdit,
+                // ⚡ HAPUS enabled: !isEdit AGAR BISA DIEDIT
                 decoration: const InputDecoration(labelText: 'Password (min. 6 karakter)', border: OutlineInputBorder()),
               ),
             ],
@@ -245,7 +246,13 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
               onPressed: () {
                 Navigator.pop(dialogContext);
                 if (isEdit) {
-                  _presenter.updateStaff(existing.id, nameController.text);
+                  // ⚡ KIRIM USERNAME & PASSWORD BARU KE PRESENTER
+                  _presenter.updateStaff(
+                    id: existing.id,
+                    name: nameController.text,
+                    username: usernameController.text,
+                    password: passwordController.text,
+                  );
                 } else {
                   _presenter.addStaff(
                     name: nameController.text,
@@ -390,7 +397,7 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
     );
   }
 
-  // ⚡ FUNGSI BARU: BOTTOM SHEET UNTUK LIHAT PASSWORD
+  // ⚡ FUNGSI LIHAT PASSWORD
   void _showCredentialSheet(String name, String username, String password) {
     showModalBottomSheet(
       context: context,
@@ -614,7 +621,6 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
         ? staff.name.trim().split(' ').map((w) => w.isNotEmpty ? w[0] : '').take(2).join().toUpperCase()
         : '?';
 
-    // ⚡ DIBUNGKUS GestureDetector AGAR BISA DIKLIK
     return GestureDetector(
       onTap: () => _showCredentialSheet(staff.name, staff.username, staff.password),
       child: Container(
@@ -661,7 +667,6 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
         ? client.name.trim().split(' ').map((w) => w.isNotEmpty ? w[0] : '').take(2).join().toUpperCase()
         : '?';
 
-    // ⚡ DIBUNGKUS GestureDetector AGAR BISA DIKLIK
     return GestureDetector(
       onTap: () => _showCredentialSheet(client.name, client.username, client.password),
       child: Container(
