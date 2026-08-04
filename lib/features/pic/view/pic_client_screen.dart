@@ -390,6 +390,85 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
     );
   }
 
+  // ⚡ FUNGSI BARU: BOTTOM SHEET UNTUK LIHAT PASSWORD
+  void _showCredentialSheet(String name, String username, String password) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[400],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Text(
+                'Detail Akun',
+                style: GoogleFonts.comfortaa(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).textTheme.titleLarge?.color,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Berikut adalah data akun untuk $name. Data ini tidak dapat diubah.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+                ),
+              ),
+              const SizedBox(height: 24),
+              _buildCredentialRow('Nama', name),
+              const Divider(height: 24),
+              _buildCredentialRow('Username', username),
+              const Divider(height: 24),
+              _buildCredentialRow('Password', password),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Tutup'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCredentialRow(String title, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black54)),
+        Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final staff = _filteredStaff;
@@ -535,40 +614,44 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
         ? staff.name.trim().split(' ').map((w) => w.isNotEmpty ? w[0] : '').take(2).join().toUpperCase()
         : '?';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
-            child: Text(initials, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(staff.name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Theme.of(context).textTheme.bodyLarge?.color)),
-                const SizedBox(height: 2),
-                Text('@${staff.username} • ${staff.jobCount} pekerjaan', style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6))),
-              ],
+    // ⚡ DIBUNGKUS GestureDetector AGAR BISA DIKLIK
+    return GestureDetector(
+      onTap: () => _showCredentialSheet(staff.name, staff.username, staff.password),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 22,
+              backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+              child: Text(initials, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
             ),
-          ),
-          IconButton(
-            onPressed: () => _showStaffFormDialog(existing: staff),
-            icon: Icon(Icons.edit_outlined, size: 20, color: Theme.of(context).colorScheme.primary),
-          ),
-          IconButton(
-            onPressed: () => _confirmDeleteStaff(staff),
-            icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
-          ),
-        ],
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(staff.name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Theme.of(context).textTheme.bodyLarge?.color)),
+                  const SizedBox(height: 2),
+                  Text('@${staff.username} • ${staff.jobCount} pekerjaan', style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6))),
+                ],
+              ),
+            ),
+            IconButton(
+              onPressed: () => _showStaffFormDialog(existing: staff),
+              icon: Icon(Icons.edit_outlined, size: 20, color: Theme.of(context).colorScheme.primary),
+            ),
+            IconButton(
+              onPressed: () => _confirmDeleteStaff(staff),
+              icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -578,36 +661,40 @@ class _PicScreenState extends State<PicScreen> implements PicClientViewContract 
         ? client.name.trim().split(' ').map((w) => w.isNotEmpty ? w[0] : '').take(2).join().toUpperCase()
         : '?';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: Colors.blueGrey.withValues(alpha: 0.15),
-            child: Text(initials, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(client.name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Theme.of(context).textTheme.bodyLarge?.color)),
-                const SizedBox(height: 2),
-                Text('@${client.username} • ${client.jobCount} pekerjaan', style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6))),
-              ],
+    // ⚡ DIBUNGKUS GestureDetector AGAR BISA DIKLIK
+    return GestureDetector(
+      onTap: () => _showCredentialSheet(client.name, client.username, client.password),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 22,
+              backgroundColor: Colors.blueGrey.withValues(alpha: 0.15),
+              child: Text(initials, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
             ),
-          ),
-          IconButton(
-            onPressed: () => _confirmDeleteClient(client),
-            icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
-          ),
-        ],
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(client.name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Theme.of(context).textTheme.bodyLarge?.color)),
+                  const SizedBox(height: 2),
+                  Text('@${client.username} • ${client.jobCount} pekerjaan', style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6))),
+                ],
+              ),
+            ),
+            IconButton(
+              onPressed: () => _confirmDeleteClient(client),
+              icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+            ),
+          ],
+        ),
       ),
     );
   }

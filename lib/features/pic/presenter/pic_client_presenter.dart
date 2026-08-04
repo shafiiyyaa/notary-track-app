@@ -14,9 +14,10 @@ class PicClientPresenter {
   Future<void> fetchStaffList() async {
     _view.showLoading();
     try {
+      // ⚡ TAMBAHKAN password DI SELECT
       final staffData = await _supabase
           .from('staff')
-          .select('id, name, username')
+          .select('id, name, username, password')
           .order('name');
       final staffList = List<Map<String, dynamic>>.from(staffData);
 
@@ -35,6 +36,7 @@ class PicClientPresenter {
           id: id,
           name: s['name'] ?? '',
           username: s['username'] ?? '',
+          password: s['password'] ?? '', // ⚡ DITAMBAHKAN
           jobCount: counts[id] ?? 0,
         );
       }).toList();
@@ -119,9 +121,10 @@ class PicClientPresenter {
   Future<void> fetchClients() async {
     _view.showLoading();
     try {
+      // ⚡ TAMBAHKAN password DI SELECT
       final clientData = await _supabase
           .from('clients')
-          .select('id, name, username')
+          .select('id, name, username, password')
           .order('name');
       final clientList = List<Map<String, dynamic>>.from(clientData);
 
@@ -140,6 +143,7 @@ class PicClientPresenter {
           id: id,
           name: c['name'] ?? '',
           username: c['username'] ?? '',
+          password: c['password'] ?? '', // ⚡ DITAMBAHKAN
           jobCount: counts[id] ?? 0,
         );
       }).toList();

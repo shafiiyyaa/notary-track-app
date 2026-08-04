@@ -1,6 +1,5 @@
 import 'income_detail_model.dart';
 import 'expense_model.dart';
-import '../../../utils/date_helper.dart'; 
 
 class DocumentModel {
   final String id;
@@ -77,22 +76,35 @@ class DocumentModel {
     this.statusPembayaran = 'Belum Dibayar',
   });
 
-  double get totalPemohon => uangMukaJumlah + tambahanJumlah;
-
+  // ⚡ PERBAIKAN: totalRincian tetap dihitung
   double get totalRincian =>
       incomeDetails.fold(0, (sum, item) => sum + item.amount);
+
+  // ⚡ PERBAIKAN RUMUS: totalPemohon = Uang Muka + Tambahan lama (jika ada) + Cicilan动态 (incomeDetails)
+  double get totalPemohon => uangMukaJumlah + tambahanJumlah + totalRincian;
 
   double get totalPengeluaran =>
       expenses.fold(0, (sum, item) => sum + item.amount);
 
   double get sisaKas => totalPemohon + kasBesarJumlah - totalPengeluaran;
 
-  // ⚡ PERBAIKAN: pakai DateHelper biar logika parsing timezone SAMA PERSIS
-  // dengan yang dipakai di dashboard_presenter.dart. Sebelumnya di sini
-  // tidak ada penanganan 'Z'/UTC, jadi hasilnya beda dengan dashboard.
-  bool get isLate => DateHelper.isLate(deadline, status: status);
+  bool get isLate {
+    if (status == 'Selesai' || status == 'Batal') return false;
+    if (deadline.isEmpty) return false;
+    
+    DateTime? dt;
+    try {
+      String cleanDeadline = deadline.contains(' ') ? deadline.replaceAll(' ', 'T') : deadline;
+      dt = DateTime.parse(cleanDeadline);
+    } catch (e) {
+      dt = DateTime.tryParse(deadline);
+    }
+    
+    if (dt == null) return false;
+    
+    return dt.isBefore(DateTime.now());
+  }
 
-  // ⚡ Status efektif untuk UI
   String get effectiveStatus => isLate ? 'Terlambat' : status;
 
   factory DocumentModel.fromMap(

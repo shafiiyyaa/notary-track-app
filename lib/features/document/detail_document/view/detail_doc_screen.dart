@@ -123,7 +123,7 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
     final doc = _document!;
 
     // ⚡ HITUNG KURANG BAYAR
-    double totalDibayarKlien = doc.totalPemohon + doc.totalRincian;
+    double totalDibayarKlien = doc.totalPemohon;
     double kurangBayar = doc.kesepakatanBiaya - totalDibayarKlien;
     if (kurangBayar < 0) kurangBayar = 0;
 
@@ -285,7 +285,7 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                       if (doc.incomeDetails.isNotEmpty) ...[
                         ...doc.incomeDetails.map((item) => _buildItem(context, item.label, _rupiah.format(item.amount))),
                       ],
-                      _summaryRow(context, "Total Uang Pemohon", doc.totalPemohon, isBold: true),
+                      _summaryRow(context, "Total Uang Masuk Pemohon", totalDibayarKlien, isBold: true),
                       
                       // 2. KESEPAKATAN BIAYA & KURANG BAYAR
                       const Divider(height: 32),
@@ -307,7 +307,7 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                         ),
                       ),
 
-                      // 3. PENGELUARAN
+                      // 3. PENGELUARAN OPERASIONAL (DIKEMBALIKAN)
                       if (doc.expenses.isNotEmpty) ...[
                         const Divider(height: 32),
                         Text("Pengeluaran Operasional", style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),

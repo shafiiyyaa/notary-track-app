@@ -71,11 +71,9 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   final _newDocController = TextEditingController();
 
   String? _uangMukaTanggal;
-
   DateTime? _deadlineDateTime;
 
   List<Map<String, dynamic>> _incomeDetailRows = [];
-  List<Map<String, dynamic>> _expenseRows = [];
   List<RequiredDoc> _requiredDocs = [];
   bool _financialLoaded = false;
 
@@ -83,7 +81,12 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   int? _selectedDocumentTypeId;
 
   String? _selectedKategori;
-  final List<String> _kategoriList = ['Notaris', 'PPAT', 'Waarmerking', 'Legalisasi'];
+  final List<String> _kategoriList = [
+    'Notaris',
+    'PPAT',
+    'Waarmerking',
+    'Legalisasi',
+  ];
 
   bool _isLoading = false;
   List<Map<String, dynamic>> _staffs = [];
@@ -96,7 +99,11 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   String? _selectedClientId;
 
   late EditDocPresenter _presenter;
-  final _rupiah = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+  final _rupiah = NumberFormat.currency(
+    locale: 'id_ID',
+    symbol: 'Rp ',
+    decimalDigits: 0,
+  );
   final NumberFormat _numberFormat = NumberFormat.decimalPattern('id_ID');
 
   late final PageController _pageController;
@@ -163,16 +170,11 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   double get _uangMukaJumlah => _parseAmount(_uangMukaJumlahController.text);
 
   double get _totalIncomeDetails => _incomeDetailRows.fold(
-        0,
-        (sum, r) => sum + ((r['amount'] as num?)?.toDouble() ?? 0),
-      );
+    0,
+    (sum, r) => sum + ((r['amount'] as num?)?.toDouble() ?? 0),
+  );
 
   double get _totalPemohon => _uangMukaJumlah + _totalIncomeDetails;
-
-  double get _totalPengeluaran => _expenseRows.fold(
-        0,
-        (sum, r) => sum + ((r['amount'] as num?)?.toDouble() ?? 0),
-      );
 
   bool get _hasFinanceData => _uangMukaJumlah > 0 || _totalIncomeDetails > 0;
 
@@ -262,10 +264,6 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
       });
     }
 
-    _expenseRows = document.expenses
-        .map((e) => {'proses': e.proses, 'tanggal': e.tanggal, 'amount': e.amount})
-        .toList();
-
     List<String> dibutuhkanList = document.dokumenDibutuhkan
         .split('\n')
         .where((e) => e.trim().isNotEmpty)
@@ -302,7 +300,9 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   @override
   void onError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _pickDate(void Function(String) onPicked) async {
@@ -347,12 +347,17 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
 
     setState(() {
       _deadlineDateTime = combined;
-      _deadlineController.text = DateFormat('dd MMMM yyyy, HH:mm', 'id_ID').format(combined);
+      _deadlineController.text = DateFormat(
+        'dd MMMM yyyy, HH:mm',
+        'id_ID',
+      ).format(combined);
     });
   }
 
   void _showSnack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   bool _validateStep(int step) {
@@ -361,7 +366,8 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         _showSnack('Pilih klien dulu');
         return false;
       }
-      if (_phoneController.text.length < 10 || _phoneController.text.length > 13) {
+      if (_phoneController.text.length < 10 ||
+          _phoneController.text.length > 13) {
         _showSnack('Nomor telepon harus terdiri dari 10-13 digit');
         return false;
       }
@@ -438,13 +444,32 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
       uangMukaJumlah: _uangMukaJumlah,
       keteranganKeuangan: _noteController.text,
       incomeDetails: _incomeDetailRows,
-      expenses: _expenseRows,
-      tanggalMasuk: _tanggalMasukController.text.isEmpty ? null : _tanggalMasukController.text,
+      expenses: [],
+      tanggalMasuk: _tanggalMasukController.text.isEmpty
+          ? null
+          : _tanggalMasukController.text,
       uraianSingkat: _uraianSingkatController.text,
-      nomorDokumen: _nomorDokumenController.text.isEmpty ? null : _nomorDokumenController.text,
+      nomorDokumen: _nomorDokumenController.text.isEmpty
+          ? null
+          : _nomorDokumenController.text,
       dokumenDibutuhkan: dokumenDibutuhkan,
       dokumenDiterima: dokumenDiterima,
       statusPembayaran: _autoStatusPembayaran,
+    );
+  }
+
+  // ⚡ DEKORASI INPUT YANG LEBIH RAMPING (KOTAK PUTIH KECIL)
+  InputDecoration _compactInputDecoration(String hint) {
+    return InputDecoration(
+      filled: true,
+      fillColor: Theme.of(context).cardColor,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide.none,
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      hintText: hint,
+      isDense: true,
     );
   }
 
@@ -525,7 +550,10 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isActive ? primary : Theme.of(context).cardColor,
-                  border: Border.all(color: isActive ? primary : inactiveColor, width: 2),
+                  border: Border.all(
+                    color: isActive ? primary : inactiveColor,
+                    width: 2,
+                  ),
                 ),
                 alignment: Alignment.center,
                 child: isDone
@@ -533,7 +561,9 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                     : Text(
                         '${stepIndex + 1}',
                         style: TextStyle(
-                          color: isActive ? Colors.white : Theme.of(context).textTheme.bodyMedium?.color,
+                          color: isActive
+                              ? Colors.white
+                              : Theme.of(context).textTheme.bodyMedium?.color,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -546,8 +576,12 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 11,
-                    fontWeight: stepIndex == _currentStep ? FontWeight.bold : FontWeight.normal,
-                    color: isActive ? primary : Theme.of(context).textTheme.bodySmall?.color,
+                    fontWeight: stepIndex == _currentStep
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                    color: isActive
+                        ? primary
+                        : Theme.of(context).textTheme.bodySmall?.color,
                   ),
                 ),
               ),
@@ -589,15 +623,26 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                 onPressed: _isLoading ? null : _prevStep,
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  side: BorderSide(color: Theme.of(context).colorScheme.primary),
+                  side: BorderSide(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 ),
-                child: Text('Kembali', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+                child: Text(
+                  'Kembali',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
               ),
             ),
           if (_currentStep > 0) const SizedBox(width: 12),
           Expanded(
             child: ElevatedButton(
-              onPressed: _isLoading ? null : (_currentStep < _stepTitles.length - 1 ? _nextStep : _submit),
+              onPressed: _isLoading
+                  ? null
+                  : (_currentStep < _stepTitles.length - 1
+                        ? _nextStep
+                        : _submit),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -606,10 +651,15 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                   ? const SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
                     )
                   : Text(
-                      _currentStep < _stepTitles.length - 1 ? 'Lanjut' : 'Update Dokumen',
+                      _currentStep < _stepTitles.length - 1
+                          ? 'Lanjut'
+                          : 'Update Dokumen',
                       style: const TextStyle(color: Colors.white),
                     ),
             ),
@@ -626,45 +676,48 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         _buildLabel(context, 'Klien'),
         DropdownButtonFormField<String>(
           initialValue: _selectedClientId,
-          isExpanded: true, 
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Theme.of(context).cardColor,
-            border: InputBorder.none,
-          ),
-          hint: const Text('Pilih klien'),
+          isExpanded: true,
+          menuMaxHeight: 250, // ⚡ BATAS TINGGI DROPDOWN BIAR BISA SCROLL
+          decoration: _compactInputDecoration('Pilih klien'),
           items: _clientList
-              .map((c) => DropdownMenuItem<String>(
-                    value: c['id'].toString(),
-                    child: Text(c['name'] ?? ''),
-                  ))
+              .map(
+                (c) => DropdownMenuItem<String>(
+                  value: c['id'].toString(),
+                  child: Text(
+                    c['name'] ?? '',
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ),
+              )
               .toList(),
           onChanged: (value) => setState(() => _selectedClientId = value),
         ),
         _buildLabel(context, 'Tanggal Masuk'),
         _buildDateTile(
           context,
-          _tanggalMasukController.text.isEmpty ? null : _tanggalMasukController.text,
+          _tanggalMasukController.text.isEmpty
+              ? null
+              : _tanggalMasukController.text,
           (v) => setState(() => _tanggalMasukController.text = v),
         ),
         _buildLabel(context, 'Nomor Telepon'),
         TextField(
           controller: _phoneController,
           keyboardType: TextInputType.phone,
+          style: const TextStyle(fontSize: 14),
           inputFormatters: [
             FilteringTextInputFormatter.digitsOnly,
             LengthLimitingTextInputFormatter(13),
           ],
           onChanged: (val) => setState(() {}),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Theme.of(context).cardColor,
-            border: InputBorder.none,
-            hintText: '10-13 digit nomor telepon',
-            errorText: (_phoneController.text.isNotEmpty && _phoneController.text.length < 10)
-                ? 'Nomor telepon minimal 10 digit'
-                : null,
-          ),
+          decoration: _compactInputDecoration('10-13 digit nomor telepon')
+              .copyWith(
+                errorText:
+                    (_phoneController.text.isNotEmpty &&
+                        _phoneController.text.length < 10)
+                    ? 'Nomor telepon minimal 10 digit'
+                    : null,
+              ),
         ),
       ],
     );
@@ -677,27 +730,35 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         _buildLabel(context, 'Kategori'),
         DropdownButtonFormField<String>(
           initialValue: _selectedKategori,
-          isExpanded: true, 
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Theme.of(context).cardColor,
-            border: InputBorder.none,
-          ),
-          hint: const Text('Pilih kategori'),
-          items: _kategoriList.map((k) => DropdownMenuItem<String>(value: k, child: Text(k))).toList(),
+          isExpanded: true,
+          menuMaxHeight: 250, // ⚡ BATAS TINGGI DROPDOWN
+          decoration: _compactInputDecoration('Pilih kategori'),
+          items: _kategoriList
+              .map(
+                (k) => DropdownMenuItem<String>(
+                  value: k,
+                  child: Text(k, style: const TextStyle(fontSize: 14)),
+                ),
+              )
+              .toList(),
           onChanged: (value) => setState(() => _selectedKategori = value),
         ),
         _buildLabel(context, 'Jenis Dokumen'),
         DropdownButtonFormField<int>(
           initialValue: _selectedDocumentTypeId,
-          isExpanded: true, 
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Theme.of(context).cardColor,
-            border: InputBorder.none,
-          ),
+          isExpanded: true,
+          menuMaxHeight: 250, // ⚡ BATAS TINGGI DROPDOWN
+          decoration: _compactInputDecoration('Pilih jenis dokumen'),
           items: _documentTypes
-              .map((doc) => DropdownMenuItem<int>(value: doc['id'], child: Text(doc['name'])))
+              .map(
+                (doc) => DropdownMenuItem<int>(
+                  value: doc['id'],
+                  child: Text(
+                    doc['name'],
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ),
+              )
               .toList(),
           onChanged: (value) => setState(() => _selectedDocumentTypeId = value),
         ),
@@ -705,35 +766,32 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         TextField(
           controller: _uraianSingkatController,
           maxLines: 2,
+          style: const TextStyle(fontSize: 14),
           onChanged: (_) => setState(() {}),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Theme.of(context).cardColor,
-            border: InputBorder.none,
-            hintText: 'Uraian singkat pekerjaan',
-          ),
+          decoration: _compactInputDecoration('Uraian singkat pekerjaan'),
         ),
         _buildLabel(context, 'Nomor Akta/Dokumen'),
         TextField(
           controller: _nomorDokumenController,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Theme.of(context).cardColor,
-            border: InputBorder.none,
-            hintText: 'Opsional',
-          ),
+          style: const TextStyle(fontSize: 14),
+          decoration: _compactInputDecoration('Opsional'),
         ),
         _buildLabel(context, "Staff Penanggung Jawab"),
         DropdownButtonFormField<String>(
           initialValue: _selectedStaffId,
-          isExpanded: true, 
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Theme.of(context).cardColor,
-            border: InputBorder.none,
-          ),
+          isExpanded: true,
+          menuMaxHeight: 250, // ⚡ BATAS TINGGI DROPDOWN
+          decoration: _compactInputDecoration('Pilih staff'),
           items: _staffs
-              .map((staff) => DropdownMenuItem<String>(value: staff['id'], child: Text(staff['name'])))
+              .map(
+                (staff) => DropdownMenuItem<String>(
+                  value: staff['id'],
+                  child: Text(
+                    staff['name'],
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ),
+              )
               .toList(),
           onChanged: (value) => setState(() => _selectedStaffId = value),
         ),
@@ -741,7 +799,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         _buildLabel(context, "Status"),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(8),
@@ -751,12 +809,13 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
             children: [
               Text(
                 'Status otomatis: $_finalStatus',
-                style: TextStyle(
+                style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
+                  fontSize: 13,
+                  color: Colors.green,
                 ),
               ),
-              Icon(Icons.auto_awesome, size: 16, color: Theme.of(context).colorScheme.primary),
+              const Icon(Icons.auto_awesome, size: 16, color: Colors.green),
             ],
           ),
         ),
@@ -765,7 +824,9 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           'Status dihitung otomatis berdasarkan data dokumen & keuangan yang sudah diisi.',
           style: TextStyle(
             fontSize: 11,
-            color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+            color: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
           ),
         ),
         const SizedBox(height: 12),
@@ -782,7 +843,10 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
             Expanded(
               child: Text(
                 'Tandai manual sebagai Tertunda / Batal',
-                style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodyLarge?.color),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                ),
               ),
             ),
           ],
@@ -790,16 +854,18 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         if (_manualOverride)
           DropdownButtonFormField<String>(
             initialValue: _overrideStatus,
-            isExpanded: true, 
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: Theme.of(context).cardColor,
-              border: InputBorder.none,
-            ),
-            hint: const Text('Pilih status'),
+            isExpanded: true,
+            menuMaxHeight: 250,
+            decoration: _compactInputDecoration('Pilih status'),
             items: const [
-              DropdownMenuItem(value: "Tertunda", child: Text("Tertunda")),
-              DropdownMenuItem(value: "Batal", child: Text("Batal")),
+              DropdownMenuItem(
+                value: "Tertunda",
+                child: Text("Tertunda", style: TextStyle(fontSize: 14)),
+              ),
+              DropdownMenuItem(
+                value: "Batal",
+                child: Text("Batal", style: TextStyle(fontSize: 14)),
+              ),
             ],
             onChanged: (value) => setState(() => _overrideStatus = value),
           ),
@@ -808,13 +874,10 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         TextField(
           controller: _deadlineController,
           readOnly: true,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Theme.of(context).cardColor,
-            border: InputBorder.none,
-            hintText: 'Pilih tanggal & jam deadline',
-            suffixIcon: const Icon(Icons.event),
-          ),
+          style: const TextStyle(fontSize: 14),
+          decoration: _compactInputDecoration(
+            'Pilih tanggal & jam deadline',
+          ).copyWith(suffixIcon: const Icon(Icons.event, size: 18)),
           onTap: _pickDeadlineDateTime,
         ),
         const SizedBox(height: 16),
@@ -826,7 +889,9 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           'Tambahkan dokumen yang dibutuhkan, lalu centang jika sudah diterima.',
           style: TextStyle(
             fontSize: 11,
-            color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+            color: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
           ),
         ),
         const SizedBox(height: 8),
@@ -835,12 +900,8 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
             Expanded(
               child: TextField(
                 controller: _newDocController,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  border: InputBorder.none,
-                  hintText: 'Masukkan nama dokumen...',
-                ),
+                style: const TextStyle(fontSize: 14),
+                decoration: _compactInputDecoration('Masukkan nama dokumen...'),
                 onSubmitted: (val) {
                   if (val.trim().isNotEmpty) {
                     setState(() {
@@ -852,11 +913,16 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
               ),
             ),
             IconButton(
-              icon: Icon(Icons.add_circle, color: Theme.of(context).colorScheme.primary),
+              icon: Icon(
+                Icons.add_circle,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               onPressed: () {
                 if (_newDocController.text.trim().isNotEmpty) {
                   setState(() {
-                    _requiredDocs.add(RequiredDoc(_newDocController.text.trim()));
+                    _requiredDocs.add(
+                      RequiredDoc(_newDocController.text.trim()),
+                    );
                     _newDocController.clear();
                   });
                 }
@@ -866,17 +932,25 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         ),
         const SizedBox(height: 12),
         _requiredDocs.isEmpty
-            ? Text('Belum ada dokumen dibutuhkan.', style: TextStyle(fontSize: 12, color: Colors.grey))
+            ? Text(
+                'Belum ada dokumen dibutuhkan.',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              )
             : Column(
                 children: _requiredDocs.map((doc) {
                   return Container(
                     margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: doc.isReceived ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                        color: doc.isReceived
+                            ? Theme.of(context).colorScheme.primary
+                            : Colors.transparent,
                         width: 1.5,
                       ),
                     ),
@@ -895,13 +969,24 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                           child: Text(
                             doc.name,
                             style: TextStyle(
-                              decoration: doc.isReceived ? TextDecoration.lineThrough : TextDecoration.none,
-                              color: doc.isReceived ? Colors.grey : Theme.of(context).textTheme.bodyLarge?.color,
+                              fontSize: 13,
+                              decoration: doc.isReceived
+                                  ? TextDecoration.lineThrough
+                                  : TextDecoration.none,
+                              color: doc.isReceived
+                                  ? Colors.grey
+                                  : Theme.of(
+                                      context,
+                                    ).textTheme.bodyLarge?.color,
                             ),
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close, size: 18, color: Colors.red),
+                          icon: const Icon(
+                            Icons.close,
+                            size: 18,
+                            color: Colors.red,
+                          ),
                           onPressed: () {
                             setState(() {
                               _requiredDocs.remove(doc);
@@ -925,19 +1010,17 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         TextField(
           controller: _kesepakatanBiayaController,
           keyboardType: TextInputType.number,
+          style: const TextStyle(fontSize: 14),
           inputFormatters: [CurrencyInputFormatter()],
           onChanged: (_) => setState(() {}),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Theme.of(context).cardColor,
-            border: InputBorder.none,
-            hintText: 'Nominal kesepakatan awal dengan klien',
+          decoration: _compactInputDecoration(
+            'Nominal kesepakatan awal dengan klien',
           ),
         ),
         _buildLabel(context, 'Status Pembayaran'),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(8),
@@ -947,9 +1030,17 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
             children: [
               Text(
                 'Status otomatis: $_autoStatusPembayaran',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: Colors.green,
+                ),
               ),
-              Icon(Icons.monetization_on_outlined, size: 16, color: Theme.of(context).colorScheme.primary),
+              const Icon(
+                Icons.monetization_on_outlined,
+                size: 16,
+                color: Colors.green,
+              ),
             ],
           ),
         ),
@@ -958,7 +1049,9 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           'Status pembayaran dihitung otomatis berdasarkan total uang masuk pemohon vs kesepakatan biaya.',
           style: TextStyle(
             fontSize: 11,
-            color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+            color: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
           ),
         ),
         const SizedBox(height: 20),
@@ -974,21 +1067,22 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         ),
         const SizedBox(height: 12),
         _buildLabel(context, 'Uang Muka - Tanggal'),
-        _buildDateTile(context, _uangMukaTanggal, (v) => setState(() => _uangMukaTanggal = v)),
-        
+        _buildDateTile(
+          context,
+          _uangMukaTanggal,
+          (v) => setState(() => _uangMukaTanggal = v),
+        ),
+
         _buildLabel(context, 'Uang Muka - Nominal Pembayaran'),
         TextField(
           controller: _uangMukaJumlahController,
           keyboardType: TextInputType.number,
+          style: const TextStyle(fontSize: 14),
           inputFormatters: [CurrencyInputFormatter()],
           onChanged: (_) => setState(() {}),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Theme.of(context).cardColor,
-            border: InputBorder.none,
-          ),
+          decoration: _compactInputDecoration('0'),
         ),
-        
+
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.all(12),
@@ -1001,24 +1095,32 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
             children: [
               Text(
                 'Total Uang Masuk Pemohon',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                ),
               ),
               Text(
                 _rupiah.format(_totalPemohon),
-                style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 20),
-        
+
         if (_financialLoaded)
           DynamicListField(
-            title: 'Pembayaran Tambahan',
+            title: 'Pembayaran Tambahan / Cicilan',
             fields: [
               DynamicFieldConfig(
                 key: 'label',
-                label: 'Keterangan',
+                label: 'Keterangan Cicilan',
                 type: DynamicFieldType.text,
               ),
               DynamicFieldConfig(
@@ -1034,29 +1136,13 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         const SizedBox(height: 24),
         Divider(color: Theme.of(context).dividerColor),
         const SizedBox(height: 12),
-        if (_financialLoaded)
-          DynamicListField(
-            title: 'Pengeluaran Operasional',
-            fields: [
-              DynamicFieldConfig(key: 'proses', label: 'Keterangan Pengeluaran', type: DynamicFieldType.text),
-              DynamicFieldConfig(key: 'tanggal', label: 'Tanggal', type: DynamicFieldType.date),
-              DynamicFieldConfig(key: 'amount', label: 'Nominal Pengeluaran', type: DynamicFieldType.number),
-            ],
-            initialRows: _expenseRows,
-            onChanged: (rows) => setState(() => _expenseRows = rows),
-          ),
-        const SizedBox(height: 24),
-        Divider(color: Theme.of(context).dividerColor),
-        const SizedBox(height: 12),
+
         _buildLabel(context, 'Catatan/Kendala'),
         TextField(
           controller: _noteController,
           maxLines: 3,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Theme.of(context).cardColor,
-            border: InputBorder.none,
-          ),
+          style: const TextStyle(fontSize: 14),
+          decoration: _compactInputDecoration('Catatan'),
         ),
         const SizedBox(height: 20),
         Container(
@@ -1067,11 +1153,25 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           ),
           child: Column(
             children: [
-              _summaryRow(context, 'Kesepakatan Biaya', _parseAmount(_kesepakatanBiayaController.text), isBold: true),
-              _summaryRow(context, 'Total Dibayar Pemohon', _totalPemohon, isBold: true),
-              _summaryRow(context, 'Total Pengeluaran', _totalPengeluaran, isBold: true),
+              _summaryRow(
+                context,
+                'Kesepakatan Biaya',
+                _parseAmount(_kesepakatanBiayaController.text),
+                isBold: true,
+              ),
+              _summaryRow(
+                context,
+                'Total Dibayar Pemohon',
+                _totalPemohon,
+                isBold: true,
+              ),
               const Divider(),
-              _summaryRow(context, 'Kurang Bayar', _parseAmount(_kesepakatanBiayaController.text) - _totalPemohon, isBold: true),
+              _summaryRow(
+                context,
+                'Kurang Bayar',
+                _parseAmount(_kesepakatanBiayaController.text) - _totalPemohon,
+                isBold: true,
+              ),
             ],
           ),
         ),
@@ -1079,12 +1179,16 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
     );
   }
 
-  Widget _buildDateTile(BuildContext context, String? value, void Function(String) onPicked) {
+  Widget _buildDateTile(
+    BuildContext context,
+    String? value,
+    void Function(String) onPicked,
+  ) {
     return InkWell(
       onTap: () => _pickDate((v) => onPicked(v)),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,
@@ -1095,16 +1199,24 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           children: [
             Text(
               value ?? 'Pilih tanggal',
-              style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
+              style: TextStyle(
+                fontSize: 13,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
+              ),
             ),
-            const Icon(Icons.calendar_today, size: 18),
+            const Icon(Icons.calendar_today, size: 16),
           ],
         ),
       ),
     );
   }
 
-  Widget _summaryRow(BuildContext context, String label, double value, {bool isBold = false}) {
+  Widget _summaryRow(
+    BuildContext context,
+    String label,
+    double value, {
+    bool isBold = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -1114,6 +1226,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
             label,
             style: TextStyle(
               fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+              fontSize: 13,
               color: Theme.of(context).textTheme.bodyLarge?.color,
             ),
           ),
@@ -1121,7 +1234,10 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
             _rupiah.format(value < 0 ? 0 : value),
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: isBold ? Theme.of(context).colorScheme.primary : Theme.of(context).textTheme.bodyLarge?.color,
+              fontSize: 14,
+              color: isBold
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).textTheme.bodyLarge?.color,
             ),
           ),
         ],
@@ -1131,12 +1247,13 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
 
   Widget _buildLabel(BuildContext context, String text) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.only(top: 12, bottom: 6),
       child: Text(
         text,
-        style: TextStyle(
+        style: const TextStyle(
           fontWeight: FontWeight.bold,
-          color: Theme.of(context).textTheme.bodyLarge?.color,
+          fontSize: 13,
+          color: Colors.black54,
         ),
       ),
     );
