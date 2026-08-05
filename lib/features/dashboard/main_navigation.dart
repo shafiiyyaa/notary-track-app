@@ -17,8 +17,6 @@ class _MainNavigationState extends State<MainNavigation> {
   final GlobalKey<DocumentListScreenState> _documentListKey =
       GlobalKey<DocumentListScreenState>();
 
-  // Urutan WAJIB SAMA dengan urutan nav item di bawah:
-  // 0 = Home, 1 = PIC, 2 = Pekerjaan, 3 = Akun
   late final List<Widget> _screens = [
     const HomeScreen(),
     const PicScreen(),
