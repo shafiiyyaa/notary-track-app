@@ -1,10 +1,21 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-  <uses-permission android:name="android.permission.INTERNET"/>
-  <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-  <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
-  <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
-  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <!-- IZIN INTERNET & JARINGAN -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- IZIN NOTIFIKASI & ALARM (PENTING UNTUK ANDROID 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
+    
+    <!-- IZIN BANGUNKAN HP DARI MODE TIDUR (PENTING BIAR NOTIF GK KE-BLOCK) -->
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    
+    <!-- IZIN GETAR (VIBRATE) -->
+    <uses-permission android:name="android.permission.VIBRATE"/>
+
+    <!-- IZIN AUTO START SETELAH HP RESTART -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
     <application
         android:label="notarytrackapp"
@@ -30,8 +41,10 @@
             </intent-filter>
         </activity>
         
-        <!-- TAMBAHAN PENTING UNTUK NOTIFIKASI: RECEIVER ALARM -->
+        <!-- RECEIVER UNTUK JADWAL NOTIFIKASI -->
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
+        
+        <!-- RECEIVER UNTUK MENGULANGI JADWAL SETELAH HP DI-RESTART -->
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>

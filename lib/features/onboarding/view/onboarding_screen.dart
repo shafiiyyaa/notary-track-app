@@ -92,57 +92,52 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 itemBuilder: (context, index) {
                   final item = _onboardingData[index];
 
-                  // ⚡ BUNGKUS DENGAN SingleChildScrollView BIAR GA OVERFLOW
-                  return SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 30),
-                      child: Column(
-                        // mainAxisAlignment dihapus agar bisa scroll dengan baik
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          SizedBox(height: MediaQuery.of(context).size.height * 0.05),
-                          
-                          /// Illustration (Dikecilin biar muat)
-                          SizedBox(
-                            width: 260, 
-                            height: 260,
+                  // ⚡ BUNGKUS DENGAN PADDING & COLUMN PUSAT
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 30),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center, // Menyesuaikan secara vertikal ke tengah
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        /// Illustration (Dibuat Flexible biar auto mengecil jika layar kecil)
+                        Flexible(
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 30),
                             child: Image.asset(
                               item["image"]!,
                               fit: BoxFit.contain,
                             ),
                           ),
-                          const SizedBox(height: 28),
+                        ),
 
-                          /// Title
-                          Text(
-                            item["title"]!,
+                        /// Title
+                        Text(
+                          item["title"]!,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.comfortaa(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w700,
+                            height: 1.3,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+
+                        /// Description
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Text(
+                            item["desc"]!,
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.comfortaa(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w700,
-                              height: 1.3,
-                              color: Theme.of(context).colorScheme.primary,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 15,
+                              height: 1.7,
+                              fontWeight: FontWeight.w500,
+                              color: Theme.of(context).textTheme.bodyMedium?.color,
                             ),
                           ),
-                          const SizedBox(height: 18),
-
-                          /// Description
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            child: Text(
-                              item["desc"]!,
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 15,
-                                height: 1.7,
-                                fontWeight: FontWeight.w500,
-                                color: Theme.of(context).textTheme.bodyMedium?.color,
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: MediaQuery.of(context).size.height * 0.05),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   );
                 },

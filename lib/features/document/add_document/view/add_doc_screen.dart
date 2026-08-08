@@ -60,15 +60,20 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
   String? _uangMukaTanggal;
   DateTime? _deadlineDateTime;
 
-  List<Map<String, dynamic>> _incomeDetailRows = [];
-  List<Map<String, dynamic>> _expenseRows = [];
+  final List<Map<String, dynamic>> _incomeDetailRows = [];
+  final List<Map<String, dynamic>> _expenseRows = [];
   final List<RequiredDoc> _requiredDocs = [];
 
   List<Map<String, dynamic>> _documentTypes = [];
   int? _selectedDocumentTypeId;
 
   String? _selectedKategori;
-  final List<String> _kategoriList = ['Notaris', 'PPAT', 'Waarmerking', 'Legalisasi'];
+  final List<String> _kategoriList = [
+    'Notaris',
+    'PPAT',
+    'Waarmerking',
+    'Legalisasi',
+  ];
 
   List<Map<String, dynamic>> _staffList = [];
   String? _selectedStaffId;
@@ -78,7 +83,11 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
 
   bool _isLoading = false;
   late AddDocPresenter _presenter;
-  final _rupiah = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+  final _rupiah = NumberFormat.currency(
+    locale: 'id_ID',
+    symbol: 'Rp ',
+    decimalDigits: 0,
+  );
 
   final _pageController = PageController();
   int _currentStep = 0;
@@ -129,16 +138,16 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
   double get _uangMukaJumlah => _parseAmount(_uangMukaJumlahController.text);
 
   double get _totalIncomeDetails => _incomeDetailRows.fold(
-        0,
-        (sum, r) => sum + ((r['amount'] as num?)?.toDouble() ?? 0),
-      );
+    0,
+    (sum, r) => sum + ((r['amount'] as num?)?.toDouble() ?? 0),
+  );
 
   double get _totalPemohon => _uangMukaJumlah + _totalIncomeDetails;
 
   double get _totalPengeluaran => _expenseRows.fold(
-        0,
-        (sum, r) => sum + ((r['amount'] as num?)?.toDouble() ?? 0),
-      );
+    0,
+    (sum, r) => sum + ((r['amount'] as num?)?.toDouble() ?? 0),
+  );
 
   bool get _hasFinanceData => _uangMukaJumlah > 0 || _totalIncomeDetails > 0;
 
@@ -198,7 +207,9 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
   @override
   void onSaveError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _pickDate(void Function(String) onPicked) async {
@@ -225,11 +236,21 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
     if (pickedDate == null) return;
     if (!mounted) return;
 
+    // ⚡ FIX: pakai mode input angka (bukan jam analog) supaya lebih gampang
+    // dan presisi milih menit deadline. User tetap bisa switch ke mode dial
+    // lewat ikon jam di pojok kiri bawah dialog kalau mau.
     final pickedTime = await showTimePicker(
       context: context,
       initialTime: _deadlineDateTime != null
           ? TimeOfDay.fromDateTime(_deadlineDateTime!)
           : const TimeOfDay(hour: 8, minute: 0),
+      initialEntryMode: TimePickerEntryMode.input,
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: child!,
+        );
+      },
     );
     if (pickedTime == null) return;
 
@@ -243,12 +264,17 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
 
     setState(() {
       _deadlineDateTime = combined;
-      _deadlineController.text = DateFormat('dd MMMM yyyy, HH:mm', 'id_ID').format(combined);
+      _deadlineController.text = DateFormat(
+        'dd MMMM yyyy, HH:mm',
+        'id_ID',
+      ).format(combined);
     });
   }
 
   void _showSnack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   bool _validateStep(int step) {
@@ -257,7 +283,8 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
         _showSnack('Pilih klien dulu');
         return false;
       }
-      if (_phoneController.text.length < 10 || _phoneController.text.length > 13) {
+      if (_phoneController.text.length < 10 ||
+          _phoneController.text.length > 13) {
         _showSnack('Nomor telepon harus terdiri dari 10-13 digit');
         return false;
       }
@@ -310,14 +337,21 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
     if (!_validateStep(0) || !_validateStep(1)) return;
 
     String dokumenDibutuhkan = _requiredDocs.map((d) => d.name).join('\n');
-    String dokumenDiterima = _requiredDocs.where((d) => d.isReceived).map((d) => d.name).join('\n');
+    String dokumenDiterima = _requiredDocs
+        .where((d) => d.isReceived)
+        .map((d) => d.name)
+        .join('\n');
 
     _presenter.saveDocument(
       clientId: _selectedClientId!,
       phone: _phoneController.text,
       documentTypeId: _selectedDocumentTypeId!,
       kategori: _selectedKategori!,
-      deadline: _deadlineDateTime!.toIso8601String(),
+      // ⚡ FIX UTAMA: WAJIB .toUtc() supaya konsisten dengan edit_document_view.dart.
+      // Tanpa ini, Supabase (kolom timestamptz) menyimpan jam yang dipilih user
+      // (mis. 11:05 WIB) sebagai 11:05 UTC = 18:05 WIB -> deadline "mundur" 7 jam
+      // sehingga status "Terlambat" telat terdeteksi.
+      deadline: _deadlineDateTime!.toUtc().toIso8601String(),
       staffId: _selectedStaffId!,
       note: _noteController.text,
       kesepakatanBiaya: _parseAmount(_kesepakatanBiayaController.text),
@@ -326,9 +360,13 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
       keteranganKeuangan: _noteController.text,
       incomeDetails: _incomeDetailRows,
       expenses: _expenseRows,
-      tanggalMasuk: _tanggalMasukController.text.isEmpty ? null : _tanggalMasukController.text,
+      tanggalMasuk: _tanggalMasukController.text.isEmpty
+          ? null
+          : _tanggalMasukController.text,
       uraianSingkat: _uraianSingkatController.text,
-      nomorDokumen: _nomorDokumenController.text.isEmpty ? null : _nomorDokumenController.text,
+      nomorDokumen: _nomorDokumenController.text.isEmpty
+          ? null
+          : _nomorDokumenController.text,
       dokumenDibutuhkan: dokumenDibutuhkan,
       dokumenDiterima: dokumenDiterima,
       statusPembayaran: _autoStatusPembayaran,
@@ -428,7 +466,10 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isActive ? primary : Theme.of(context).cardColor,
-                  border: Border.all(color: isActive ? primary : inactiveColor, width: 2),
+                  border: Border.all(
+                    color: isActive ? primary : inactiveColor,
+                    width: 2,
+                  ),
                 ),
                 alignment: Alignment.center,
                 child: isDone
@@ -436,7 +477,9 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
                     : Text(
                         '${stepIndex + 1}',
                         style: TextStyle(
-                          color: isActive ? Colors.white : Theme.of(context).textTheme.bodyMedium?.color,
+                          color: isActive
+                              ? Colors.white
+                              : Theme.of(context).textTheme.bodyMedium?.color,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -449,8 +492,12 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 11,
-                    fontWeight: stepIndex == _currentStep ? FontWeight.bold : FontWeight.normal,
-                    color: isActive ? primary : Theme.of(context).textTheme.bodySmall?.color,
+                    fontWeight: stepIndex == _currentStep
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                    color: isActive
+                        ? primary
+                        : Theme.of(context).textTheme.bodySmall?.color,
                   ),
                 ),
               ),
@@ -492,15 +539,26 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
                 onPressed: _isLoading ? null : _prevStep,
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  side: BorderSide(color: Theme.of(context).colorScheme.primary),
+                  side: BorderSide(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 ),
-                child: Text('Kembali', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+                child: Text(
+                  'Kembali',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
               ),
             ),
           if (_currentStep > 0) const SizedBox(width: 12),
           Expanded(
             child: ElevatedButton(
-              onPressed: _isLoading ? null : (_currentStep < _stepTitles.length - 1 ? _nextStep : _submit),
+              onPressed: _isLoading
+                  ? null
+                  : (_currentStep < _stepTitles.length - 1
+                        ? _nextStep
+                        : _submit),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -509,10 +567,15 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
                   ? const SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
                     )
                   : Text(
-                      _currentStep < _stepTitles.length - 1 ? 'Lanjut' : 'Simpan Dokumen',
+                      _currentStep < _stepTitles.length - 1
+                          ? 'Lanjut'
+                          : 'Simpan Dokumen',
                       style: const TextStyle(color: Colors.white),
                     ),
             ),
@@ -533,15 +596,24 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
           menuMaxHeight: 250, // ⚡ BATAS TINGGI DROPDOWN
           decoration: _compactInputDecoration('Pilih klien'),
           items: _clientList
-              .map((c) => DropdownMenuItem<String>(
-                    value: c['id'].toString(),
-                    child: Text(c['name'] ?? '', style: const TextStyle(fontSize: 14)),
-                  ))
+              .map(
+                (c) => DropdownMenuItem<String>(
+                  value: c['id'].toString(),
+                  child: Text(
+                    c['name'] ?? '',
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ),
+              )
               .toList(),
           onChanged: (value) => setState(() => _selectedClientId = value),
         ),
         _buildLabel(context, 'Tanggal Masuk'),
-        _buildDateTile(context, _tanggalMasukController.text, (v) => setState(() => _tanggalMasukController.text = v)),
+        _buildDateTile(
+          context,
+          _tanggalMasukController.text,
+          (v) => setState(() => _tanggalMasukController.text = v),
+        ),
         _buildLabel(context, 'Nomor Telepon'),
         TextField(
           controller: _phoneController,
@@ -552,11 +624,14 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
             LengthLimitingTextInputFormatter(13),
           ],
           onChanged: (val) => setState(() {}),
-          decoration: _compactInputDecoration('10-13 digit nomor telepon').copyWith(
-            errorText: (_phoneController.text.isNotEmpty && _phoneController.text.length < 10)
-                ? 'Nomor telepon minimal 10 digit'
-                : null,
-          ),
+          decoration: _compactInputDecoration('10-13 digit nomor telepon')
+              .copyWith(
+                errorText:
+                    (_phoneController.text.isNotEmpty &&
+                        _phoneController.text.length < 10)
+                    ? 'Nomor telepon minimal 10 digit'
+                    : null,
+              ),
         ),
       ],
     );
@@ -572,7 +647,14 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
           isExpanded: true,
           menuMaxHeight: 250, // ⚡ BATAS TINGGI DROPDOWN
           decoration: _compactInputDecoration('Pilih kategori'),
-          items: _kategoriList.map((k) => DropdownMenuItem<String>(value: k, child: Text(k, style: const TextStyle(fontSize: 14)))).toList(),
+          items: _kategoriList
+              .map(
+                (k) => DropdownMenuItem<String>(
+                  value: k,
+                  child: Text(k, style: const TextStyle(fontSize: 14)),
+                ),
+              )
+              .toList(),
           onChanged: (value) => setState(() => _selectedKategori = value),
         ),
         _buildLabel(context, 'Jenis Dokumen'),
@@ -582,7 +664,15 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
           menuMaxHeight: 250, // ⚡ BATAS TINGGI DROPDOWN
           decoration: _compactInputDecoration('Pilih jenis dokumen'),
           items: _documentTypes
-              .map((doc) => DropdownMenuItem<int>(value: doc['id'], child: Text(doc['name'], style: const TextStyle(fontSize: 14))))
+              .map(
+                (doc) => DropdownMenuItem<int>(
+                  value: doc['id'],
+                  child: Text(
+                    doc['name'],
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ),
+              )
               .toList(),
           onChanged: (value) => setState(() => _selectedDocumentTypeId = value),
         ),
@@ -607,7 +697,15 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
           menuMaxHeight: 250, // ⚡ BATAS TINGGI DROPDOWN
           decoration: _compactInputDecoration('Pilih staff'),
           items: _staffList
-              .map((staff) => DropdownMenuItem<String>(value: staff['id'], child: Text(staff['name'], style: const TextStyle(fontSize: 14))))
+              .map(
+                (staff) => DropdownMenuItem<String>(
+                  value: staff['id'],
+                  child: Text(
+                    staff['name'],
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ),
+              )
               .toList(),
           onChanged: (value) => setState(() => _selectedStaffId = value),
         ),
@@ -625,7 +723,11 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
             children: [
               Text(
                 'Status otomatis: $_autoStatus',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.green),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: Colors.green,
+                ),
               ),
               const Icon(Icons.auto_awesome, size: 16, color: Colors.green),
             ],
@@ -636,7 +738,9 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
           'Status dihitung otomatis berdasarkan data dokumen & keuangan yang sudah diisi.',
           style: TextStyle(
             fontSize: 11,
-            color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+            color: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
           ),
         ),
         const SizedBox(height: 10),
@@ -645,9 +749,9 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
           controller: _deadlineController,
           readOnly: true,
           style: const TextStyle(fontSize: 14),
-          decoration: _compactInputDecoration('Pilih tanggal & jam deadline').copyWith(
-            suffixIcon: const Icon(Icons.event, size: 18),
-          ),
+          decoration: _compactInputDecoration(
+            'Pilih tanggal & jam deadline',
+          ).copyWith(suffixIcon: const Icon(Icons.event, size: 18)),
           onTap: _pickDeadlineDateTime,
         ),
         const SizedBox(height: 16),
@@ -658,7 +762,9 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
           'Tambahkan dokumen yang dibutuhkan, lalu centang jika sudah diterima.',
           style: TextStyle(
             fontSize: 11,
-            color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+            color: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
           ),
         ),
         const SizedBox(height: 8),
@@ -680,11 +786,16 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
               ),
             ),
             IconButton(
-              icon: Icon(Icons.add_circle, color: Theme.of(context).colorScheme.primary),
+              icon: Icon(
+                Icons.add_circle,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               onPressed: () {
                 if (_newDocController.text.trim().isNotEmpty) {
                   setState(() {
-                    _requiredDocs.add(RequiredDoc(_newDocController.text.trim()));
+                    _requiredDocs.add(
+                      RequiredDoc(_newDocController.text.trim()),
+                    );
                     _newDocController.clear();
                   });
                 }
@@ -694,17 +805,25 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
         ),
         const SizedBox(height: 12),
         _requiredDocs.isEmpty
-            ? Text('Belum ada dokumen dibutuhkan.', style: TextStyle(fontSize: 12, color: Colors.grey))
+            ? Text(
+                'Belum ada dokumen dibutuhkan.',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              )
             : Column(
                 children: _requiredDocs.map((doc) {
                   return Container(
                     margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: doc.isReceived ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                        color: doc.isReceived
+                            ? Theme.of(context).colorScheme.primary
+                            : Colors.transparent,
                         width: 1.5,
                       ),
                     ),
@@ -712,7 +831,8 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
                       children: [
                         Checkbox(
                           value: doc.isReceived,
-                          onChanged: (val) => setState(() => doc.isReceived = val ?? false),
+                          onChanged: (val) =>
+                              setState(() => doc.isReceived = val ?? false),
                           activeColor: Theme.of(context).colorScheme.primary,
                         ),
                         Expanded(
@@ -720,14 +840,25 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
                             doc.name,
                             style: TextStyle(
                               fontSize: 13,
-                              decoration: doc.isReceived ? TextDecoration.lineThrough : TextDecoration.none,
-                              color: doc.isReceived ? Colors.grey : Theme.of(context).textTheme.bodyLarge?.color,
+                              decoration: doc.isReceived
+                                  ? TextDecoration.lineThrough
+                                  : TextDecoration.none,
+                              color: doc.isReceived
+                                  ? Colors.grey
+                                  : Theme.of(
+                                      context,
+                                    ).textTheme.bodyLarge?.color,
                             ),
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close, size: 18, color: Colors.red),
-                          onPressed: () => setState(() => _requiredDocs.remove(doc)),
+                          icon: const Icon(
+                            Icons.close,
+                            size: 18,
+                            color: Colors.red,
+                          ),
+                          onPressed: () =>
+                              setState(() => _requiredDocs.remove(doc)),
                         ),
                       ],
                     ),
@@ -749,7 +880,9 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
           style: const TextStyle(fontSize: 14),
           inputFormatters: [CurrencyInputFormatter()],
           onChanged: (_) => setState(() {}),
-          decoration: _compactInputDecoration('Nominal kesepakatan awal dengan klien'),
+          decoration: _compactInputDecoration(
+            'Nominal kesepakatan awal dengan klien',
+          ),
         ),
         _buildLabel(context, 'Status Pembayaran'),
         Container(
@@ -764,9 +897,17 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
             children: [
               Text(
                 'Status otomatis: $_autoStatusPembayaran',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.green),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: Colors.green,
+                ),
               ),
-              const Icon(Icons.monetization_on_outlined, size: 16, color: Colors.green),
+              const Icon(
+                Icons.monetization_on_outlined,
+                size: 16,
+                color: Colors.green,
+              ),
             ],
           ),
         ),
@@ -775,7 +916,9 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
           'Status pembayaran dihitung otomatis berdasarkan total uang masuk pemohon vs kesepakatan biaya.',
           style: TextStyle(
             fontSize: 11,
-            color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+            color: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
           ),
         ),
         const SizedBox(height: 20),
@@ -791,7 +934,11 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
         ),
         const SizedBox(height: 12),
         _buildLabel(context, 'Uang Muka - Tanggal'),
-        _buildDateTile(context, _uangMukaTanggal, (v) => setState(() => _uangMukaTanggal = v)),
+        _buildDateTile(
+          context,
+          _uangMukaTanggal,
+          (v) => setState(() => _uangMukaTanggal = v),
+        ),
         _buildLabel(context, 'Uang Muka - Nominal Pembayaran'),
         TextField(
           controller: _uangMukaJumlahController,
@@ -813,11 +960,19 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
             children: [
               Text(
                 'Total Uang Masuk Pemohon',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Theme.of(context).textTheme.bodyLarge?.color),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                ),
               ),
               Text(
                 _rupiah.format(_totalPemohon),
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Theme.of(context).colorScheme.primary),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               ),
             ],
           ),
@@ -861,11 +1016,18 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
           child: TextButton.icon(
             onPressed: () {
               setState(() {
-                _incomeDetailRows.add({'tanggal': null, 'label': '', 'amount': 0});
+                _incomeDetailRows.add({
+                  'tanggal': null,
+                  'label': '',
+                  'amount': 0,
+                });
               });
             },
             icon: Icon(Icons.add, color: Theme.of(context).colorScheme.primary),
-            label: Text('Tambah Pembayaran', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+            label: Text(
+              'Tambah Pembayaran',
+              style: TextStyle(color: Theme.of(context).colorScheme.primary),
+            ),
           ),
         ),
         const SizedBox(height: 24),
@@ -911,7 +1073,10 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
               });
             },
             icon: Icon(Icons.add, color: Theme.of(context).colorScheme.primary),
-            label: Text('Tambah Pengeluaran', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+            label: Text(
+              'Tambah Pengeluaran',
+              style: TextStyle(color: Theme.of(context).colorScheme.primary),
+            ),
           ),
         ),
         const SizedBox(height: 24),
@@ -933,11 +1098,31 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
           ),
           child: Column(
             children: [
-              _summaryRow(context, 'Kesepakatan Biaya', _parseAmount(_kesepakatanBiayaController.text), isBold: true),
-              _summaryRow(context, 'Total Dibayar Pemohon', _totalPemohon, isBold: true),
-              _summaryRow(context, 'Total Pengeluaran', _totalPengeluaran, isBold: true),
+              _summaryRow(
+                context,
+                'Kesepakatan Biaya',
+                _parseAmount(_kesepakatanBiayaController.text),
+                isBold: true,
+              ),
+              _summaryRow(
+                context,
+                'Total Dibayar Pemohon',
+                _totalPemohon,
+                isBold: true,
+              ),
+              _summaryRow(
+                context,
+                'Total Pengeluaran',
+                _totalPengeluaran,
+                isBold: true,
+              ),
               const Divider(),
-              _summaryRow(context, 'Kurang Bayar', _parseAmount(_kesepakatanBiayaController.text) - _totalPemohon, isBold: true),
+              _summaryRow(
+                context,
+                'Kurang Bayar',
+                _parseAmount(_kesepakatanBiayaController.text) - _totalPemohon,
+                isBold: true,
+              ),
             ],
           ),
         ),
@@ -945,7 +1130,11 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
     );
   }
 
-  Widget _buildDateTile(BuildContext context, String? value, void Function(String) onPicked) {
+  Widget _buildDateTile(
+    BuildContext context,
+    String? value,
+    void Function(String) onPicked,
+  ) {
     return InkWell(
       onTap: () => _pickDate((v) => onPicked(v)),
       child: Container(
@@ -961,7 +1150,10 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
           children: [
             Text(
               value ?? 'Pilih tanggal',
-              style: TextStyle(fontSize: 13, color: Theme.of(context).textTheme.bodyLarge?.color),
+              style: TextStyle(
+                fontSize: 13,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
+              ),
             ),
             const Icon(Icons.calendar_today, size: 16),
           ],
@@ -970,7 +1162,12 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
     );
   }
 
-  Widget _summaryRow(BuildContext context, String label, double value, {bool isBold = false}) {
+  Widget _summaryRow(
+    BuildContext context,
+    String label,
+    double value, {
+    bool isBold = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -989,7 +1186,9 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 14,
-              color: isBold ? Theme.of(context).colorScheme.primary : Theme.of(context).textTheme.bodyLarge?.color,
+              color: isBold
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).textTheme.bodyLarge?.color,
             ),
           ),
         ],
@@ -1041,9 +1240,11 @@ class _DynamicFinanceRowState extends State<_DynamicFinanceRow> {
   void initState() {
     super.initState();
     _descController = TextEditingController(
-      text: widget.isExpense ? (widget.data['proses'] ?? '') : (widget.data['label'] ?? ''),
+      text: widget.isExpense
+          ? (widget.data['proses'] ?? '')
+          : (widget.data['label'] ?? ''),
     );
-    
+
     final amount = widget.data['amount'];
     if (amount != null && amount != 0) {
       _amountController = TextEditingController(
@@ -1052,7 +1253,7 @@ class _DynamicFinanceRowState extends State<_DynamicFinanceRow> {
     } else {
       _amountController = TextEditingController(text: '');
     }
-    
+
     _date = widget.data['tanggal'];
   }
 
@@ -1064,7 +1265,11 @@ class _DynamicFinanceRowState extends State<_DynamicFinanceRow> {
       data['label'] = _descController.text;
     }
     data['tanggal'] = _date;
-    data['amount'] = double.tryParse(_amountController.text.replaceAll('.', '').replaceAll(',', '.')) ?? 0;
+    data['amount'] =
+        double.tryParse(
+          _amountController.text.replaceAll('.', '').replaceAll(',', '.'),
+        ) ??
+        0;
     widget.onChanged(data);
   }
 
@@ -1077,7 +1282,8 @@ class _DynamicFinanceRowState extends State<_DynamicFinanceRow> {
     );
     if (picked != null) {
       setState(() {
-        _date = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+        _date =
+            "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
         _updateData();
       });
     }
@@ -1099,15 +1305,25 @@ class _DynamicFinanceRowState extends State<_DynamicFinanceRow> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              widget.isExpense ? 'Pengeluaran ${widget.index + 1}' : 'Pembayaran ${widget.index + 1}',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black54),
+              widget.isExpense
+                  ? 'Pengeluaran ${widget.index + 1}'
+                  : 'Pembayaran ${widget.index + 1}',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: Colors.black54,
+              ),
             ),
             IconButton(
-              icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+              icon: const Icon(
+                Icons.delete_outline,
+                size: 20,
+                color: Colors.red,
+              ),
               onPressed: widget.onRemove,
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
-            )
+            ),
           ],
         ),
         const SizedBox(height: 8),
@@ -1138,7 +1354,10 @@ class _DynamicFinanceRowState extends State<_DynamicFinanceRow> {
               children: [
                 Text(
                   _date ?? 'Pilih tanggal',
-                  style: TextStyle(fontSize: 13, color: Theme.of(context).textTheme.bodyLarge?.color),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                  ),
                 ),
                 const Icon(Icons.calendar_today, size: 16),
               ],
@@ -1167,8 +1386,13 @@ class _DynamicFinanceRowState extends State<_DynamicFinanceRow> {
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide.none,
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            hintText: widget.isExpense ? 'Masukkan keterangan pengeluaran' : 'Masukkan keterangan',
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 10,
+            ),
+            hintText: widget.isExpense
+                ? 'Masukkan keterangan pengeluaran'
+                : 'Masukkan keterangan',
             isDense: true,
           ),
           onChanged: (val) => _updateData(),
@@ -1198,7 +1422,10 @@ class _DynamicFinanceRowState extends State<_DynamicFinanceRow> {
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide.none,
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 10,
+            ),
             hintText: '0',
             isDense: true,
           ),

@@ -13,15 +13,25 @@ class NotificationPresenter {
 
   NotificationPresenter(this._view);
 
-  // ⚡ FUNGSI BANTU: Parse waktu dari Supabase supaya jamnya sesuai WIB (tidak +7 jam)
+  // ⚡ FUNGSI BANTU: Parse waktu dari Supabase (timestamptz) ke waktu lokal device.
+  // Catatan: ini hanya benar kalau timezone HP sudah WIB. Kalau butuh independen
+  // dari setting device, sebaiknya pakai package `timezone` (tz.TZDateTime) yang
+  // sudah dipakai di NotificationService, bukan .toLocal() bawaan Dart.
   DateTime _parseTz(dynamic input) {
     if (input == null) return DateTime.now();
-    String str = input.toString();
-    DateTime dt = DateTime.parse(str);
-    if (str.contains('Z') || str.contains('+00:00')) {
-      return DateTime(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second);
-    }
-    return dt;
+    return DateTime.parse(input.toString()).toLocal();
+  }
+
+  // ⚡ FIX: hitung sisa hari berdasarkan SELISIH TANGGAL KALENDER, bukan selisih
+  // durasi mentah (.inDays). Sebelumnya, "besok jam 08:00" yang baru berjarak
+  // ~20 jam dari sekarang bisa kebulat jadi 0 hari ("Hari Ini") padahal
+  // seharusnya H-1. Dengan cara ini, begitu tanggalnya beda, langsung dianggap
+  // beda hari terlepas dari jam berapa sekarang.
+  int _calcRemainingDays(DateTime target) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final targetDate = DateTime(target.year, target.month, target.day);
+    return targetDate.difference(today).inDays;
   }
 
   Future<void> loadNotifications() async {
@@ -36,9 +46,8 @@ class NotificationPresenter {
           .order('deadline', ascending: true);
 
       for (final item in docResponse) {
-        // ⚡ GUNAKAN FUNGSI WIB DI SINI
         final deadline = _parseTz(item['deadline']);
-        final remainingDays = deadline.difference(DateTime.now()).inDays;
+        final remainingDays = _calcRemainingDays(deadline);
 
         final docId = item['id'] as int;
         final status = item['status'] ?? 'Belum Diproses';
@@ -54,7 +63,7 @@ class NotificationPresenter {
           docId: docId,
           clientName: clientName,
           documentType: documentType,
-          deadline: deadline, // ⚡ Sekarang sudah WIB
+          deadline: deadline,
         );
 
         final key = NotificationDismissService.buildKey(
@@ -88,9 +97,8 @@ class NotificationPresenter {
           .order('scheduled_at', ascending: true);
 
       for (final item in manualResponse) {
-        // ⚡ GUNAKAN FUNGSI WIB DI SINI JUGA
         final schedDate = _parseTz(item['scheduled_at']);
-        final remainingDays = schedDate.difference(DateTime.now()).inDays;
+        final remainingDays = _calcRemainingDays(schedDate);
         final location = item['location'] ?? '';
         final notifIdInDb = item['id'] as int;
 
@@ -109,7 +117,7 @@ class NotificationPresenter {
               clientName: item['clients']?['name'] ?? '',
               location: location,
               message: item['message'] ?? '',
-              appointmentTime: schedDate, // ⚡ Sekarang sudah WIB
+              appointmentTime: schedDate,
             );
           }
 

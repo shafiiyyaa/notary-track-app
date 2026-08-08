@@ -44,15 +44,41 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
     }
 
     try {
+      // 1. Fetch documents utama
       final response = await _supabase
           .from('documents')
           .select('*, document_types(name), staff(name)')
           .eq('client_id', clientId)
           .order('deadline', ascending: false);
 
+      final documents = List<Map<String, dynamic>>.from(response);
+
+      // 2. Fetch SEMUA income_details untuk dokumen2 klien ini SEKALI saja (efficient)
+      final docIds = documents.map((d) => d['id'].toString()).toList();
+      Map<String, double> incomeByDoc = {};
+
+      if (docIds.isNotEmpty) {
+        final incomeResponse = await _supabase
+            .from('document_income_details')
+            .select('document_id, amount')
+            .inFilter('document_id', docIds);
+
+        for (var item in incomeResponse) {
+          final docId = item['document_id'].toString();
+          final amount = (item['amount'] as num?)?.toDouble() ?? 0;
+          incomeByDoc[docId] = (incomeByDoc[docId] ?? 0) + amount;
+        }
+      }
+
+      // 3. Inject total income tambahan ke setiap map dokumen
+      for (var doc in documents) {
+        final docId = doc['id'].toString();
+        doc['_extra_income'] = incomeByDoc[docId] ?? 0.0;
+      }
+
       if (!mounted) return;
       setState(() {
-        _myDocuments = List<Map<String, dynamic>>.from(response);
+        _myDocuments = documents;
         _isLoading = false;
       });
     } catch (e) {
@@ -188,7 +214,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       final kesepakatan = (doc['kesepakatan_biaya'] as num?)?.toDouble() ?? 0;
       final uangMuka = (doc['uang_muka_jumlah'] as num?)?.toDouble() ?? 0;
       final tambahan = (doc['tambahan_jumlah'] as num?)?.toDouble() ?? 0;
-      final sisaTagihan = kesepakatan - (uangMuka + tambahan);
+      final extraIncome = (doc['_extra_income'] as num?)?.toDouble() ?? 0;
+      final totalDibayar = uangMuka + tambahan + extraIncome;
+      final sisaTagihan = kesepakatan - totalDibayar;
 
       if (kesepakatan > 0 && sisaTagihan > 0) {
         belumLunas.add('$docType • ${_rupiah.format(sisaTagihan)}');
@@ -268,7 +296,12 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                                           (doc['tambahan_jumlah'] as num?)
                                               ?.toDouble() ??
                                           0;
-                                      final totalDibayar = uangMuka + tambahan;
+                                      final extraIncome =
+                                          (doc['_extra_income'] as num?)
+                                              ?.toDouble() ??
+                                          0;
+                                      final totalDibayar =
+                                          uangMuka + tambahan + extraIncome;
                                       final sisaTagihan =
                                           kesepakatan - totalDibayar;
 

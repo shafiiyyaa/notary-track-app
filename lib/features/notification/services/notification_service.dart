@@ -14,13 +14,11 @@ void notificationTapBackgroundHandler(NotificationResponse response) {
 }
 
 class NotificationService {
-  static final NotificationService _instance =
-      NotificationService._internal();
+  static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
   NotificationService._internal();
 
-  final FlutterLocalNotificationsPlugin _plugin =
-      FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
 
   bool _initialized = false;
 
@@ -30,7 +28,6 @@ class NotificationService {
     tzdata.initializeTimeZones();
     tz.setLocalLocation(tz.getLocation('Asia/Jakarta'));
 
-    // ⚡ GANTI: pakai icon notifikasi custom (siluet putih), bukan ic_launcher
     const androidSettings = AndroidInitializationSettings('ic_notification');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
@@ -48,18 +45,15 @@ class NotificationService {
       onDidReceiveBackgroundNotificationResponse: notificationTapBackgroundHandler,
     );
 
+    // Request permissions for Android 13+
     final android = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
 
-    final notifGranted = await android?.requestNotificationsPermission();
-    final exactAlarmGranted = await android?.requestExactAlarmsPermission();
-
-    debugPrint('Notification permission granted: $notifGranted');
-    debugPrint('Exact alarm permission granted: $exactAlarmGranted');
+    await android?.requestNotificationsPermission();
+    await android?.requestExactAlarmsPermission();
 
     _initialized = true;
   }
 
-  // ================= HANDLER TAP NOTIFIKASI =================
   static void _handleTap(NotificationResponse response) {
     final payloadStr = response.payload;
     if (payloadStr == null || payloadStr.isEmpty) return;
@@ -87,7 +81,6 @@ class NotificationService {
     }
   }
 
-  // ================= TES NOTIFIKASI INSTAN =================
   Future<void> showInstantNotification({
     required String title,
     required String body,
@@ -103,7 +96,7 @@ class NotificationService {
           'instant_channel',
           'Tes Instan',
           channelDescription: 'Channel untuk tes instan',
-          icon: 'ic_notification', // ⚡ TAMBAHKAN
+          icon: 'ic_notification',
           importance: Importance.max,
           priority: Priority.high,
           enableVibration: true,
@@ -118,7 +111,6 @@ class NotificationService {
     );
   }
 
-  // ================= JADWALKAN 1 NOTIFIKASI =================
   Future<void> scheduleDeadlineNotification({
     required int id,
     required String title,
@@ -127,7 +119,10 @@ class NotificationService {
     required bool isRing,
     Map<String, dynamic>? payloadData,
   }) async {
-    if (scheduledDate.isBefore(DateTime.now())) {
+    // Konversi ke WIB (Asia/Jakarta)
+    final tz.TZDateTime scheduledTZ = tz.TZDateTime.from(scheduledDate, tz.local);
+
+    if (scheduledTZ.isBefore(tz.TZDateTime.now(tz.local))) {
       debugPrint('SKIP schedule id=$id: waktu ($scheduledDate) sudah lewat');
       return;
     }
@@ -147,7 +142,7 @@ class NotificationService {
         id,
         title,
         body,
-        tz.TZDateTime.from(scheduledDate, tz.local),
+        scheduledTZ,
         NotificationDetails(
           android: AndroidNotificationDetails(
             isRing ? 'ring_channel' : 'deadline_channel',
@@ -155,7 +150,7 @@ class NotificationService {
             channelDescription: isRing
                 ? 'Notifikasi dering saat waktu janji temu / deadline tiba'
                 : 'Notifikasi deadline dokumen dan janji temu',
-            icon: 'ic_notification', // ⚡ TAMBAHKAN
+            icon: 'ic_notification',
             importance: Importance.max,
             priority: Priority.high,
             fullScreenIntent: isRing,
@@ -177,14 +172,13 @@ class NotificationService {
             UILocalNotificationDateInterpretation.absoluteTime,
         payload: payload,
       );
-      debugPrint('OK schedule id=$id "$title" pada $scheduledDate (tz: ${tz.TZDateTime.from(scheduledDate, tz.local)})');
+      debugPrint('OK schedule id=$id "$title" pada $scheduledDate (tz: $scheduledTZ)');
     } catch (e, stack) {
       debugPrint('GAGAL schedule id=$id "$title": $e');
       debugPrint('$stack');
     }
   }
 
-  // ================= JADWALKAN PENGINGAT JANJI TEMU =================
   Future<void> scheduleAppointmentReminders({
     required int baseId,
     required String clientName,
@@ -192,7 +186,6 @@ class NotificationService {
     required String message,
     required DateTime appointmentTime,
   }) async {
-    // Cancel dulu reminders lama supaya tidak dobel/numpuk jadwal lama
     await cancelAppointmentReminders(baseId);
 
     final jamMenit =
@@ -255,31 +248,21 @@ class NotificationService {
     }
   }
 
-  // ================= JADWALKAN DEADLINE DOKUMEN =================
   Future<void> scheduleForDocument({
     required int docId,
     required String clientName,
     required String documentType,
     required DateTime deadline,
   }) async {
-    // Cancel dulu semua jadwal notifikasi lama untuk dokumen ini
     await cancelForDocument(docId);
 
     final jamMenitDeadline =
         "${deadline.hour.toString().padLeft(2, '0')}:${deadline.minute.toString().padLeft(2, '0')}";
 
-    // 1. Reminder harian H-14, H-7, H-3, H-1 (jam 08:00 pagi, sebagai pengingat awal)
     const daysBeforeMilestones = [14, 7, 3, 1];
 
     for (final h in daysBeforeMilestones) {
-      final notifDate = DateTime(
-        deadline.year,
-        deadline.month,
-        deadline.day - h,
-        8,
-        0,
-      );
-
+      final notifDate = DateTime(deadline.year, deadline.month, deadline.day - h, 8, 0);
       await scheduleDeadlineNotification(
         id: _makeId(docId, 'd$h'),
         title: '📌 Deadline Mendekat',
@@ -295,7 +278,6 @@ class NotificationService {
       );
     }
 
-    // 2. Reminder TEPAT pada waktu deadline (hari H, jam sesuai deadline sungguhan)
     await scheduleDeadlineNotification(
       id: _makeId(docId, 'd0'),
       title: '⏰🔔 Deadline Hari Ini!',
@@ -310,7 +292,6 @@ class NotificationService {
       },
     );
 
-    // 3. Reminder 1 jam sebelum waktu deadline
     final h1jam = deadline.subtract(const Duration(hours: 1));
     await scheduleDeadlineNotification(
       id: _makeId(docId, '1jam'),
@@ -326,7 +307,6 @@ class NotificationService {
       },
     );
 
-    // 4. [UJI COBA] Reminder 5 detik sebelum waktu deadline
     final h5detik = deadline.subtract(const Duration(seconds: 5));
     await scheduleDeadlineNotification(
       id: _makeId(docId, '5detik'),
@@ -358,7 +338,6 @@ class NotificationService {
     await _plugin.cancel(baseId + 4);
   }
 
-  // ================= DEBUG: CEK PENDING NOTIFICATION =================
   Future<List<PendingNotificationRequest>> getPendingNotifications() async {
     final pending = await _plugin.pendingNotificationRequests();
     debugPrint('===== PENDING NOTIFICATIONS (${pending.length}) =====');
@@ -369,10 +348,8 @@ class NotificationService {
     return pending;
   }
 
-  // ================= DEBUG: CEK EXACT ALARM PERMISSION STATUS =================
   Future<bool?> canScheduleExactAlarms() async {
-    final android = _plugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    final android = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     final canSchedule = await android?.canScheduleExactNotifications();
     debugPrint('Can schedule exact alarms: $canSchedule');
     return canSchedule;

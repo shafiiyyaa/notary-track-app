@@ -26,7 +26,11 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
   DocumentModel? _document;
   String _notes = '';
   bool _isLoading = false;
-  final _rupiah = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+  final _rupiah = NumberFormat.currency(
+    locale: 'id_ID',
+    symbol: 'Rp ',
+    decimalDigits: 0,
+  );
 
   @override
   void initState() {
@@ -41,20 +45,23 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
   void hideLoading() => setState(() => _isLoading = false);
   @override
   void onDocumentLoaded(DocumentModel document, String notes) => setState(() {
-        _document = document;
-        _notes = notes;
-      });
+    _document = document;
+    _notes = notes;
+  });
   @override
   void onDocumentError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   void onDocumentDeleted() {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Dokumen berhasil dihapus')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Dokumen berhasil dihapus')));
     Navigator.pop(context, true);
   }
 
@@ -68,7 +75,10 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
             'Dokumen "${_document?.docType ?? ''}" untuk ${_document?.clientName ?? ''} akan dihapus permanen dan tidak bisa dikembalikan.',
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Batal')),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Batal'),
+            ),
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext);
@@ -93,18 +103,19 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
     _presenter.fetchDocumentDetail(widget.documentId);
   }
 
+  // ⚡ FIX: sebelumnya bagian ini strip info 'Z'/'+00:00' lalu bikin ulang
+  // DateTime dari angka jam UTC mentah TANPA convert -> hasilnya jam UTC
+  // (mis. 04:45) ditampilkan seolah itu jam WIB, padahal seharusnya 11:45 WIB.
+  // Sekarang cukup pakai .toLocal() yang benar-benar convert UTC -> waktu lokal
+  // device (WIB), sama seperti yang dipakai di Edit Dokumen & notification
+  // presenter yang sudah diperbaiki sebelumnya.
   String _formatDeadline(dynamic deadlineInput) {
     if (deadlineInput == null) return '-';
     String deadlineStr = deadlineInput.toString();
     if (deadlineStr.isEmpty || deadlineStr == 'null') return '-';
-    
+
     try {
-      DateTime dt = DateTime.parse(deadlineStr);
-      
-      if (deadlineStr.contains('Z') || deadlineStr.contains('+00:00')) {
-        dt = DateTime(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second);
-      }
-      
+      final dt = DateTime.parse(deadlineStr).toLocal();
       return DateFormat('EEEE, dd MMMM yyyy, HH:mm', 'id_ID').format(dt);
     } catch (e) {
       return deadlineStr;
@@ -137,7 +148,10 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
             children: [
               Row(
                 children: [
-                  IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back)),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.arrow_back),
+                  ),
                   Text(
                     "Detail Dokumen",
                     style: GoogleFonts.comfortaa(
@@ -177,7 +191,10 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                   if (widget.userRole == 'Staff')
                     IconButton(
                       onPressed: () => _goToEdit(doc, step: 0),
-                      icon: Icon(Icons.edit, color: Theme.of(context).colorScheme.primary),
+                      icon: Icon(
+                        Icons.edit,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                     ),
                 ],
               ),
@@ -185,21 +202,52 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
               Card(
                 elevation: 2,
                 color: Theme.of(context).cardColor,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
                       _buildItem(context, "Nama Klien", doc.clientName),
                       _buildItem(context, "Jenis Dokumen", doc.docType),
-                      _buildItem(context, "Kategori", doc.kategori.isEmpty ? '-' : doc.kategori),
-                      _buildItem(context, "Tanggal Masuk", doc.tanggalMasuk ?? '-'),
-                      _buildItem(context, "Deadline", _formatDeadline(doc.deadline)),
-                      _buildStatusItem(context, "Status", doc.status, doc.isLate),
+                      _buildItem(
+                        context,
+                        "Kategori",
+                        doc.kategori.isEmpty ? '-' : doc.kategori,
+                      ),
+                      _buildItem(
+                        context,
+                        "Tanggal Masuk",
+                        doc.tanggalMasuk ?? '-',
+                      ),
+                      _buildItem(
+                        context,
+                        "Deadline",
+                        _formatDeadline(doc.deadline),
+                      ),
+                      _buildStatusItem(
+                        context,
+                        "Status",
+                        doc.status,
+                        doc.isLate,
+                      ),
                       _buildItem(context, "Staff", doc.staffName),
-                      _buildItem(context, "Uraian Singkat", doc.uraianSingkat.isEmpty ? '-' : doc.uraianSingkat),
-                      _buildItem(context, "Nomor Akta/Dokumen", doc.nomorDokumen ?? '-'),
-                      _buildItem(context, "Status Pembayaran", doc.statusPembayaran),
+                      _buildItem(
+                        context,
+                        "Uraian Singkat",
+                        doc.uraianSingkat.isEmpty ? '-' : doc.uraianSingkat,
+                      ),
+                      _buildItem(
+                        context,
+                        "Nomor Akta/Dokumen",
+                        doc.nomorDokumen ?? '-',
+                      ),
+                      _buildItem(
+                        context,
+                        "Status Pembayaran",
+                        doc.statusPembayaran,
+                      ),
                       _buildItem(context, "Catatan/Kendala", _notes),
                     ],
                   ),
@@ -222,7 +270,10 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                   if (widget.userRole == 'Staff')
                     IconButton(
                       onPressed: () => _goToEdit(doc, step: 1),
-                      icon: Icon(Icons.edit, color: Theme.of(context).colorScheme.primary),
+                      icon: Icon(
+                        Icons.edit,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                     ),
                 ],
               ),
@@ -230,19 +281,45 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
               Card(
                 elevation: 2,
                 color: Theme.of(context).cardColor,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Dokumen Dibutuhkan", style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
+                      Text(
+                        "Dokumen Dibutuhkan",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
+                        ),
+                      ),
                       const SizedBox(height: 4),
-                      Text(doc.dokumenDibutuhkan.isEmpty ? '-' : doc.dokumenDibutuhkan, style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
+                      Text(
+                        doc.dokumenDibutuhkan.isEmpty
+                            ? '-'
+                            : doc.dokumenDibutuhkan,
+                        style: TextStyle(
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
+                        ),
+                      ),
                       const SizedBox(height: 16),
-                      Text("Dokumen Diterima", style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
+                      Text(
+                        "Dokumen Diterima",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
+                        ),
+                      ),
                       const SizedBox(height: 4),
-                      Text(doc.dokumenDiterima.isEmpty ? '-' : doc.dokumenDiterima, style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
+                      Text(
+                        doc.dokumenDiterima.isEmpty ? '-' : doc.dokumenDiterima,
+                        style: TextStyle(
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -264,7 +341,10 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                   if (widget.userRole == 'Staff')
                     IconButton(
                       onPressed: () => _goToEdit(doc, step: 2),
-                      icon: Icon(Icons.edit, color: Theme.of(context).colorScheme.primary),
+                      icon: Icon(
+                        Icons.edit,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                     ),
                 ],
               ),
@@ -272,36 +352,85 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
               Card(
                 elevation: 2,
                 color: Theme.of(context).cardColor,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // 1. UANG MASUK DARI PEMOHON
-                      Text("Uang Masuk dari Pemohon", style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
+                      Text(
+                        "Uang Masuk dari Pemohon",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
+                        ),
+                      ),
                       const SizedBox(height: 6),
-                      _buildItem(context, "Uang Muka", "${doc.uangMukaTanggal ?? '-'} • ${_rupiah.format(doc.uangMukaJumlah)}"),
+                      _buildItem(
+                        context,
+                        "Uang Muka",
+                        "${doc.uangMukaTanggal ?? '-'} • ${_rupiah.format(doc.uangMukaJumlah)}",
+                      ),
                       if (doc.incomeDetails.isNotEmpty) ...[
-                        ...doc.incomeDetails.map((item) => _buildItem(context, item.label, _rupiah.format(item.amount))),
+                        ...doc.incomeDetails.map(
+                          (item) => _buildItem(
+                            context,
+                            item.label,
+                            _rupiah.format(item.amount),
+                          ),
+                        ),
                       ],
-                      _summaryRow(context, "Total Uang Masuk Pemohon", totalDibayarKlien, isBold: true),
-                      
+                      _summaryRow(
+                        context,
+                        "Total Uang Masuk Pemohon",
+                        totalDibayarKlien,
+                        isBold: true,
+                      ),
+
                       // 2. KESEPAKATAN BIAYA & KURANG BAYAR
                       const Divider(height: 32),
-                      Text("Pembayaran Klien", style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
+                      Text(
+                        "Pembayaran Klien",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
+                        ),
+                      ),
                       const SizedBox(height: 6),
-                      _summaryRow(context, "Kesepakatan Biaya", doc.kesepakatanBiaya, isBold: true),
-                      _summaryRow(context, "Sudah Dibayar", totalDibayarKlien, isBold: true),
+                      _summaryRow(
+                        context,
+                        "Kesepakatan Biaya",
+                        doc.kesepakatanBiaya,
+                        isBold: true,
+                      ),
+                      _summaryRow(
+                        context,
+                        "Sudah Dibayar",
+                        totalDibayarKlien,
+                        isBold: true,
+                      ),
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text("Kurang Bayar", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+                            const Text(
+                              "Kurang Bayar",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.red,
+                              ),
+                            ),
                             Text(
                               _rupiah.format(kurangBayar),
-                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red, fontSize: 16),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.red,
+                                fontSize: 16,
+                              ),
                             ),
                           ],
                         ),
@@ -310,10 +439,27 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                       // 3. PENGELUARAN OPERASIONAL (DIKEMBALIKAN)
                       if (doc.expenses.isNotEmpty) ...[
                         const Divider(height: 32),
-                        Text("Pengeluaran Operasional", style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
+                        Text(
+                          "Pengeluaran Operasional",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).textTheme.bodyLarge?.color,
+                          ),
+                        ),
                         const SizedBox(height: 6),
-                        ...doc.expenses.map((item) => _buildItem(context, item.proses, "${item.tanggal ?? '-'} • ${_rupiah.format(item.amount)}")),
-                        _summaryRow(context, "Total Pengeluaran", doc.totalPengeluaran, isBold: true),
+                        ...doc.expenses.map(
+                          (item) => _buildItem(
+                            context,
+                            item.proses,
+                            "${item.tanggal ?? '-'} • ${_rupiah.format(item.amount)}",
+                          ),
+                        ),
+                        _summaryRow(
+                          context,
+                          "Total Pengeluaran",
+                          doc.totalPengeluaran,
+                          isBold: true,
+                        ),
                       ],
                     ],
                   ),
@@ -327,10 +473,18 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
                   height: 52,
                   child: OutlinedButton.icon(
                     icon: const Icon(Icons.delete_outline, color: Colors.red),
-                    label: const Text("Hapus Dokumen", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                    label: const Text(
+                      "Hapus Dokumen",
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Colors.red),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     onPressed: _confirmDelete,
                   ),
@@ -351,32 +505,64 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
         children: [
           SizedBox(
             width: 130,
-            child: Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
+            child: Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
+              ),
+            ),
           ),
-          Expanded(child: Text(value, style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                color: Theme.of(context).textTheme.bodyLarge?.color,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildStatusItem(BuildContext context, String title, String status, bool isLate) {
+  Widget _buildStatusItem(
+    BuildContext context,
+    String title,
+    String status,
+    bool isLate,
+  ) {
     String displayStatus = isLate ? '$status - Terlambat' : status;
     return _buildItem(context, title, displayStatus);
   }
 
-  Widget _summaryRow(BuildContext context, String label, double value, {bool isBold = false, bool highlight = false}) {
+  Widget _summaryRow(
+    BuildContext context,
+    String label,
+    double value, {
+    bool isBold = false,
+    bool highlight = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(fontWeight: isBold ? FontWeight.bold : FontWeight.normal, color: Theme.of(context).textTheme.bodyLarge?.color)),
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+              color: Theme.of(context).textTheme.bodyLarge?.color,
+            ),
+          ),
           Text(
             _rupiah.format(value),
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: highlight ? 18 : 14,
-              color: highlight ? Theme.of(context).colorScheme.primary : Theme.of(context).textTheme.bodyLarge?.color,
+              color: highlight
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).textTheme.bodyLarge?.color,
             ),
           ),
         ],
@@ -396,15 +582,31 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
         _circle(context, "Belum", step >= 0, primary, inactiveColor),
-        Expanded(child: Divider(thickness: 2, color: step >= 1 ? primary : inactiveColor)),
+        Expanded(
+          child: Divider(
+            thickness: 2,
+            color: step >= 1 ? primary : inactiveColor,
+          ),
+        ),
         _circle(context, "Proses", step >= 1, primary, inactiveColor),
-        Expanded(child: Divider(thickness: 2, color: step >= 2 ? primary : inactiveColor)),
+        Expanded(
+          child: Divider(
+            thickness: 2,
+            color: step >= 2 ? primary : inactiveColor,
+          ),
+        ),
         _circle(context, "Selesai", step >= 2, primary, inactiveColor),
       ],
     );
   }
 
-  Widget _circle(BuildContext context, String title, bool active, Color primary, Color inactiveColor) {
+  Widget _circle(
+    BuildContext context,
+    String title,
+    bool active,
+    Color primary,
+    Color inactiveColor,
+  ) {
     return Column(
       children: [
         Container(
@@ -413,16 +615,25 @@ class _DetailDocumentScreenState extends State<DetailDocumentScreen>
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: active ? primary : Theme.of(context).cardColor,
-            border: Border.all(color: active ? primary : inactiveColor, width: 2),
+            border: Border.all(
+              color: active ? primary : inactiveColor,
+              width: 2,
+            ),
           ),
           alignment: Alignment.center,
-          child: Icon(Icons.check, size: 18, color: active ? Colors.white : inactiveColor),
+          child: Icon(
+            Icons.check,
+            size: 18,
+            color: active ? Colors.white : inactiveColor,
+          ),
         ),
         const SizedBox(height: 5),
         Text(
           title,
           style: TextStyle(
-            color: active ? primary : Theme.of(context).textTheme.bodySmall?.color,
+            color: active
+                ? primary
+                : Theme.of(context).textTheme.bodySmall?.color,
             fontWeight: active ? FontWeight.bold : FontWeight.normal,
           ),
         ),

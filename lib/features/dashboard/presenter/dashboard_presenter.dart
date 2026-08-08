@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../model/dashboard_model.dart';
 import '../view/dashboard_view.dart';
-import '../../utils/date_helper.dart'; 
 
 class HomePresenter {
   final HomeViewContract _view;
@@ -12,12 +11,13 @@ class HomePresenter {
 
   Future<void> fetchDashboardSummary() async {
     try {
+      // ⚡ TAMBAHKAN document_income_details(amount) UNTUK HITUNG CICILAN/TAMBAHAN
       final data = await _supabase.from('documents').select('''
             status,
             deadline,
             kesepakatan_biaya,
             uang_muka_jumlah,
-            tambahan_jumlah,
+            document_income_details(amount),
             document_types(name)
           ''');
 
@@ -31,7 +31,8 @@ class HomePresenter {
       for (final doc in docs) {
         final status = doc['status'] ?? 'Belum Diproses';
         final typeName = doc['document_types']?['name'] ?? 'Lainnya';
-        categoryComposition[typeName] = (categoryComposition[typeName] ?? 0) + 1;
+        categoryComposition[typeName] =
+            (categoryComposition[typeName] ?? 0) + 1;
 
         if (status == 'Diproses') aktif++;
         if (status == 'Selesai') selesai++;
@@ -40,7 +41,15 @@ class HomePresenter {
 
         final kesepakatan = (doc['kesepakatan_biaya'] as num?)?.toDouble() ?? 0;
         final uangMuka = (doc['uang_muka_jumlah'] as num?)?.toDouble() ?? 0;
-        final tambahan = (doc['tambahan_jumlah'] as num?)?.toDouble() ?? 0;
+
+        // ⚡ JUMLAHKAN SEMUA PEMBAYARAN TAMBAHAN DARI TABEL RELASI
+        double tambahan = 0;
+        if (doc['document_income_details'] != null) {
+          for (var inc in doc['document_income_details'] as List) {
+            tambahan += (inc['amount'] as num?)?.toDouble() ?? 0;
+          }
+        }
+
         final totalMasukPemohon = uangMuka + tambahan;
 
         totalNilaiJasa += kesepakatan;
@@ -48,15 +57,22 @@ class HomePresenter {
           totalLunas += kesepakatan;
         }
 
-        // ⚡ PERBAIKAN: pakai DateHelper.isLate biar logikanya SAMA PERSIS
-        // dengan DocumentModel.isLate yang dipakai di Daftar Pekerjaan.
-        final deadlineStr = doc['deadline'] as String?;
-        final isLate = DateHelper.isLate(deadlineStr, status: status);
+        bool isLate = false;
+        if (status != 'Selesai' && status != 'Batal') {
+          final deadlineStr = doc['deadline'] as String?;
+          if (deadlineStr != null) {
+            final deadlineDate = DateTime.tryParse(deadlineStr);
+            if (deadlineDate != null && deadlineDate.isBefore(DateTime.now())) {
+              isLate = true;
+            }
+          }
+        }
+
         if (isLate) terlambat++;
 
-        // ⚡ MASUKKAN STATUS TERLAMBAT KE PIE CHART
         final effectiveStatus = isLate ? 'Terlambat' : status;
-        statusComposition[effectiveStatus] = (statusComposition[effectiveStatus] ?? 0) + 1;
+        statusComposition[effectiveStatus] =
+            (statusComposition[effectiveStatus] ?? 0) + 1;
       }
 
       final total = docs.length;
@@ -86,13 +102,14 @@ class HomePresenter {
 
   Future<void> fetchPriorityData() async {
     try {
+      // ⚡ TAMBAHKAN document_income_details(amount) UNTUK HITUNG CICILAN/TAMBAHAN
       final data = await _supabase.from('documents').select('''
             clients(name),
             deadline,
             status,
             kesepakatan_biaya,
             uang_muka_jumlah,
-            tambahan_jumlah,
+            document_income_details(amount),
             document_types(name)
           ''');
 
@@ -109,22 +126,26 @@ class HomePresenter {
 
         if (status != 'Selesai' && status != 'Batal') {
           final deadlineStr = doc['deadline'] as String?;
-          final deadlineDate = DateHelper.parseDeadline(deadlineStr);
+          final deadlineDate = DateTime.tryParse(deadlineStr ?? '');
 
           if (deadlineDate != null) {
-            final remaining = DateHelper.remainingDays(deadlineStr) ?? 0;
+            final now = DateTime.now();
+            final diff = deadlineDate
+                .difference(DateTime(now.year, now.month, now.day))
+                .inDays;
+
             final item = PriorityDeadlineItem(
               clientName: clientName,
               documentType: typeName,
               deadline: deadlineDate,
-              remainingDays: remaining,
+              remainingDays: diff,
             );
 
-            // ⚡ PERBAIKAN: pakai DateHelper.isLate (cek jam juga, bukan cuma
-            // tanggal) biar konsisten dengan document_model.dart
-            if (DateHelper.isLate(deadlineStr, status: status)) {
+            bool isLate = deadlineDate.isBefore(DateTime.now());
+
+            if (isLate) {
               terlambat.add(item);
-            } else if (remaining <= 14) {
+            } else if (diff <= 14) {
               mendekati.add(item);
             }
           }
@@ -132,21 +153,30 @@ class HomePresenter {
 
         final kesepakatan = (doc['kesepakatan_biaya'] as num?)?.toDouble() ?? 0;
         final uangMuka = (doc['uang_muka_jumlah'] as num?)?.toDouble() ?? 0;
-        final tambahan = (doc['tambahan_jumlah'] as num?)?.toDouble() ?? 0;
+
+        // ⚡ JUMLAHKAN SEMUA PEMBAYARAN TAMBAHAN DARI TABEL RELASI
+        double tambahan = 0;
+        if (doc['document_income_details'] != null) {
+          for (var inc in doc['document_income_details'] as List) {
+            tambahan += (inc['amount'] as num?)?.toDouble() ?? 0;
+          }
+        }
+
         final totalMasuk = uangMuka + tambahan;
 
+        // ⚡ CEK JIKA UANG MASUK MASIH KURANG DARI KESEPAKATAN
         if (kesepakatan > 0 && totalMasuk < kesepakatan) {
-          belumLunas.add(UnpaidItem(
-            clientName: clientName,
-            documentType: typeName,
-            sisaTagihan: kesepakatan - totalMasuk,
-          ));
+          belumLunas.add(
+            UnpaidItem(
+              clientName: clientName,
+              documentType: typeName,
+              sisaTagihan: kesepakatan - totalMasuk,
+            ),
+          );
         }
       }
 
-      // Urutkan dari paling telat
       terlambat.sort((a, b) => a.deadline.compareTo(b.deadline));
-      // Urutkan dari paling mendekati deadline
       mendekati.sort((a, b) => a.deadline.compareTo(b.deadline));
 
       _view.onPriorityLoaded(mendekati, terlambat, belumLunas);

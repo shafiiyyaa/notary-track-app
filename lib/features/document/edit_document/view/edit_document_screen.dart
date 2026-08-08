@@ -71,7 +71,6 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   List<Map<String, dynamic>> _incomeDetailRows = [];
   List<Map<String, dynamic>> _expenseRows = [];
   List<RequiredDoc> _requiredDocs = [];
-  bool _financialLoaded = false;
 
   List<Map<String, dynamic>> _documentTypes = [];
   int? _selectedDocumentTypeId;
@@ -102,6 +101,8 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   );
   final NumberFormat _numberFormat = NumberFormat.decimalPattern('id_ID');
 
+  final DateFormat _deadlineFormat = DateFormat('dd MMMM yyyy, HH:mm', 'id_ID');
+
   late final PageController _pageController;
   late int _currentStep;
   final List<String> _stepTitles = ['Identitas Klien', 'Dokumen', 'Keuangan'];
@@ -124,7 +125,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
 
     _deadlineDateTime = DateTime.tryParse(doc.deadline);
     _deadlineController.text = _deadlineDateTime != null
-        ? DateFormat('dd MMMM yyyy, HH:mm', 'id_ID').format(_deadlineDateTime!)
+        ? '${_deadlineFormat.format(_deadlineDateTime!.toLocal())} WIB'
         : doc.deadline;
 
     _noteController.text = doc.notes;
@@ -191,7 +192,14 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
     return _requiredDocs.every((doc) => doc.isReceived);
   }
 
+  bool get _isTerlambat {
+    if (_deadlineDateTime == null) return false;
+    if (_isAllDocsReceived && _isLunas) return false;
+    return DateTime.now().isAfter(_deadlineDateTime!.toLocal());
+  }
+
   String get _autoStatus {
+    if (_isTerlambat) return 'Terlambat';
     if (!_hasFinanceData && !_hasDocReceived) return 'Belum Diproses';
     if (_isAllDocsReceived && _isLunas) return 'Selesai';
     return 'Diproses';
@@ -240,7 +248,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
 
     _deadlineDateTime = DateTime.tryParse(document.deadline);
     _deadlineController.text = _deadlineDateTime != null
-        ? DateFormat('dd MMMM yyyy, HH:mm', 'id_ID').format(_deadlineDateTime!)
+        ? '${_deadlineFormat.format(_deadlineDateTime!.toLocal())} WIB'
         : document.deadline;
 
     _noteController.text = document.notes;
@@ -254,13 +262,31 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
         ? ''
         : _numberFormat.format(document.uangMukaJumlah);
 
-    _incomeDetailRows = document.incomeDetails.map((e) {
-      return {
-        'tanggal': (e as dynamic).tanggal, 
-        'label': e.label,
-        'amount': e.amount,
-      };
-    }).toList();
+    try {
+      _incomeDetailRows = document.incomeDetails.map((e) {
+        final dynamic item = e;
+        Map<String, dynamic> json = {};
+        try {
+          json = Map<String, dynamic>.from(item.toJson());
+        } catch (_) {
+          try {
+            json = Map<String, dynamic>.from(item.toMap());
+          } catch (_) {}
+        }
+
+        final tanggal =
+            json['tanggal'] ??
+            json['date'] ??
+            json['tanggalBayar'] ??
+            json['tanggal_bayar'];
+        final label = json['label'] ?? json['keterangan'] ?? json['name'];
+        final amount = json['amount'] ?? json['nominal'] ?? json['jumlah'] ?? 0;
+
+        return {'tanggal': tanggal, 'label': label, 'amount': amount};
+      }).toList();
+    } catch (e) {
+      _incomeDetailRows = [];
+    }
 
     if (document.tambahanJumlah > 0) {
       _incomeDetailRows.insert(0, {
@@ -270,13 +296,32 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
       });
     }
 
-    _expenseRows = document.expenses.map((e) {
-      return {
-        'proses': e.proses,
-        'tanggal': e.tanggal,
-        'amount': e.amount,
-      };
-    }).toList();
+    try {
+      _expenseRows = document.expenses.map((e) {
+        final dynamic item = e;
+        Map<String, dynamic> json = {};
+        try {
+          json = Map<String, dynamic>.from(item.toJson());
+        } catch (_) {
+          try {
+            json = Map<String, dynamic>.from(item.toMap());
+          } catch (_) {}
+        }
+
+        final proses =
+            json['proses'] ?? json['label'] ?? json['keterangan'] ?? '';
+        final tanggal =
+            json['tanggal'] ??
+            json['date'] ??
+            json['tanggalBayar'] ??
+            json['tanggal_bayar'];
+        final amount = json['amount'] ?? json['nominal'] ?? json['jumlah'] ?? 0;
+
+        return {'proses': proses, 'tanggal': tanggal, 'amount': amount};
+      }).toList();
+    } catch (e) {
+      _expenseRows = [];
+    }
 
     List<String> dibutuhkanList = document.dokumenDibutuhkan
         .split('\n')
@@ -299,7 +344,6 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
       _manualOverride = true;
       _overrideStatus = document.status;
     }
-    _financialLoaded = true;
 
     _tanggalMasukController.text = document.tanggalMasuk ?? '';
     _uraianSingkatController.text = document.uraianSingkat;
@@ -309,13 +353,23 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   }
 
   @override
-  void onUpdateSuccess() => Navigator.pop(context, true);
+  void onUpdateSuccess() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Dokumen berhasil diperbarui!'),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 2),
+      ),
+    );
+    Navigator.pop(context, true);
+  }
 
   @override
   void onError(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
@@ -343,11 +397,19 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
     if (pickedDate == null) return;
     if (!mounted) return;
 
+    // ⚡ FIX: mode input angka (bukan jam analog), lebih mudah & presisi.
     final pickedTime = await showTimePicker(
       context: context,
       initialTime: _deadlineDateTime != null
-          ? TimeOfDay.fromDateTime(_deadlineDateTime!)
+          ? TimeOfDay.fromDateTime(_deadlineDateTime!.toLocal())
           : const TimeOfDay(hour: 8, minute: 0),
+      initialEntryMode: TimePickerEntryMode.input,
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: child!,
+        );
+      },
     );
     if (pickedTime == null) return;
 
@@ -361,16 +423,14 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
 
     setState(() {
       _deadlineDateTime = combined;
-      _deadlineController.text = DateFormat(
-        'dd MMMM yyyy, HH:mm',
-        'id_ID',
-      ).format(combined);
+      _deadlineController.text =
+          '${_deadlineFormat.format(combined.toLocal())} WIB';
     });
   }
 
   void _showSnack(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
@@ -450,7 +510,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
       documentTypeId: _selectedDocumentTypeId!,
       kategori: _selectedKategori!,
       staffId: _selectedStaffId!,
-      deadline: _deadlineDateTime!.toIso8601String(),
+      deadline: _deadlineDateTime!.toUtc().toIso8601String(),
       status: _finalStatus,
       notes: _noteController.text,
       kesepakatanBiaya: _parseAmount(_kesepakatanBiayaController.text),
@@ -654,8 +714,8 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
               onPressed: _isLoading
                   ? null
                   : (_currentStep < _stepTitles.length - 1
-                      ? _nextStep
-                      : _submit),
+                        ? _nextStep
+                        : _submit),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -725,7 +785,8 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           onChanged: (val) => setState(() {}),
           decoration: _compactInputDecoration('10-13 digit nomor telepon')
               .copyWith(
-                errorText: (_phoneController.text.isNotEmpty &&
+                errorText:
+                    (_phoneController.text.isNotEmpty &&
                         _phoneController.text.length < 10)
                     ? 'Nomor telepon minimal 10 digit'
                     : null,
@@ -821,26 +882,28 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
             children: [
               Text(
                 'Status otomatis: $_finalStatus',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
-                  color: Colors.green,
+                  color: _isTerlambat ? Colors.red : Colors.green,
                 ),
               ),
-              const Icon(Icons.auto_awesome, size: 16, color: Colors.green),
+              Icon(
+                Icons.auto_awesome,
+                size: 16,
+                color: _isTerlambat ? Colors.red : Colors.green,
+              ),
             ],
           ),
         ),
         const SizedBox(height: 4),
         Text(
-          'Status dihitung otomatis berdasarkan data dokumen & keuangan yang sudah diisi.',
+          'Status dihitung otomatis berdasarkan data dokumen, keuangan & waktu deadline.',
           style: TextStyle(
             fontSize: 11,
-            color: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.color
-                ?.withValues(alpha: 0.6),
+            color: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
           ),
         ),
         const SizedBox(height: 12),
@@ -902,11 +965,9 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           'Tambahkan dokumen yang dibutuhkan, lalu centang jika sudah diterima.',
           style: TextStyle(
             fontSize: 11,
-            color: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.color
-                ?.withValues(alpha: 0.6),
+            color: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
           ),
         ),
         const SizedBox(height: 8),
@@ -990,10 +1051,9 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
                                   : TextDecoration.none,
                               color: doc.isReceived
                                   ? Colors.grey
-                                  : Theme.of(context)
-                                      .textTheme
-                                      .bodyLarge
-                                      ?.color,
+                                  : Theme.of(
+                                      context,
+                                    ).textTheme.bodyLarge?.color,
                             ),
                           ),
                         ),
@@ -1065,11 +1125,9 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           'Status pembayaran dihitung otomatis berdasarkan total uang masuk pemohon vs kesepakatan biaya.',
           style: TextStyle(
             fontSize: 11,
-            color: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.color
-                ?.withValues(alpha: 0.6),
+            color: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
           ),
         ),
         const SizedBox(height: 20),
@@ -1140,39 +1198,45 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           ),
         ),
         const SizedBox(height: 12),
-        if (_financialLoaded)
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _incomeDetailRows.length,
-            itemBuilder: (context, index) {
-              return _DynamicFinanceRow(
-                index: index,
-                data: _incomeDetailRows[index],
-                isExpense: false,
-                onChanged: (newData) {
-                  setState(() {
-                    _incomeDetailRows[index] = newData;
-                  });
-                },
-                onRemove: () {
-                  setState(() {
-                    _incomeDetailRows.removeAt(index);
-                  });
-                },
-              );
-            },
-          ),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _incomeDetailRows.length,
+          itemBuilder: (context, index) {
+            return _DynamicFinanceRow(
+              index: index,
+              data: _incomeDetailRows[index],
+              isExpense: false,
+              onChanged: (newData) {
+                setState(() {
+                  _incomeDetailRows[index] = newData;
+                });
+              },
+              onRemove: () {
+                setState(() {
+                  _incomeDetailRows.removeAt(index);
+                });
+              },
+            );
+          },
+        ),
         Align(
           alignment: Alignment.centerLeft,
           child: TextButton.icon(
             onPressed: () {
               setState(() {
-                _incomeDetailRows.add({'tanggal': null, 'label': '', 'amount': 0});
+                _incomeDetailRows.add({
+                  'tanggal': null,
+                  'label': '',
+                  'amount': 0,
+                });
               });
             },
             icon: Icon(Icons.add, color: Theme.of(context).colorScheme.primary),
-            label: Text('Tambah Pembayaran', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+            label: Text(
+              'Tambah Pembayaran',
+              style: TextStyle(color: Theme.of(context).colorScheme.primary),
+            ),
           ),
         ),
         const SizedBox(height: 24),
@@ -1187,29 +1251,28 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
           ),
         ),
         const SizedBox(height: 12),
-        if (_financialLoaded)
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _expenseRows.length,
-            itemBuilder: (context, index) {
-              return _DynamicFinanceRow(
-                index: index,
-                data: _expenseRows[index],
-                isExpense: true,
-                onChanged: (newData) {
-                  setState(() {
-                    _expenseRows[index] = newData;
-                  });
-                },
-                onRemove: () {
-                  setState(() {
-                    _expenseRows.removeAt(index);
-                  });
-                },
-              );
-            },
-          ),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _expenseRows.length,
+          itemBuilder: (context, index) {
+            return _DynamicFinanceRow(
+              index: index,
+              data: _expenseRows[index],
+              isExpense: true,
+              onChanged: (newData) {
+                setState(() {
+                  _expenseRows[index] = newData;
+                });
+              },
+              onRemove: () {
+                setState(() {
+                  _expenseRows.removeAt(index);
+                });
+              },
+            );
+          },
+        ),
         Align(
           alignment: Alignment.centerLeft,
           child: TextButton.icon(
@@ -1219,7 +1282,10 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
               });
             },
             icon: Icon(Icons.add, color: Theme.of(context).colorScheme.primary),
-            label: Text('Tambah Pengeluaran', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+            label: Text(
+              'Tambah Pengeluaran',
+              style: TextStyle(color: Theme.of(context).colorScheme.primary),
+            ),
           ),
         ),
         const SizedBox(height: 24),
@@ -1354,7 +1420,6 @@ class _EditDocumentScreenState extends State<EditDocumentScreen>
   }
 }
 
-// ================= CUSTOM WIDGET UNTUK FORM DINAMIS =================
 class _DynamicFinanceRow extends StatefulWidget {
   final int index;
   final Map<String, dynamic> data;
@@ -1383,9 +1448,11 @@ class _DynamicFinanceRowState extends State<_DynamicFinanceRow> {
   void initState() {
     super.initState();
     _descController = TextEditingController(
-      text: widget.isExpense ? (widget.data['proses'] ?? '') : (widget.data['label'] ?? ''),
+      text: widget.isExpense
+          ? (widget.data['proses'] ?? '')
+          : (widget.data['label'] ?? ''),
     );
-    
+
     final amount = widget.data['amount'];
     if (amount != null && amount != 0) {
       _amountController = TextEditingController(
@@ -1394,7 +1461,7 @@ class _DynamicFinanceRowState extends State<_DynamicFinanceRow> {
     } else {
       _amountController = TextEditingController(text: '');
     }
-    
+
     _date = widget.data['tanggal'];
   }
 
@@ -1406,7 +1473,11 @@ class _DynamicFinanceRowState extends State<_DynamicFinanceRow> {
       data['label'] = _descController.text;
     }
     data['tanggal'] = _date;
-    data['amount'] = double.tryParse(_amountController.text.replaceAll('.', '').replaceAll(',', '.')) ?? 0;
+    data['amount'] =
+        double.tryParse(
+          _amountController.text.replaceAll('.', '').replaceAll(',', '.'),
+        ) ??
+        0;
     widget.onChanged(data);
   }
 
@@ -1419,7 +1490,8 @@ class _DynamicFinanceRowState extends State<_DynamicFinanceRow> {
     );
     if (picked != null) {
       setState(() {
-        _date = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+        _date =
+            "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
         _updateData();
       });
     }
@@ -1441,19 +1513,28 @@ class _DynamicFinanceRowState extends State<_DynamicFinanceRow> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              widget.isExpense ? 'Pengeluaran ${widget.index + 1}' : 'Pembayaran ${widget.index + 1}',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black54),
+              widget.isExpense
+                  ? 'Pengeluaran ${widget.index + 1}'
+                  : 'Pembayaran ${widget.index + 1}',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: Colors.black54,
+              ),
             ),
             IconButton(
-              icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+              icon: const Icon(
+                Icons.delete_outline,
+                size: 20,
+                color: Colors.red,
+              ),
               onPressed: widget.onRemove,
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
-            )
+            ),
           ],
         ),
         const SizedBox(height: 8),
-        // Tanggal
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Text(
@@ -1480,14 +1561,15 @@ class _DynamicFinanceRowState extends State<_DynamicFinanceRow> {
               children: [
                 Text(
                   _date ?? 'Pilih tanggal',
-                  style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
+                  style: TextStyle(
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                  ),
                 ),
                 const Icon(Icons.calendar_today, size: 18),
               ],
             ),
           ),
         ),
-        // Keterangan
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Text(
@@ -1505,12 +1587,13 @@ class _DynamicFinanceRowState extends State<_DynamicFinanceRow> {
             filled: true,
             fillColor: Theme.of(context).cardColor,
             border: InputBorder.none,
-            hintText: widget.isExpense ? 'Masukkan keterangan pengeluaran' : 'Masukkan keterangan',
+            hintText: widget.isExpense
+                ? 'Masukkan keterangan pengeluaran'
+                : 'Masukkan keterangan',
           ),
           onChanged: (val) => _updateData(),
         ),
         const SizedBox(height: 8),
-        // Nominal
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Text(
