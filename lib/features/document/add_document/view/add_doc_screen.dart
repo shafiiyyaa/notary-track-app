@@ -62,6 +62,7 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
 
   final List<Map<String, dynamic>> _incomeDetailRows = [];
   final List<Map<String, dynamic>> _expenseRows = [];
+  final List<Map<String, dynamic>> _processDetailRows = []; // ⚡ TAMBAHAN: rincian biaya proses (tidak dihitung)
   final List<RequiredDoc> _requiredDocs = [];
 
   List<Map<String, dynamic>> _documentTypes = [];
@@ -360,6 +361,7 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
       keteranganKeuangan: _noteController.text,
       incomeDetails: _incomeDetailRows,
       expenses: _expenseRows,
+      processDetails: _processDetailRows, // ⚡ TAMBAHAN
       tanggalMasuk: _tanggalMasukController.text.isEmpty
           ? null
           : _tanggalMasukController.text,
@@ -1079,6 +1081,56 @@ class _AddDocumentScreenState extends State<AddDocumentScreen>
             ),
           ),
         ),
+
+        const SizedBox(height: 24),
+        Divider(color: Theme.of(context).dividerColor),
+        const SizedBox(height: 12),
+        Text(
+          "Rincian Biaya Proses",
+          style: GoogleFonts.comfortaa(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).textTheme.titleLarge?.color,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _processDetailRows.length,
+          itemBuilder: (context, index) {
+            return _ProcessDetailRow(
+              index: index,
+              data: _processDetailRows[index],
+              onChanged: (newData) {
+                setState(() {
+                  _processDetailRows[index] = newData;
+                });
+              },
+              onRemove: () {
+                setState(() {
+                  _processDetailRows.removeAt(index);
+                });
+              },
+            );
+          },
+        ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () {
+              setState(() {
+                _processDetailRows.add({'proses': '', 'amount': 0});
+              });
+            },
+            icon: Icon(Icons.add, color: Theme.of(context).colorScheme.primary),
+            label: Text(
+              'Tambah Rincian Biaya',
+              style: TextStyle(color: Theme.of(context).colorScheme.primary),
+            ),
+          ),
+        ),
+
         const SizedBox(height: 24),
         Divider(color: Theme.of(context).dividerColor),
         const SizedBox(height: 12),
@@ -1435,6 +1487,126 @@ class _DynamicFinanceRowState extends State<_DynamicFinanceRow> {
         Divider(color: Theme.of(context).dividerColor),
         const SizedBox(height: 16),
       ],
+    );
+  }
+}
+
+// ⚡ TAMBAHAN: WIDGET RINGKAS UNTUK RINCIAN BIAYA PROSES (PROSES + JUMLAH SAJA)
+class _ProcessDetailRow extends StatefulWidget {
+  final int index;
+  final Map<String, dynamic> data;
+  final Function(Map<String, dynamic>) onChanged;
+  final VoidCallback onRemove;
+
+  const _ProcessDetailRow({
+    required this.index,
+    required this.data,
+    required this.onChanged,
+    required this.onRemove,
+  });
+
+  @override
+  State<_ProcessDetailRow> createState() => _ProcessDetailRowState();
+}
+
+class _ProcessDetailRowState extends State<_ProcessDetailRow> {
+  late TextEditingController _prosesController;
+  late TextEditingController _amountController;
+
+  @override
+  void initState() {
+    super.initState();
+    _prosesController = TextEditingController(
+      text: widget.data['proses'] ?? '',
+    );
+    final amount = widget.data['amount'];
+    _amountController = TextEditingController(
+      text: (amount != null && amount != 0)
+          ? NumberFormat.decimalPattern('id_ID').format(amount)
+          : '',
+    );
+  }
+
+  void _updateData() {
+    final data = Map<String, dynamic>.from(widget.data);
+    data['proses'] = _prosesController.text;
+    data['amount'] =
+        double.tryParse(
+          _amountController.text.replaceAll('.', '').replaceAll(',', '.'),
+        ) ??
+        0;
+    widget.onChanged(data);
+  }
+
+  @override
+  void dispose() {
+    _prosesController.dispose();
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 3,
+            child: TextField(
+              controller: _prosesController,
+              style: const TextStyle(fontSize: 14),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Theme.of(context).cardColor,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                hintText: 'Proses (mis. Biaya Cek NIB)',
+                isDense: true,
+              ),
+              onChanged: (_) => _updateData(),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 2,
+            child: TextField(
+              controller: _amountController,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(fontSize: 14),
+              inputFormatters: [CurrencyInputFormatter()],
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Theme.of(context).cardColor,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                hintText: '0',
+                isDense: true,
+              ),
+              onChanged: (_) => _updateData(),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, size: 18, color: Colors.red),
+            onPressed: widget.onRemove,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
+      ),
     );
   }
 }

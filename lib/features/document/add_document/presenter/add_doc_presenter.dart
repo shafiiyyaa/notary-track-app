@@ -31,6 +31,7 @@ class AddDocPresenter {
     required String keteranganKeuangan,
     required List<Map<String, dynamic>> incomeDetails,
     required List<Map<String, dynamic>> expenses,
+    required List<Map<String, dynamic>> processDetails, // ⚡ TAMBAHAN: rincian biaya proses (tidak dihitung ke keuangan)
     String? tanggalMasuk,
     String? uraianSingkat,
     String? nomorDokumen,
@@ -113,6 +114,23 @@ class AddDocPresenter {
 
       if (expenseRows.isNotEmpty) {
         await _supabase.from('document_expenses').insert(expenseRows);
+      }
+
+      // ⚡ INSERT RINCIAN BIAYA PROSES — hanya catatan, tidak mempengaruhi
+      // perhitungan keuangan manapun (Total Pemohon, Pengeluaran, Kurang Bayar).
+      final processDetailRows = processDetails
+          .where((r) => (r['proses'] as String? ?? '').trim().isNotEmpty)
+          .map((r) => {
+                'document_id': documentId,
+                'proses': r['proses'],
+                'amount': _cleanAmount(r['amount']),
+              })
+          .toList();
+
+      if (processDetailRows.isNotEmpty) {
+        await _supabase
+            .from('document_process_details')
+            .insert(processDetailRows);
       }
 
       _view.hideLoading();

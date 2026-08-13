@@ -104,17 +104,19 @@ class DocumentListScreenState extends State<DocumentListScreen>
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  DateTime? _parseDeadline(String deadline) => DateTime.tryParse(deadline);
+  // ⚡ FIX: Konversi ke local time (WIB) sebelum dipakai untuk filter & sorting
+  DateTime? _parseDeadline(String deadline) {
+    final dt = DateTime.tryParse(deadline);
+    return dt?.toLocal();
+  }
 
   static const List<String> _tahunOptions = ['2026', '2027', '2028'];
 
+  // ⚡ FIX: Gunakan .toLocal() agar jam yang ditampilkan adalah WIB
   String _formatDeadline(String? deadlineStr) {
     if (deadlineStr == null || deadlineStr.isEmpty) return '-';
     try {
-      DateTime dt = DateTime.parse(deadlineStr);
-      if (deadlineStr.contains('Z') || deadlineStr.contains('+00:00')) {
-        dt = DateTime(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second);
-      }
+      final dt = DateTime.parse(deadlineStr).toLocal();
       String dateStr = DateFormat('dd MMM yyyy', 'id_ID').format(dt);
       String timeStr = DateFormat('hh.mm a', 'en_US').format(dt);
       return '$dateStr\n$timeStr';
@@ -510,7 +512,7 @@ class DocumentListScreenState extends State<DocumentListScreen>
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Theme.of(context).cardColor, // Card tetap putih
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: doc.isLate
@@ -570,10 +572,8 @@ class DocumentListScreenState extends State<DocumentListScreen>
                     ),
                   ),
                   const SizedBox(height: 10),
-                  // ⚡ TAMPILAN STATUS BERSEBELAHAN
                   Row(
                     children: [
-                      // Badge Status Asli (Kuning/Berdasarkan Status)
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
@@ -584,7 +584,7 @@ class DocumentListScreenState extends State<DocumentListScreen>
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          doc.status, // Tampilkan status asli (Diproses/Belum Diproses)
+                          doc.status,
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -592,9 +592,8 @@ class DocumentListScreenState extends State<DocumentListScreen>
                           ),
                         ),
                       ),
-                      // Jika Terlambat, tampilkan badge merah di sebelahnya
                       if (doc.isLate) ...[
-                        const SizedBox(width: 8), // Jarak antar badge
+                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,

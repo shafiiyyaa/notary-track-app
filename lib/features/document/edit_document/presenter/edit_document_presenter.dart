@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../document_list/model/document_model.dart';
 import '../../document_list/model/income_detail_model.dart';
 import '../../document_list/model/expense_model.dart';
+import '../../document_list/model/process_detail_model.dart'; // ⚡ TAMBAHAN
 import '../view/edit_document_view.dart';
 
 class EditDocPresenter {
@@ -46,6 +47,12 @@ class EditDocPresenter {
           .select()
           .eq('document_id', documentId);
 
+      // ⚡ TAMBAHAN: fetch rincian biaya proses
+      final processDetailData = await _supabase
+          .from('document_process_details')
+          .select()
+          .eq('document_id', documentId);
+
       final incomeDetails = List<Map<String, dynamic>>.from(
         incomeData,
       ).map((m) => IncomeDetailModel.fromMap(m)).toList();
@@ -54,10 +61,16 @@ class EditDocPresenter {
         expenseData,
       ).map((m) => ExpenseModel.fromMap(m)).toList();
 
+      // ⚡ TAMBAHAN
+      final processDetails = List<Map<String, dynamic>>.from(
+        processDetailData,
+      ).map((m) => ProcessDetailModel.fromMap(m)).toList();
+
       final document = DocumentModel.fromMap(
         data,
         incomeDetails: incomeDetails,
         expenses: expenses,
+        processDetails: processDetails, // ⚡ TAMBAHAN
       );
 
       _view.hideLoading();
@@ -85,6 +98,7 @@ class EditDocPresenter {
     required String keteranganKeuangan,
     required List<Map<String, dynamic>> incomeDetails,
     required List<Map<String, dynamic>> expenses,
+    required List<Map<String, dynamic>> processDetails, // ⚡ TAMBAHAN
     String? tanggalMasuk,
     String? uraianSingkat,
     String? nomorDokumen,
@@ -129,6 +143,12 @@ class EditDocPresenter {
           .eq('document_id', id);
       await _supabase.from('document_expenses').delete().eq('document_id', id);
 
+      // ⚡ TAMBAHAN: hapus rincian biaya proses lama sebelum insert ulang
+      await _supabase
+          .from('document_process_details')
+          .delete()
+          .eq('document_id', id);
+
       final incomeRows = incomeDetails
           .where((r) => (r['label'] as String? ?? '').trim().isNotEmpty)
           .map(
@@ -159,6 +179,25 @@ class EditDocPresenter {
 
       if (expenseRows.isNotEmpty) {
         await _supabase.from('document_expenses').insert(expenseRows);
+      }
+
+      // ⚡ TAMBAHAN: insert ulang rincian biaya proses — hanya catatan,
+      // tidak mempengaruhi perhitungan keuangan manapun.
+      final processDetailRows = processDetails
+          .where((r) => (r['proses'] as String? ?? '').trim().isNotEmpty)
+          .map(
+            (r) => {
+              'document_id': id,
+              'proses': r['proses'],
+              'amount': _cleanAmount(r['amount']),
+            },
+          )
+          .toList();
+
+      if (processDetailRows.isNotEmpty) {
+        await _supabase
+            .from('document_process_details')
+            .insert(processDetailRows);
       }
 
       _view.hideLoading();

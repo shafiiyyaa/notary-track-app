@@ -1,5 +1,6 @@
 import 'income_detail_model.dart';
 import 'expense_model.dart';
+import 'process_detail_model.dart'; // ⚡ TAMBAHAN
 
 class DocumentModel {
   final String id;
@@ -36,6 +37,7 @@ class DocumentModel {
 
   final List<IncomeDetailModel> incomeDetails;
   final List<ExpenseModel> expenses;
+  final List<ProcessDetailModel> processDetails; // ⚡ TAMBAHAN: rincian biaya proses (catatan saja, tidak dihitung ke keuangan)
 
   final String? tanggalMasuk;
   final String uraianSingkat;
@@ -68,6 +70,7 @@ class DocumentModel {
     this.keteranganKeuangan = '',
     this.incomeDetails = const [],
     this.expenses = const [],
+    this.processDetails = const [], // ⚡ TAMBAHAN
     this.tanggalMasuk,
     this.uraianSingkat = '',
     this.nomorDokumen,
@@ -111,6 +114,7 @@ class DocumentModel {
     Map<String, dynamic> map, {
     List<IncomeDetailModel> incomeDetails = const [],
     List<ExpenseModel> expenses = const [],
+    List<ProcessDetailModel> processDetails = const [], // ⚡ TAMBAHAN
   }) {
     return DocumentModel(
       id: map['id'].toString(),
@@ -138,6 +142,7 @@ class DocumentModel {
       keteranganKeuangan: map['keterangan_keuangan'] ?? '',
       incomeDetails: incomeDetails,
       expenses: expenses,
+      processDetails: processDetails, // ⚡ TAMBAHAN
       tanggalMasuk: map['tanggal_masuk']?.toString(),
       uraianSingkat: map['uraian_singkat'] ?? '',
       nomorDokumen: map['nomor_dokumen']?.toString(),
